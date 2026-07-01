@@ -24,6 +24,7 @@ const arabicMap: Record<string, string> = {
   ف: "f",
   ق: "q",
   ك: "k",
+  گ: "g",
   ل: "l",
   م: "m",
   ن: "n",
@@ -44,14 +45,20 @@ export function slugify(input: string) {
     .map((char) => arabicMap[char] ?? char)
     .join("");
 
-  return transliterated
+  const slug = transliterated
     .toLowerCase()
+    .replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-{2,}/g, "-")
     .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
+    .slice(0, 80)
+    .replace(/^-+|-+$/g, "");
+
+  return slug || "item";
 }
 
 export function uniqueSlug(base: string, suffix?: number) {
-  const slug = slugify(base) || "item";
-  return suffix ? slug + "-" + suffix : slug;
+  const slug = slugify(base);
+
+  return suffix ? `${slug}-${suffix}` : slug;
 }

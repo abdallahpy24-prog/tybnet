@@ -41,6 +41,7 @@ type ProviderRow = {
   imageUrl: string | null;
   status: ProviderStatus;
   sortOrder: number;
+  bookingPoints: number;
   isFeatured: boolean;
   address: string | null;
   workingHours: string | null;
@@ -116,6 +117,7 @@ export function ProviderForm({
           <input type="hidden" name="status" value="ACTIVE" />
           <input type="hidden" name="titlePrefix" value="د." />
           <input type="hidden" name="sortOrder" value="0" />
+          <input type="hidden" name="bookingPoints" value="0" />
         </>
       ) : (
         <input type="hidden" name="id" value={row?.id} />
@@ -256,8 +258,17 @@ export function ProviderForm({
             </Select>
           </Field>
 
-          <Field label="الترتيب">
+          <Field label="الترتيب اليدوي">
             <Input name="sortOrder" type="number" defaultValue={row?.sortOrder ?? 0} />
+          </Field>
+
+          <Field label="عدد النقاط">
+            <Input
+              name="bookingPoints"
+              type="number"
+              min={0}
+              defaultValue={row?.bookingPoints ?? 0}
+            />
           </Field>
 
           <label className="flex h-11 items-center gap-2 text-sm font-bold">

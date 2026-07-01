@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Eye, Instagram, MapPin, MessageCircle } from "lucide-react";
+import { Eye, Instagram, MapPin, MessageCircle, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,6 +17,7 @@ type ProviderCardData = {
   governorate: { name: string };
   area: { name: string };
   isFeatured?: boolean;
+  bookingPoints?: number;
 };
 
 export function ProviderCard({
@@ -27,6 +28,7 @@ export function ProviderCard({
   compact?: boolean;
 }) {
   const displayName = (provider.titlePrefix ? provider.titlePrefix + " " : "") + provider.name;
+  const bookingPoints = provider.bookingPoints ?? 0;
 
   const whatsappUrl = buildWhatsappUrl(
     provider.whatsapp,
@@ -53,14 +55,30 @@ export function ProviderCard({
         </div>
 
         <div className="md:hidden">
-          {provider.isFeatured ? <Badge>مميز</Badge> : null}
+          <div className="flex flex-wrap items-center gap-2">
+            {provider.isFeatured ? <Badge>مميز</Badge> : null}
+
+            <span className="inline-flex items-center gap-1 rounded-full bg-surface px-2.5 py-1 text-[11px] font-black text-slate-500">
+              <Star className="h-3 w-3 text-accent" aria-hidden="true" />
+              {bookingPoints} نقطة
+            </span>
+          </div>
+
           <h3 className="mt-2 text-lg font-black text-navy">{displayName}</h3>
         </div>
       </div>
 
       <div className="min-w-0 flex-1">
         <div className="hidden md:block">
-          {provider.isFeatured ? <Badge>مميز</Badge> : null}
+          <div className="flex flex-wrap items-center gap-2">
+            {provider.isFeatured ? <Badge>مميز</Badge> : null}
+
+            <span className="inline-flex items-center gap-1 rounded-full bg-surface px-2.5 py-1 text-[11px] font-black text-slate-500">
+              <Star className="h-3 w-3 text-accent" aria-hidden="true" />
+              {bookingPoints} نقطة
+            </span>
+          </div>
+
           <h3 className="mt-2 text-xl font-black text-navy">{displayName}</h3>
         </div>
 

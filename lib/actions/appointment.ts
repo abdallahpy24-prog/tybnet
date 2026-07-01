@@ -24,17 +24,46 @@ export async function createAppointment(_prevState: unknown, formData: FormData)
     };
   }
 
-  await prisma.appointment.create({
-    data: {
-      providerId: parsed.data.providerId || null,
-      patientName: parsed.data.patientName,
-      patientPhone: parsed.data.patientPhone,
-      note: parsed.data.note || null,
-      preferredDate: parsed.data.preferredDate ? new Date(parsed.data.preferredDate) : null
+  let providerSlug: string | null = null;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.appointment.create({
+      data: {
+        providerId: parsed.data.providerId || null,
+        patientName: parsed.data.patientName,
+        patientPhone: parsed.data.patientPhone,
+        note: parsed.data.note || null,
+        preferredDate: parsed.data.preferredDate ? new Date(parsed.data.preferredDate) : null
+      }
+    });
+
+    if (parsed.data.providerId) {
+      const provider = await tx.provider.update({
+        where: {
+          id: parsed.data.providerId
+        },
+        data: {
+          bookingPoints: {
+            increment: 1
+          }
+        },
+        select: {
+          slug: true
+        }
+      });
+
+      providerSlug = provider.slug;
     }
   });
 
   revalidatePath("/admin/appointments");
+  revalidatePath("/admin/providers");
+  revalidatePath("/doctors");
+  revalidatePath("/dentists");
+
+  if (providerSlug) {
+    revalidatePath(`/providers/${providerSlug}`);
+  }
 
   return {
     ok: true,

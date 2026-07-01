@@ -144,7 +144,12 @@ export async function searchProviders(
       governorate: true,
       area: true
     },
-    orderBy: [{ isFeatured: "desc" }, { sortOrder: "asc" }, { updatedAt: "desc" }],
+    orderBy: [
+      { isFeatured: "desc" },
+      { bookingPoints: "desc" },
+      { sortOrder: "asc" },
+      { updatedAt: "desc" }
+    ],
     take
   });
 }
@@ -221,7 +226,11 @@ export async function getHomeData() {
         governorate: true,
         area: true
       },
-      orderBy: [{ sortOrder: "asc" }, { updatedAt: "desc" }],
+      orderBy: [
+        { bookingPoints: "desc" },
+        { sortOrder: "asc" },
+        { updatedAt: "desc" }
+      ],
       take: 6
     })
   ]);

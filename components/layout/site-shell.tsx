@@ -4,10 +4,10 @@ import { SiteFooter } from "@/components/layout/site-footer";
 
 export function SiteShell({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-surface">
+    <div className="flex min-h-screen flex-col bg-surface">
       <SiteHeader />
 
-      <main className="min-h-0 flex-1 overflow-y-auto">
+      <main className="flex-1">
         {children}
       </main>
 

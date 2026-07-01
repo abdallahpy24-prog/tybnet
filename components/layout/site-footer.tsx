@@ -38,7 +38,7 @@ export function SiteFooter() {
             </p>
 
             <p className="mt-4 text-xs font-bold text-slate-500">
-              © {new Date().getFullYear()} طب نت / TibNet. جميع الحقوق محفوظة.
+              © {new Date().getFullYear()} طب نت / TybNet. جميع الحقوق محفوظة.
             </p>
           </div>
 

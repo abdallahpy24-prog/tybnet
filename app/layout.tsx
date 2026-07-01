@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
-
 export const metadata: Metadata = {
   title: {
-    default: "طب نت - TibNet",
+    default: "طب نت - TybNet",
     template: "%s | طب نت"
   },
   description: "منصة خدمات طبية عراقية للبحث عن الأطباء وأطباء الأسنان والصيدليات والمختبرات والعروض.",

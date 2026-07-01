@@ -12,20 +12,26 @@ export default async function ProvidersPage() {
     prisma.governorate.findMany({
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
     }),
+
     prisma.area.findMany({
       include: { governorate: true },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
     }),
+
     prisma.specialty.findMany({
       orderBy: [{ name: "asc" }]
     }),
+
     prisma.provider.findMany({
       include: {
         governorate: true,
         area: true,
         specialty: true
       },
-      orderBy: [{ updatedAt: "desc" }]
+      orderBy: [
+        { bookingPoints: "desc" },
+        { updatedAt: "desc" }
+      ]
     })
   ]);
 
@@ -56,7 +62,7 @@ export default async function ProvidersPage() {
     <>
       <PageHeader
         title="الأطباء وأطباء الأسنان"
-        description="إدارة الأطباء وأطباء الأسنان مع اختيار المحافظة والمنطقة والاختصاص بشكل ذكي."
+        description="إدارة الأطباء وأطباء الأسنان مع عدد النقاط والترتيب حسب الحجوزات عبر المنصة."
       />
 
       <FormShell title="إضافة مقدم خدمة">
@@ -100,6 +106,7 @@ export default async function ProvidersPage() {
                   imageUrl: row.imageUrl,
                   status: row.status,
                   sortOrder: row.sortOrder,
+                  bookingPoints: row.bookingPoints,
                   isFeatured: row.isFeatured,
                   address: row.address,
                   workingHours: row.workingHours,
@@ -112,6 +119,9 @@ export default async function ProvidersPage() {
                   <StatusPill value={row.status} />
                   <span>{row.type}</span>
                   <span>{row.specialty?.name ?? "بدون اختصاص"}</span>
+                  <span className="font-black text-primary-dark">
+                    النقاط: {row.bookingPoints}
+                  </span>
                   <span>
                     {row.governorate.name} - {row.area.name}
                   </span>

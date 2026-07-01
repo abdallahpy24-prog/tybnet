@@ -87,7 +87,7 @@ export default async function HomePage() {
               منصة عراقية للخدمات الطبية
             </div>
 
-            <h1 className="max-w-4xl text-4xl font-black leading-tight text-navy md:text-6xl">
+            <h1 className="max-w-4xl text-4xl font-black leading-[1.35] text-navy md:text-5xl md:leading-[1.35] lg:text-6xl lg:leading-[1.3]">
               {heroTitle}
             </h1>
 
