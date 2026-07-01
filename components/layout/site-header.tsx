@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Grid2X2, LogIn, Menu, Search, X } from "lucide-react";
+import { Grid2X2, LogIn, Menu, Search, UserPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const links = [
@@ -20,7 +20,8 @@ const quickLinks = [
   { href: "/dentists", label: "أطباء الأسنان", description: "عيادات وأطباء أسنان قريبين منك" },
   { href: "/pharmacies", label: "الصيدليات", description: "صيدليات حسب المحافظة والمنطقة" },
   { href: "/labs", label: "المختبرات", description: "مختبرات وتحاليل طبية" },
-  { href: "/offers", label: "العروض", description: "العروض الطبية المتاحة" }
+  { href: "/offers", label: "العروض", description: "العروض الطبية المتاحة" },
+  { href: "/join", label: "انضم إلى طب نت", description: "أضف عيادتك أو صيدليتك أو مختبرك إلى المنصة" }
 ];
 
 export function SiteHeader() {
@@ -87,6 +88,13 @@ export function SiteHeader() {
             className="h-11 flex-1 bg-transparent px-2 text-sm outline-none"
           />
         </form>
+
+        <Link href="/join" className="hidden lg:inline-flex">
+          <Button type="button" variant="secondary" className="h-10 px-3">
+            <UserPlus className="h-4 w-4" aria-hidden="true" />
+            انضم
+          </Button>
+        </Link>
 
         <Link href="/login" className="hidden sm:inline-flex">
           <Button type="button" className="h-10 px-3">
@@ -172,6 +180,14 @@ export function SiteHeader() {
                   {link.label}
                 </Link>
               ))}
+
+              <Link
+                href="/join"
+                onClick={closeAll}
+                className="rounded-2xl border border-primary-soft bg-primary-soft px-4 py-3 text-sm font-black text-primary-dark transition hover:bg-white"
+              >
+                انضم إلى طب نت
+              </Link>
             </nav>
 
             <Link href="/login" onClick={closeAll} className="block">

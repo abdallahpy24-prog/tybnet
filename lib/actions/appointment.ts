@@ -5,10 +5,23 @@ import { prisma } from "@/lib/prisma";
 import { appointmentSchema } from "@/lib/validations";
 
 export async function createAppointment(_prevState: unknown, formData: FormData) {
+  const privacyConsent = formData.get("privacyConsent");
+
+  if (privacyConsent !== "yes") {
+    return {
+      ok: false,
+      message: "يجب الموافقة على سياسة الخصوصية قبل إرسال طلب الموعد"
+    };
+  }
+
   const raw = Object.fromEntries(formData.entries());
   const parsed = appointmentSchema.safeParse(raw);
+
   if (!parsed.success) {
-    return { ok: false, message: parsed.error.issues[0]?.message ?? "تحقق من البيانات" };
+    return {
+      ok: false,
+      message: parsed.error.issues[0]?.message ?? "تحقق من البيانات"
+    };
   }
 
   await prisma.appointment.create({
@@ -22,5 +35,9 @@ export async function createAppointment(_prevState: unknown, formData: FormData)
   });
 
   revalidatePath("/admin/appointments");
-  return { ok: true, message: "تم إرسال طلب الموعد بنجاح" };
+
+  return {
+    ok: true,
+    message: "تم إرسال طلب الموعد بنجاح"
+  };
 }
