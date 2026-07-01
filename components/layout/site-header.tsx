@@ -16,12 +16,36 @@ const links = [
 ];
 
 const quickLinks = [
-  { href: "/doctors", label: "الأطباء", description: "ابحث عن طبيب حسب المحافظة والاختصاص" },
-  { href: "/dentists", label: "أطباء الأسنان", description: "عيادات وأطباء أسنان قريبين منك" },
-  { href: "/pharmacies", label: "الصيدليات", description: "صيدليات حسب المحافظة والمنطقة" },
-  { href: "/labs", label: "المختبرات", description: "مختبرات وتحاليل طبية" },
-  { href: "/offers", label: "العروض", description: "العروض الطبية المتاحة" },
-  { href: "/join", label: "انضم إلى طب نت", description: "أضف عيادتك أو صيدليتك أو مختبرك إلى المنصة" }
+  {
+    href: "/doctors",
+    label: "الأطباء",
+    description: "ابحث عن طبيب حسب المحافظة أو المنطقة أو الاختصاص"
+  },
+  {
+    href: "/dentists",
+    label: "أطباء الأسنان",
+    description: "استعرض أطباء وعيادات الأسنان حسب موقعك"
+  },
+  {
+    href: "/pharmacies",
+    label: "الصيدليات",
+    description: "اعثر على صيدليات قريبة واطّلع على وسائل التواصل"
+  },
+  {
+    href: "/labs",
+    label: "المختبرات",
+    description: "مختبرات طبية وخدمات تحليل حسب المحافظة والمنطقة"
+  },
+  {
+    href: "/offers",
+    label: "العروض",
+    description: "تابع العروض الطبية المتاحة عند توفرها"
+  },
+  {
+    href: "/join",
+    label: "انضم إلى طب نت",
+    description: "أضف عيادتك أو صيدليتك أو مختبرك إلى المنصة"
+  }
 ];
 
 export function SiteHeader() {
@@ -49,7 +73,7 @@ export function SiteHeader() {
         <Link
           href="/"
           className="flex min-w-max items-center gap-3"
-          aria-label="طب نت"
+          aria-label="الانتقال إلى الصفحة الرئيسية - طب نت"
           onClick={closeAll}
         >
           <Image
@@ -70,7 +94,7 @@ export function SiteHeader() {
             <Link
               key={link.href}
               href={link.href}
-              className="rounded-xl px-3 py-2 text-sm font-bold text-slate-600 hover:bg-primary-soft hover:text-primary-dark"
+              className="rounded-xl px-3 py-2 text-sm font-bold text-slate-600 transition hover:bg-primary-soft hover:text-primary-dark"
             >
               {link.label}
             </Link>
@@ -92,14 +116,14 @@ export function SiteHeader() {
         <Link href="/join" className="hidden lg:inline-flex">
           <Button type="button" variant="secondary" className="h-10 px-3">
             <UserPlus className="h-4 w-4" aria-hidden="true" />
-            انضم
+            انضم للمنصة
           </Button>
         </Link>
 
         <Link href="/login" className="hidden sm:inline-flex">
           <Button type="button" className="h-10 px-3">
             <LogIn className="h-4 w-4" aria-hidden="true" />
-            دخول
+            دخول الإدارة
           </Button>
         </Link>
 
@@ -128,8 +152,12 @@ export function SiteHeader() {
         <div className="border-t border-borderSoft bg-white lg:hidden">
           <div className="container-page py-4">
             <div className="mb-3">
-              <p className="text-sm font-black text-primary-dark">الخدمات السريعة</p>
-              <h2 className="text-xl font-black text-navy">شنو تبحث؟</h2>
+              <p className="text-sm font-black text-primary-dark">
+                الخدمات السريعة
+              </p>
+              <h2 className="text-xl font-black text-navy">
+                اختر القسم المناسب
+              </h2>
             </div>
 
             <div className="grid gap-2">
@@ -193,7 +221,7 @@ export function SiteHeader() {
             <Link href="/login" onClick={closeAll} className="block">
               <Button type="button" className="h-11 w-full justify-center">
                 <LogIn className="h-4 w-4" aria-hidden="true" />
-                دخول / لوحة الإدارة
+                دخول لوحة الإدارة
               </Button>
             </Link>
           </div>

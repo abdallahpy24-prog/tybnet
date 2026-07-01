@@ -12,8 +12,9 @@ import {
 } from "@/lib/queries";
 
 export const metadata: Metadata = {
-  title: "أطباء أسنان في العراق",
-  description: "ابحث عن أطباء أسنان في العراق حسب المحافظة والمنطقة والاختصاص عبر طب نت."
+  title: "ابحث عن أطباء أسنان في العراق | طب نت",
+  description:
+    "ابحث عن أطباء أسنان وعيادات أسنان في العراق حسب المحافظة والمنطقة والاختصاص عبر منصة طب نت."
 };
 
 export default async function DentistsPage({
@@ -34,8 +35,8 @@ export default async function DentistsPage({
       <section className="container-page py-10">
         <SectionTitle
           eyebrow="أطباء الأسنان"
-          title="عيادات الأسنان"
-          description="قائمة أطباء الأسنان النشطين فقط، مع فلاتر حسب المحافظة والمنطقة واختصاصات الأسنان."
+          title="ابحث عن طبيب أسنان قريب منك"
+          description="استعرض أطباء الأسنان المتاحين على طب نت، وصفّي النتائج حسب المحافظة والمنطقة والاختصاص للوصول إلى العيادة الأنسب لك."
         />
 
         <FilterForm
@@ -54,8 +55,8 @@ export default async function DentistsPage({
           </div>
         ) : (
           <EmptyState
-            title="لا توجد نتائج مطابقة"
-            description="جرّب تغيير المحافظة أو المنطقة أو اختصاص الأسنان."
+            title="لم نجد أطباء أسنان مطابقين لبحثك"
+            description="جرّب تغيير المحافظة أو المنطقة أو الاختصاص، أو ابحث بكلمة أبسط مثل اسم الطبيب أو نوع خدمة الأسنان."
           />
         )}
       </section>

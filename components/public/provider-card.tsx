@@ -30,7 +30,7 @@ export function ProviderCard({
 
   const whatsappUrl = buildWhatsappUrl(
     provider.whatsapp,
-    `مرحبا، وصلت لكم من منصة طب نت وأرغب بالاستفسار عن الحجز لدى ${displayName}.`
+    `مرحباً، وصلت إلى ${displayName} عبر منصة طب نت، وأرغب بالاستفسار عن الحجز أو المواعيد المتاحة.`
   );
 
   return (
@@ -65,7 +65,7 @@ export function ProviderCard({
         </div>
 
         <p className="mt-2 text-sm font-bold text-primary-dark">
-          {provider.specialty?.name ?? "اختصاص طبي"}
+          {provider.specialty?.name ?? "الاختصاص غير محدد"}
         </p>
 
         <p className="mt-2 flex items-center gap-2 text-sm text-slate-600">
@@ -85,7 +85,7 @@ export function ProviderCard({
         <Link href={"/providers/" + provider.slug} className="flex-1 md:flex-none">
           <Button type="button" variant="secondary" className="w-full">
             <Eye className="h-4 w-4" aria-hidden="true" />
-            عرض المزيد
+            عرض الملف
           </Button>
         </Link>
 
@@ -98,7 +98,7 @@ export function ProviderCard({
           >
             <Button type="button" className="w-full">
               <MessageCircle className="h-4 w-4" aria-hidden="true" />
-              واتساب
+              تواصل واتساب
             </Button>
           </a>
         ) : null}

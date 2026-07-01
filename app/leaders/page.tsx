@@ -1,15 +1,26 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { SiteShell } from "@/components/layout/site-shell";
+
+export const metadata: Metadata = {
+  title: "فريق طب نت | طب نت",
+  description:
+    "تعرّف على فريق طب نت والمؤسسين القائمين على تطوير المنصة وتنظيم حضورها الرقمي."
+};
 
 const leaders = [
   {
     name: "عبدالله حامد السعدي",
     title: "شريك مؤسس",
+    description:
+      "طالب طب وجراحة عامة، ويعمل على تطوير فكرة طب نت كمنصة تساعد على تنظيم الوصول إلى الخدمات الطبية في العراق.",
     image: "/assets/leaders/person-1.jpg"
   },
   {
     name: "عبدالله محمد الشمري",
     title: "شريك مؤسس",
+    description:
+      "بكالوريوس مختبرات وتحليلات طبية ومرضية، ويساهم في بناء رؤية المنصة وربطها باحتياجات القطاع الطبي والمختبري.",
     image: "/assets/leaders/person-2.jpg"
   }
 ];
@@ -20,19 +31,21 @@ export default function LeadersPage() {
       <section className="container-page py-12">
         <div className="mx-auto max-w-3xl text-center">
           <p className="mb-3 text-sm font-black text-primary">
-            فريق القيادة
+            فريق طب نت
           </p>
 
           <h1 className="text-4xl font-black text-navy md:text-5xl">
-            رواد الشركة
+            القائمون على المنصة
           </h1>
 
           <p className="mt-4 text-base leading-8 text-slate-600">
-            مدراء ومسؤولين المنصة
+            فريق يعمل على بناء منصة عراقية تساعد المرضى على الوصول إلى مقدمي
+            الخدمات الطبية، وتدعم حضور الأطباء والصيدليات والمختبرات بشكل
+            أوضح وأكثر تنظيماً.
           </p>
         </div>
 
-        <div className="mx-auto mt-12 grid max-w-4xl gap-6 md:grid-cols-2">
+        <div className="mx-auto mt-12 grid max-w-5xl gap-6 md:grid-cols-2">
           {leaders.map((leader) => (
             <div
               key={leader.name}
@@ -54,6 +67,10 @@ export default function LeadersPage() {
 
               <p className="mt-2 text-sm font-bold text-primary-dark">
                 {leader.title}
+              </p>
+
+              <p className="mt-4 text-sm leading-7 text-slate-600">
+                {leader.description}
               </p>
             </div>
           ))}

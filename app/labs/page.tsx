@@ -4,24 +4,61 @@ import { FilterForm } from "@/components/public/filter-form";
 import { PlaceCard } from "@/components/public/place-card";
 import { SectionTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { getFilterOptions, getPublicLabs, readFilters, type SearchParams } from "@/lib/queries";
+import {
+  getFilterOptions,
+  getPublicLabs,
+  readFilters,
+  type SearchParams
+} from "@/lib/queries";
 
 export const metadata: Metadata = {
-  title: "المختبرات",
-  description: "مختبرات العراق حسب المحافظة والمنطقة عبر طب نت."
+  title: "ابحث عن مختبرات طبية في العراق | طب نت",
+  description:
+    "ابحث عن مختبرات طبية في العراق حسب المحافظة والمنطقة، واطّلع على الخدمات والعنوان ووسائل التواصل عبر منصة طب نت."
 };
 
-export default async function LabsPage({ searchParams }: { searchParams?: Promise<SearchParams> }) {
+export default async function LabsPage({
+  searchParams
+}: {
+  searchParams?: Promise<SearchParams>;
+}) {
   const params = (await searchParams) ?? {};
   const filters = readFilters(params);
-  const [options, labs] = await Promise.all([getFilterOptions(), getPublicLabs(params)]);
+
+  const [options, labs] = await Promise.all([
+    getFilterOptions(),
+    getPublicLabs(params)
+  ]);
 
   return (
     <SiteShell>
       <section className="container-page py-10">
-        <SectionTitle eyebrow="المختبرات" title="المختبرات الطبية" description="يمكن عرض خدمات المختبر، العنوان، ساعات العمل، واتساب، والفلاتر الأساسية." />
-        <FilterForm action="/labs" q={filters.q} governorates={options.governorates} areas={options.areas} showSpecialties={false} />
-        {labs.length ? <div className="card-grid">{labs.map((item) => <PlaceCard key={item.id} item={item} label="مختبر" />)}</div> : <EmptyState title="قسم المختبرات سيفتح قريباً" description="أو لم تتم إضافة مختبرات نشطة بعد من لوحة الإدارة." />}
+        <SectionTitle
+          eyebrow="المختبرات"
+          title="ابحث عن مختبر طبي حسب المحافظة والمنطقة"
+          description="استعرض المختبرات الطبية المتاحة على طب نت، وتعرّف على الخدمات، العنوان، أوقات الدوام، ووسائل التواصل عند توفرها."
+        />
+
+        <FilterForm
+          action="/labs"
+          q={filters.q}
+          governorates={options.governorates}
+          areas={options.areas}
+          showSpecialties={false}
+        />
+
+        {labs.length ? (
+          <div className="card-grid">
+            {labs.map((item) => (
+              <PlaceCard key={item.id} item={item} label="مختبر" />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="لم نجد مختبرات مطابقة لبحثك"
+            description="جرّب تغيير المحافظة أو المنطقة، أو ابحث باسم المختبر إن كان متوفراً."
+          />
+        )}
       </section>
     </SiteShell>
   );

@@ -16,7 +16,14 @@ type PlaceData = {
 };
 
 export function PlaceCard({ item, label }: { item: PlaceData; label: string }) {
-  const whatsappUrl = buildWhatsappUrl(item.whatsapp);
+  const whatsappUrl = buildWhatsappUrl(
+    item.whatsapp,
+    `مرحباً، وصلت إلى ${item.name} عبر منصة طب نت، وأرغب بالاستفسار عن الخدمات أو أوقات الدوام.`
+  );
+
+  const locationText = item.address
+    ? item.address
+    : `${item.governorate.name} - ${item.area.name}`;
 
   return (
     <Card className="h-full">
@@ -38,27 +45,29 @@ export function PlaceCard({ item, label }: { item: PlaceData; label: string }) {
 
       <h3 className="text-xl font-black text-navy">{item.name}</h3>
 
-      <p className="mt-2 flex items-center gap-2 text-sm text-slate-600">
-        <MapPin className="h-4 w-4 text-accent" />
-        {item.governorate.name} - {item.area.name}
+      <p className="mt-2 flex items-start gap-2 text-sm leading-7 text-slate-600">
+        <MapPin className="mt-1 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
+        <span>{locationText}</span>
       </p>
 
       {item.workingHours ? (
-        <p className="mt-2 flex items-center gap-2 text-sm text-slate-600">
-          <Clock className="h-4 w-4 text-primary" />
-          {item.workingHours}
+        <p className="mt-2 flex items-start gap-2 text-sm leading-7 text-slate-600">
+          <Clock className="mt-1 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+          <span>{item.workingHours}</span>
         </p>
       ) : null}
 
       {item.services ? (
-        <p className="mt-3 text-sm leading-7 text-slate-600">{item.services}</p>
+        <p className="mt-3 text-sm leading-7 text-slate-600">
+          {item.services}
+        </p>
       ) : null}
 
       {whatsappUrl ? (
         <a href={whatsappUrl} target="_blank" rel="noreferrer" className="mt-5 block">
           <Button type="button" className="w-full">
-            <MessageCircle className="h-4 w-4" />
-            تواصل عبر واتساب
+            <MessageCircle className="h-4 w-4" aria-hidden="true" />
+            تواصل واتساب
           </Button>
         </a>
       ) : null}

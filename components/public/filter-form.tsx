@@ -73,12 +73,19 @@ export function FilterForm({
 
   return (
     <Card className="mb-8">
+      <div className="mb-5">
+        <p className="text-sm font-black text-navy">تصفية النتائج</p>
+        <p className="mt-1 text-xs font-bold leading-6 text-slate-500">
+          استخدم البحث والفلاتر للوصول إلى نتائج أقرب لما تحتاجه.
+        </p>
+      </div>
+
       <form action={action} className="grid gap-4 lg:grid-cols-[1.3fr_1fr_1fr_1fr_auto]">
-        <Field label="بحث">
+        <Field label="كلمة البحث">
           <Input
             name="q"
             defaultValue={q}
-            placeholder="اسم، اختصاص، أو عنوان"
+            placeholder="اكتب اسم الطبيب، الاختصاص، أو العنوان"
           />
         </Field>
 
@@ -91,7 +98,7 @@ export function FilterForm({
               setAreaId("");
             }}
           >
-            <option value="">كل المحافظات</option>
+            <option value="">جميع المحافظات</option>
 
             {governorates.map((item) => (
               <option key={item.id} value={item.id}>
@@ -109,7 +116,7 @@ export function FilterForm({
             disabled={!filteredAreas.length}
           >
             <option value="">
-              {governorateId ? "كل مناطق المحافظة" : "كل المناطق"}
+              {governorateId ? "جميع مناطق المحافظة" : "جميع المناطق"}
             </option>
 
             {filteredAreas.map((item) => (
@@ -126,7 +133,7 @@ export function FilterForm({
         {showSpecialties ? (
           <Field label="الاختصاص">
             <Select name="specialtyId" defaultValue={initialSpecialtyId}>
-              <option value="">كل الاختصاصات</option>
+              <option value="">جميع الاختصاصات</option>
 
               {(specialties ?? []).map((item) => (
                 <option key={item.id} value={item.id}>
@@ -140,7 +147,7 @@ export function FilterForm({
         <div className="flex items-end">
           <Button type="submit" className="w-full">
             <Search className="h-4 w-4" aria-hidden="true" />
-            بحث
+            تحديث النتائج
           </Button>
         </div>
       </form>

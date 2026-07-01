@@ -10,8 +10,9 @@ const mainLinks = [
 ];
 
 const supportLinks = [
+  { href: "/join", label: "انضم إلى طب نت" },
   { href: "/contact", label: "تواصل معنا" },
-  { href: "/leaders", label: "رواد الشركة" }
+  { href: "/leaders", label: "فريق طب نت" }
 ];
 
 const legalLinks = [
@@ -31,8 +32,9 @@ export function SiteFooter() {
             </Link>
 
             <p className="mt-3 max-w-sm text-sm leading-7 text-slate-600">
-              منصة عراقية تساعد المرضى على الوصول إلى الأطباء وأطباء الأسنان
-              والصيدليات والمختبرات، وتسهّل طلب المواعيد والتواصل.
+              منصة عراقية تنظّم الوصول إلى الأطباء وأطباء الأسنان والصيدليات
+              والمختبرات، وتساعد الزائر على البحث حسب المحافظة والمنطقة
+              والتواصل مع مقدم الخدمة بسهولة.
             </p>
 
             <p className="mt-4 text-xs font-bold text-slate-500">
@@ -56,7 +58,7 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <h2 className="text-sm font-black text-navy">الدعم</h2>
+            <h2 className="text-sm font-black text-navy">الدعم والانضمام</h2>
             <div className="mt-3 grid gap-2">
               {supportLinks.map((link) => (
                 <Link
@@ -71,7 +73,7 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <h2 className="text-sm font-black text-navy">معلومات قانونية</h2>
+            <h2 className="text-sm font-black text-navy">معلومات مهمة</h2>
             <div className="mt-3 grid gap-2">
               {legalLinks.map((link) => (
                 <Link
@@ -87,8 +89,9 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-8 rounded-2xl bg-primary-soft p-4 text-xs leading-6 text-slate-600">
-          تنبيه: طب نت منصة تسهّل الوصول إلى مقدمي الخدمات الطبية ولا تقدّم
-          تشخيصاً أو علاجاً طبياً بديلاً عن مراجعة الطبيب المختص.
+          تنبيه: طب نت منصة للبحث والتواصل مع مقدمي الخدمات الطبية، ولا تقدم
+          تشخيصاً أو علاجاً طبياً. في الحالات الطارئة، يرجى مراجعة أقرب مؤسسة
+          صحية أو طوارئ فوراً.
         </div>
       </div>
     </footer>

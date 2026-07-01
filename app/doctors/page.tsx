@@ -12,8 +12,9 @@ import {
 } from "@/lib/queries";
 
 export const metadata: Metadata = {
-  title: "أطباء في العراق",
-  description: "ابحث عن أطباء في العراق حسب المحافظة والمنطقة والاختصاص عبر طب نت."
+  title: "ابحث عن أطباء في العراق | طب نت",
+  description:
+    "ابحث عن أطباء في العراق حسب المحافظة والمنطقة والاختصاص، واطّلع على بيانات التواصل وطلب المواعيد عبر منصة طب نت."
 };
 
 export default async function DoctorsPage({
@@ -34,8 +35,8 @@ export default async function DoctorsPage({
       <section className="container-page py-10">
         <SectionTitle
           eyebrow="الأطباء"
-          title="أطباء في العراق"
-          description="قائمة الأطباء النشطين فقط، مع فلاتر حسب المحافظة والمنطقة واختصاصات الأطباء."
+          title="ابحث عن طبيب حسب المحافظة والاختصاص"
+          description="استعرض الأطباء المتاحين على طب نت، وصفّي النتائج حسب المحافظة والمنطقة والاختصاص للوصول إلى الطبيب الأنسب لك."
         />
 
         <FilterForm
@@ -54,8 +55,8 @@ export default async function DoctorsPage({
           </div>
         ) : (
           <EmptyState
-            title="لا توجد نتائج مطابقة"
-            description="جرّب تغيير المحافظة أو المنطقة أو الاختصاص."
+            title="لم نجد أطباء مطابقين لبحثك"
+            description="جرّب تغيير المحافظة أو المنطقة أو الاختصاص، أو ابحث بكلمة أبسط مثل اسم الطبيب أو نوع الاختصاص."
           />
         )}
       </section>
