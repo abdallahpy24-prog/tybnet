@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import Link from "next/link";
 import { CalendarPlus } from "lucide-react";
 import { createAppointment } from "@/lib/actions/appointment";
@@ -9,6 +9,12 @@ import { Field, Input, Textarea } from "@/components/ui/input";
 
 export function AppointmentForm({ providerId }: { providerId: string }) {
   const [state, formAction, pending] = useActionState(createAppointment, null);
+
+  useEffect(() => {
+    if (state?.ok && state.whatsappUrl) {
+      window.location.href = state.whatsappUrl;
+    }
+  }, [state]);
 
   return (
     <form action={formAction} className="grid gap-4">
@@ -23,7 +29,12 @@ export function AppointmentForm({ providerId }: { providerId: string }) {
       </Field>
 
       <Field label="الموعد المفضل">
-        <Input name="preferredDate" type="datetime-local" />
+        <Input
+          name="preferredDate"
+          type="text"
+          required
+          placeholder="اكتب اليوم والوقت الذي يناسبك"
+        />
       </Field>
 
       <Field label="ملاحظة اختيارية">
@@ -42,8 +53,8 @@ export function AppointmentForm({ providerId }: { providerId: string }) {
           className="mt-1 h-4 w-4 shrink-0 accent-primary"
         />
         <span>
-          أوافق على استخدام بياناتي لغرض متابعة طلب الموعد والتواصل معي، وأؤكد
-          أنني قرأت{" "}
+          أوافق على فتح واتساب وتجهيز رسالة طلب الموعد بالمعلومات التي أدخلتها،
+          وأؤكد أنني قرأت{" "}
           <Link
             href="/privacy"
             className="font-black text-primary-dark hover:text-primary"
@@ -56,8 +67,8 @@ export function AppointmentForm({ providerId }: { providerId: string }) {
       </label>
 
       <p className="rounded-2xl bg-primary-soft p-3 text-xs leading-6 text-slate-600">
-        ملاحظة: إرسال الطلب لا يعني تأكيد الموعد نهائياً إلا بعد التواصل معك.
-        للحالات الطارئة، يرجى مراجعة أقرب طوارئ فوراً.
+        ملاحظة: إرسال الطلب عبر واتساب لا يعني تأكيد الموعد نهائياً إلا بعد
+        التواصل معك من العيادة. للحالات الطارئة، يرجى مراجعة أقرب طوارئ فوراً.
       </p>
 
       {state?.message ? (
@@ -74,7 +85,7 @@ export function AppointmentForm({ providerId }: { providerId: string }) {
 
       <Button type="submit" disabled={pending}>
         <CalendarPlus className="h-4 w-4" aria-hidden="true" />
-        {pending ? "جاري إرسال الطلب" : "إرسال طلب الموعد"}
+        {pending ? "جاري تجهيز رسالة واتساب" : "إرسال طلب الموعد"}
       </Button>
     </form>
   );

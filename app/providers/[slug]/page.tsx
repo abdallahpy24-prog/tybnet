@@ -22,6 +22,50 @@ import { buildWhatsappUrl } from "@/lib/whatsapp";
 import { getProviderBySlug } from "@/lib/queries";
 import { instagramLabel } from "@/lib/instagram";
 
+function extractUrl(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const match = value.match(/https?:\/\/[^\s]+/);
+
+  return match?.[0] ?? null;
+}
+
+function getClinicMapUrl(address?: string | null) {
+  const url = extractUrl(address);
+
+  if (!url) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(url);
+    const hostname = parsed.hostname.toLowerCase();
+
+    const isMapUrl =
+      hostname.includes("google.") ||
+      hostname.includes("maps.google.") ||
+      hostname === "maps.app.goo.gl" ||
+      hostname === "goo.gl" ||
+      hostname === "waze.com" ||
+      hostname.endsWith(".waze.com") ||
+      hostname === "maps.apple.com";
+
+    return isMapUrl ? parsed.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function isOnlyUrl(value?: string | null) {
+  if (!value) {
+    return false;
+  }
+
+  return value.trim() === extractUrl(value);
+}
+
 export async function generateMetadata({
   params
 }: {
@@ -36,7 +80,8 @@ export async function generateMetadata({
     };
   }
 
-  const displayName = (provider.titlePrefix ? provider.titlePrefix + " " : "") + provider.name;
+  const displayName =
+    (provider.titlePrefix ? provider.titlePrefix + " " : "") + provider.name;
 
   return {
     title: `${displayName} | طب نت`,
@@ -60,16 +105,20 @@ export default async function ProviderDetailsPage({
 
   if (!provider) notFound();
 
-  const displayName = (provider.titlePrefix ? provider.titlePrefix + " " : "") + provider.name;
+  const displayName =
+    (provider.titlePrefix ? provider.titlePrefix + " " : "") + provider.name;
 
   const backHref = provider.type === "DENTIST" ? "/dentists" : "/doctors";
-  const backLabel = provider.type === "DENTIST" ? "العودة إلى أطباء الأسنان" : "العودة إلى الأطباء";
+  const backLabel =
+    provider.type === "DENTIST" ? "العودة إلى أطباء الأسنان" : "العودة إلى الأطباء";
 
   const whatsappUrl = buildWhatsappUrl(
-    provider.whatsapp,
+    provider.whatsapp || provider.phone,
     `مرحباً، وصلت إلى ${displayName} عبر منصة طب نت، وأرغب بالاستفسار عن الحجز أو المواعيد المتاحة.`
   );
 
+  const clinicMapUrl = getClinicMapUrl(provider.address);
+  const addressIsOnlyMapUrl = isOnlyUrl(provider.address) && Boolean(clinicMapUrl);
   const instaLabel = instagramLabel(provider.instagramUrl);
 
   return (
@@ -115,7 +164,10 @@ export default async function ProviderDetailsPage({
                 </p>
 
                 <p className="mt-3 flex items-start gap-2 text-slate-600">
-                  <MapPin className="mt-1 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
+                  <MapPin
+                    className="mt-1 h-5 w-5 shrink-0 text-accent"
+                    aria-hidden="true"
+                  />
                   <span>
                     {provider.governorate.name} - {provider.area.name}
                   </span>
@@ -142,6 +194,15 @@ export default async function ProviderDetailsPage({
                     </a>
                   ) : null}
 
+                  {clinicMapUrl ? (
+                    <a href={clinicMapUrl} target="_blank" rel="noreferrer">
+                      <Button type="button" variant="secondary">
+                        <MapPin className="h-4 w-4" aria-hidden="true" />
+                        موقع العيادة على الخرائط
+                      </Button>
+                    </a>
+                  ) : null}
+
                   {provider.phone ? (
                     <a href={"tel:" + provider.phone} className="inline-flex">
                       <Button type="button" variant="secondary">
@@ -152,7 +213,11 @@ export default async function ProviderDetailsPage({
                   ) : null}
 
                   {provider.instagramUrl ? (
-                    <a href={provider.instagramUrl} target="_blank" rel="noreferrer">
+                    <a
+                      href={provider.instagramUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
                       <Button type="button" variant="secondary">
                         <Instagram className="h-4 w-4" aria-hidden="true" />
                         {instaLabel}
@@ -167,8 +232,9 @@ export default async function ProviderDetailsPage({
           <Card>
             <h2 className="text-xl font-black text-navy">طلب موعد</h2>
             <p className="mt-2 text-sm leading-7 text-slate-600">
-              املأ البيانات المطلوبة وسيتم تسجيل طلبك للمتابعة. إرسال الطلب لا
-              يعني تأكيد الموعد نهائياً إلا بعد التواصل معك.
+              املأ البيانات المطلوبة وسيتم تجهيز رسالة واتساب مباشرة للطبيب أو
+              العيادة. إرسال الرسالة لا يعني تأكيد الموعد نهائياً إلا بعد الرد
+              عليك.
             </p>
 
             <div className="mt-5">
@@ -185,14 +251,24 @@ export default async function ProviderDetailsPage({
 
             {provider.address ? (
               <p className="mb-3 flex gap-2 text-sm leading-7 text-slate-600">
-                <MapPin className="mt-1 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-                <span>{provider.address}</span>
+                <MapPin
+                  className="mt-1 h-4 w-4 shrink-0 text-accent"
+                  aria-hidden="true"
+                />
+                <span>
+                  {addressIsOnlyMapUrl
+                    ? "موقع العيادة متوفر عبر زر الخرائط أعلى الصفحة."
+                    : provider.address}
+                </span>
               </p>
             ) : null}
 
             {provider.workingHours ? (
               <p className="flex gap-2 text-sm leading-7 text-slate-600">
-                <Clock className="mt-1 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                <Clock
+                  className="mt-1 h-4 w-4 shrink-0 text-primary"
+                  aria-hidden="true"
+                />
                 <span>{provider.workingHours}</span>
               </p>
             ) : null}

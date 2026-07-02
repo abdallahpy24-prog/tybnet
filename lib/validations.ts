@@ -154,7 +154,7 @@ export const appointmentSchema = z.object({
   providerId: optionalText,
   patientName: z.string().trim().min(2, "اسم المريض مطلوب"),
   patientPhone: z.string().trim().min(7, "رقم الهاتف مطلوب"),
-  preferredDate: optionalDateText,
+  preferredDate: optionalText,
   note: optionalText
 });
 
