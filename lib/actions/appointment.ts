@@ -90,7 +90,6 @@ export async function createAppointment(
     }
 
     const whatsappNumber = provider.whatsapp || provider.phone;
-
     const providerUrl = `${getSiteUrl()}/providers/${provider.slug}`;
 
     const message = buildAppointmentMessage({
@@ -111,6 +110,24 @@ export async function createAppointment(
       );
     }
 
+    const appointment = await tx.appointment.create({
+      data: {
+        providerId: provider.id,
+        patientName: parsed.data.patientName,
+        patientPhone: parsed.data.patientPhone,
+        preferredDate: parsed.data.preferredDate || null,
+        note: parsed.data.note || null,
+        status: "NEW"
+      },
+      select: {
+        id: true,
+        patientName: true,
+        patientPhone: true,
+        preferredDate: true,
+        createdAt: true
+      }
+    });
+
     const updatedProvider = await tx.provider.update({
       where: {
         id: provider.id
@@ -130,14 +147,18 @@ export async function createAppointment(
     await tx.auditLog.create({
       data: {
         userId: null,
-        action: "whatsapp-appointment-request",
-        entity: "Provider",
-        entityId: provider.id,
+        action: "create-whatsapp-appointment",
+        entity: "Appointment",
+        entityId: appointment.id,
         afterJson: {
+          appointmentId: appointment.id,
           providerId: provider.id,
           providerName: provider.name,
           providerSlug: provider.slug,
           providerType: provider.type,
+          patientName: appointment.patientName,
+          patientPhone: appointment.patientPhone,
+          preferredDate: appointment.preferredDate,
           bookingPoints: updatedProvider.bookingPoints,
           source: "public-whatsapp-form"
         }
@@ -146,19 +167,20 @@ export async function createAppointment(
 
     return {
       providerSlug: provider.slug,
+      appointmentId: appointment.id,
       whatsappUrl
     };
   });
 
-  revalidatePath("/admin/providers");
   revalidatePath("/admin/appointments");
+  revalidatePath("/admin/providers");
   revalidatePath("/doctors");
   revalidatePath("/dentists");
   revalidatePath(`/providers/${result.providerSlug}`);
 
   return {
     ok: true,
-    message: "تم تجهيز رسالة واتساب، سيتم تحويلك الآن",
+    message: "تم تسجيل طلب الموعد وتجهيز رسالة واتساب، سيتم تحويلك الآن",
     whatsappUrl: result.whatsappUrl
   };
 }

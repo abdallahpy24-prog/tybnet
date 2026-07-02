@@ -1171,6 +1171,51 @@ export async function updateAppointmentStatus(formData: FormData) {
 
   revalidatePath("/admin/appointments");
 }
+export async function deleteAppointment(formData: FormData) {
+  const userId = await currentUserId();
+  const id = requiredId(formData);
+
+  const before = await prisma.appointment.findUniqueOrThrow({
+    where: {
+      id
+    }
+  });
+
+  await prisma.appointment.delete({
+    where: {
+      id
+    }
+  });
+
+  await auditLog({
+    userId,
+    action: "delete",
+    entity: "Appointment",
+    entityId: id,
+    beforeJson: before
+  });
+
+  revalidatePath("/admin/appointments");
+}
+
+export async function deleteAllAppointments() {
+  const userId = await currentUserId();
+
+  const count = await prisma.appointment.count();
+
+  await prisma.appointment.deleteMany();
+
+  await auditLog({
+    userId,
+    action: "delete-all",
+    entity: "Appointment",
+    afterJson: {
+      deletedCount: count
+    }
+  });
+
+  revalidatePath("/admin/appointments");
+}
 
 export async function updateSettings(formData: FormData) {
   const userId = await currentUserId();
