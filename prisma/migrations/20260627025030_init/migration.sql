@@ -161,7 +161,7 @@ CREATE TABLE "Appointment" (
     "patientName" TEXT NOT NULL,
     "patientPhone" TEXT NOT NULL,
     "note" TEXT,
-    "preferredDate" TIMESTAMP(3),
+    "preferredDate" TEXT,
     "status" "AppointmentStatus" NOT NULL DEFAULT 'NEW',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,

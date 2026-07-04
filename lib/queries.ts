@@ -30,6 +30,38 @@ function publicProviderWhere(type: ProviderType): Prisma.ProviderWhereInput {
   };
 }
 
+function publicAnyProviderWhere(): Prisma.ProviderWhereInput {
+  return {
+    status: "ACTIVE",
+    governorate: {
+      isActive: true
+    },
+    area: {
+      isActive: true
+    },
+    OR: [
+      {
+        type: "DOCTOR",
+        specialty: {
+          isActive: true,
+          forType: {
+            in: ["DOCTOR", "BOTH"]
+          }
+        }
+      },
+      {
+        type: "DENTIST",
+        specialty: {
+          isActive: true,
+          forType: {
+            in: ["DENTIST", "BOTH"]
+          }
+        }
+      }
+    ]
+  };
+}
+
 export function readFilters(params: SearchParams = {}) {
   return {
     q: scalar(params.q)?.trim() || undefined,
@@ -297,13 +329,36 @@ export function activeOfferWhere(): Prisma.OfferWhereInput {
 
   return {
     isActive: true,
-    OR: [{ endsAt: null }, { endsAt: { gte: now } }]
+    AND: [
+      {
+        OR: [{ startsAt: null }, { startsAt: { lte: now } }]
+      },
+      {
+        OR: [{ endsAt: null }, { endsAt: { gte: now } }]
+      }
+    ]
   };
 }
 
 export async function getOffers() {
   return prisma.offer.findMany({
-    where: activeOfferWhere(),
+    where: {
+      AND: [
+        activeOfferWhere(),
+        {
+          OR: [
+            {
+              providerId: null
+            },
+            {
+              provider: {
+                is: publicAnyProviderWhere()
+              }
+            }
+          ]
+        }
+      ]
+    },
     include: {
       provider: {
         include: {
