@@ -79,6 +79,8 @@ export async function GET(request: NextRequest) {
         imageUrl: provider.imageUrl,
         phone: provider.phone,
         whatsapp: provider.whatsapp,
+        instagramUrl: provider.instagramUrl,
+
         whatsappUrl: buildWhatsappUrl(
           provider.whatsapp,
           `مرحبا، وصلت لكم من تطبيق طب نت وأرغب بالاستفسار من ${provider.titlePrefix} ${provider.name}.`

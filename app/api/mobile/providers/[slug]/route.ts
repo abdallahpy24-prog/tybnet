@@ -73,6 +73,8 @@ export async function GET(
         phoneUrl: buildTelUrl(provider.phone),
 
         whatsapp: provider.whatsapp,
+        instagramUrl: provider.instagramUrl,
+
         whatsappUrl: buildWhatsappUrl(
           whatsappNumber,
           `مرحبا، وصلت لكم من تطبيق طب نت وأرغب بالاستفسار من ${provider.titlePrefix} ${provider.name}.`
