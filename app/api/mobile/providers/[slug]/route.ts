@@ -10,6 +10,31 @@ function buildTelUrl(phone?: string | null) {
   return `tel:${phone.replace(/\s/g, "")}`;
 }
 
+function normalizeMapUrl(value?: string | null) {
+  const cleanValue = value?.trim();
+
+  if (!cleanValue) return null;
+
+  try {
+    if (/^https?:\/\//i.test(cleanValue)) {
+      return new URL(cleanValue).toString();
+    }
+
+    if (
+      cleanValue.startsWith("www.") ||
+      cleanValue.startsWith("maps.") ||
+      cleanValue.startsWith("goo.gl") ||
+      cleanValue.startsWith("maps.app.goo.gl")
+    ) {
+      return new URL(`https://${cleanValue}`).toString();
+    }
+
+    return cleanValue;
+  } catch {
+    return cleanValue;
+  }
+}
+
 function readMapUrl(address?: string | null) {
   if (!address) return null;
 
@@ -81,7 +106,7 @@ export async function GET(
         ),
 
         address: provider.address,
-        mapUrl: readMapUrl(provider.address),
+        mapUrl: normalizeMapUrl(provider.mapurl) ?? readMapUrl(provider.address),
 
         workingHours: provider.workingHours,
         bookingPoints: provider.bookingPoints,
