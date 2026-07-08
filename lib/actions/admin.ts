@@ -672,6 +672,7 @@ export async function createProvider(formData: FormData) {
   });
 
   revalidatePath("/admin/providers");
+  revalidatePath("/admin");
   revalidatePath("/doctors");
   revalidatePath("/dentists");
 }
@@ -728,6 +729,7 @@ export async function updateProvider(formData: FormData) {
   });
 
   revalidatePath("/admin/providers");
+  revalidatePath("/admin");
   revalidatePath(`/providers/${row.slug}`);
   revalidatePath("/doctors");
   revalidatePath("/dentists");
@@ -791,6 +793,7 @@ export async function deleteProvider(formData: FormData) {
   }
 
   revalidatePath("/admin/providers");
+  revalidatePath("/admin");
   revalidatePath("/doctors");
   revalidatePath("/dentists");
 }
