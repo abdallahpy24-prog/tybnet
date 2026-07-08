@@ -1,4 +1,4 @@
-import { createProvider, deleteProvider, updateProvider } from "@/lib/actions/admin";
+﻿import { createProvider, deleteProvider, updateProvider } from "@/lib/actions/admin";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/admin/page-header";
 import { FormShell } from "@/components/admin/form-shell";
@@ -103,6 +103,7 @@ export default async function ProvidersPage() {
                   whatsapp: row.whatsapp,
                   phone: row.phone,
                   instagramUrl: row.instagramUrl,
+                  mapurl: row.mapurl,
                   imageUrl: row.imageUrl,
                   status: row.status,
                   sortOrder: row.sortOrder,

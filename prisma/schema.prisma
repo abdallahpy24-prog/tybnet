@@ -122,6 +122,7 @@ model Provider {
   phone         String?
   whatsapp      String?
   instagramUrl  String?
+  mapurl        String?
   imageUrl      String?
   workingHours  String?
   status        PublishStatus @default(DRAFT)

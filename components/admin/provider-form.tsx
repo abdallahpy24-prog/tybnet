@@ -39,6 +39,7 @@ type ProviderRow = {
   whatsapp: string | null;
   phone: string | null;
   instagramUrl: string | null;
+  mapurl: string | null;
   imageUrl: string | null;
   status: ProviderStatus;
   sortOrder: number;
@@ -245,6 +246,15 @@ export function ProviderForm({
               name="instagramUrl"
               defaultValue={row?.instagramUrl ?? ""}
               placeholder="@dr.name"
+              className="ltr"
+            />
+          </Field>
+
+          <Field label="رابط الموقع">
+            <Input
+              name="mapurl"
+              defaultValue={row?.mapurl ?? ""}
+              placeholder="https://maps.app.goo.gl/..."
               className="ltr"
             />
           </Field>
