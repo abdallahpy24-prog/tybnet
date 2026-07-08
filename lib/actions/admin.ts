@@ -645,6 +645,8 @@ export async function createProvider(formData: FormData) {
     isFeatured: boolFromForm(formData, "isFeatured")
   });
 
+  const mapurl = textFromForm(formData, "mapurl") || null;
+
   await ensureAreaBelongsToGovernorate(parsed.areaId, parsed.governorateId);
   await ensureSpecialtyMatchesProviderType(parsed.specialtyId, parsed.type);
 
@@ -658,6 +660,7 @@ export async function createProvider(formData: FormData) {
       phone: parsed.phone || null,
       whatsapp: parsed.whatsapp || null,
       instagramUrl: parsed.instagramUrl || null,
+      mapurl,
       imageUrl: parsed.imageUrl || null,
       workingHours: parsed.workingHours || null
     }
@@ -698,6 +701,8 @@ export async function updateProvider(formData: FormData) {
     isFeatured: boolFromForm(formData, "isFeatured")
   });
 
+  const mapurl = textFromForm(formData, "mapurl") || null;
+
   await ensureAreaBelongsToGovernorate(parsed.areaId, parsed.governorateId);
   await ensureSpecialtyMatchesProviderType(parsed.specialtyId, parsed.type);
 
@@ -714,6 +719,7 @@ export async function updateProvider(formData: FormData) {
       phone: parsed.phone || null,
       whatsapp: parsed.whatsapp || null,
       instagramUrl: parsed.instagramUrl || null,
+      mapurl,
       imageUrl: parsed.imageUrl || null,
       workingHours: parsed.workingHours || null
     }
