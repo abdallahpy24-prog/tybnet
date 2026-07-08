@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
 
@@ -69,9 +70,11 @@ export function ProviderForm({
   governorates,
   areas,
   specialties,
-  row
+  row,
 }: ProviderFormProps) {
-  const [providerType, setProviderType] = useState<ProviderType>(row?.type ?? "DOCTOR");
+  const [providerType, setProviderType] = useState<ProviderType>(
+    row?.type ?? "DOCTOR"
+  );
 
   const [governorateId, setGovernorateId] = useState(
     row?.governorateId ?? governorates[0]?.id ?? ""
@@ -92,10 +95,13 @@ export function ProviderForm({
   }, [filteredAreas, areaId]);
 
   const filteredSpecialties = useMemo(() => {
-    return specialties.filter((specialty) => isSpecialtyAllowed(specialty, providerType));
+    return specialties.filter((specialty) =>
+      isSpecialtyAllowed(specialty, providerType)
+    );
   }, [specialties, providerType]);
 
   const [specialtyId, setSpecialtyId] = useState(row?.specialtyId ?? "");
+  const [imageUrl, setImageUrl] = useState(row?.imageUrl ?? "");
 
   useEffect(() => {
     const currentSpecialtyIsValid = filteredSpecialties.some(
@@ -200,6 +206,8 @@ export function ProviderForm({
         />
       </Field>
 
+      <ImageUploadField value={imageUrl} onChange={setImageUrl} />
+
       <div className="rounded-2xl border border-borderSoft bg-surface p-4 text-sm font-bold leading-7 text-slate-600 md:col-span-2 xl:col-span-3">
         {filteredAreas.length ? (
           <p>
@@ -237,15 +245,6 @@ export function ProviderForm({
               name="instagramUrl"
               defaultValue={row?.instagramUrl ?? ""}
               placeholder="@dr.name"
-              className="ltr"
-            />
-          </Field>
-
-          <Field label="رابط الصورة">
-            <Input
-              name="imageUrl"
-              defaultValue={row?.imageUrl ?? ""}
-              placeholder="/uploads/image.webp"
               className="ltr"
             />
           </Field>
@@ -299,5 +298,143 @@ export function ProviderForm({
         {isCreate ? "إضافة مقدم خدمة" : "حفظ التعديل"}
       </Button>
     </form>
+  );
+}
+
+function ImageUploadField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  async function uploadImage(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    setMessage(null);
+
+    if (!file.type.startsWith("image/")) {
+      setMessage("اختَر ملف صورة فقط.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 3 * 1024 * 1024) {
+      setMessage("حجم الصورة يجب ألا يتجاوز 3MB.");
+      event.target.value = "";
+      return;
+    }
+
+    try {
+      setUploading(true);
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(result?.error || "فشل رفع الصورة");
+      }
+
+      if (!result?.url || typeof result.url !== "string") {
+        throw new Error("لم يرجع رابط الصورة من الخادم");
+      }
+
+      onChange(result.url);
+      setMessage("تم رفع الصورة بنجاح.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "فشل رفع الصورة");
+    } finally {
+      setUploading(false);
+      event.target.value = "";
+    }
+  }
+
+  return (
+    <div className="grid gap-2 md:col-span-2 xl:col-span-3">
+      <span className="text-sm font-semibold text-navy">صورة الطبيب</span>
+
+      <div className="grid gap-3 rounded-2xl border border-borderSoft bg-surface p-4 md:grid-cols-[120px_1fr]">
+        <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-2xl border border-borderSoft bg-white">
+          {value ? (
+            <Image
+              src={value}
+              alt="صورة الطبيب"
+              width={112}
+              height={112}
+              unoptimized
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <span className="text-center text-xs font-bold text-slate-400">
+              لا توجد صورة
+            </span>
+          )}
+        </div>
+
+        <div className="grid gap-2">
+          <Input
+            name="imageUrl"
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            placeholder="/uploads/image.webp"
+            className="ltr"
+          />
+
+          <div className="flex flex-wrap gap-2">
+            <label className="focus-ring inline-flex h-10 cursor-pointer items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white transition hover:brightness-105">
+              {uploading ? "جاري الرفع..." : "اختيار صورة من الجهاز"}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={uploadImage}
+                disabled={uploading}
+              />
+            </label>
+
+            {value ? (
+              <button
+                type="button"
+                className="h-10 rounded-xl border border-borderSoft bg-white px-4 text-sm font-bold text-navy"
+                onClick={() => {
+                  onChange("");
+                  setMessage(null);
+                }}
+              >
+                حذف الصورة
+              </button>
+            ) : null}
+          </div>
+
+          <p className="text-xs font-bold text-slate-500">
+            الصيغ المدعومة: JPG / PNG / WebP — الحد الأعلى 3MB.
+          </p>
+
+          {message ? (
+            <p
+              className={
+                message.includes("تم رفع")
+                  ? "text-sm font-bold text-emerald-700"
+                  : "text-sm font-bold text-red-700"
+              }
+            >
+              {message}
+            </p>
+          ) : null}
+        </div>
+      </div>
+    </div>
   );
 }
