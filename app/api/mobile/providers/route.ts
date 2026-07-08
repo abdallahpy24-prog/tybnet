@@ -80,6 +80,7 @@ export async function GET(request: NextRequest) {
         phone: provider.phone,
         whatsapp: provider.whatsapp,
         instagramUrl: provider.instagramUrl,
+        mapUrl: provider.mapurl,
 
         whatsappUrl: buildWhatsappUrl(
           provider.whatsapp,
