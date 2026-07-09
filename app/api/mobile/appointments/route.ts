@@ -15,6 +15,10 @@ function getSiteUrl() {
   ).replace(/\/$/, "");
 }
 
+function cleanLine(value?: string | null) {
+  return String(value || "").trim();
+}
+
 function buildAppointmentMessage(input: {
   providerName: string;
   providerTitlePrefix: string;
@@ -24,14 +28,18 @@ function buildAppointmentMessage(input: {
   note?: string | null;
   providerUrl: string;
 }) {
+  const providerFullName = `${input.providerTitlePrefix} ${input.providerName}`.trim();
+  const preferredDate = cleanLine(input.preferredDate) || "لم يتم تحديده";
+  const note = cleanLine(input.note);
+
   const lines = [
-    "مرحبا، وصلت لكم من تطبيق طب نت وأرغب بحجز موعد.",
+    "مرحباً، وصلت لكم عن طريق طب نت وأرغب بحجز موعد.",
     "",
-    `الطبيب/الجهة: ${input.providerTitlePrefix} ${input.providerName}`,
+    `الطبيب/الجهة: ${providerFullName}`,
     `اسم المراجع: ${input.patientName}`,
     `رقم الهاتف: ${input.patientPhone}`,
-    `اليوم والوقت المناسب: ${input.preferredDate || "لم يتم تحديده"}`,
-    input.note ? `ملاحظة: ${input.note}` : null,
+    `الموعد المفضل: ${preferredDate}`,
+    note ? `ملاحظة: ${note}` : null,
     "",
     `رابط الصفحة: ${input.providerUrl}`,
   ].filter(Boolean);
@@ -105,6 +113,11 @@ export async function POST(request: NextRequest) {
       }
 
       const whatsappNumber = provider.whatsapp || provider.phone;
+
+      if (!whatsappNumber) {
+        throw new Error("لا يوجد رقم واتساب أو هاتف صحيح لهذا الطبيب");
+      }
+
       const providerUrl = `${getSiteUrl()}/providers/${provider.slug}`;
 
       const message = buildAppointmentMessage({
