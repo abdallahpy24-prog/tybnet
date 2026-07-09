@@ -10,7 +10,6 @@ import {
   Phone,
   Pill,
   ShieldCheck,
-  Sparkles,
 } from "lucide-react";
 
 import { SiteShell } from "@/components/layout/site-shell";
@@ -18,10 +17,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getPublicPharmacyBySlug } from "@/lib/queries";
-
-function cleanText(value?: string | null) {
-  return String(value || "").trim();
-}
 
 function buildTelUrl(phone?: string | null) {
   const cleanPhone = phone?.trim();
@@ -140,7 +135,6 @@ export default async function PharmacyDetailsPage({
 
   const inquiryHref = `/api/mobile/pharmacies/${pharmacy.slug}/inquiry`;
   const phoneUrl = buildTelUrl(pharmacy.phone);
-
   const mapUrl =
     normalizeMapUrl(pharmacy.mapurl) ?? getMapUrlFromAddress(pharmacy.address);
 
@@ -307,30 +301,19 @@ export default async function PharmacyDetailsPage({
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <Card>
             <h2 className="mb-4 flex items-center gap-2 text-xl font-black text-navy">
-              <Sparkles className="h-5 w-5 text-primary" aria-hidden="true" />
-              الخدمات والنبذة
+              <Pill className="h-5 w-5 text-primary" aria-hidden="true" />
+              الخدمات المتوفرة
             </h2>
 
-            {pharmacy.bio ? (
+            {pharmacy.services ? (
               <p className="whitespace-pre-line text-sm leading-8 text-slate-600">
-                {pharmacy.bio}
+                {pharmacy.services}
               </p>
             ) : (
               <p className="text-sm leading-8 text-slate-500">
-                لم تتم إضافة نبذة تفصيلية بعد.
+                لم تتم إضافة الخدمات بعد.
               </p>
             )}
-
-            {pharmacy.services ? (
-              <div className="mt-5 rounded-3xl border border-borderSoft bg-slate-50 p-4">
-                <h3 className="text-sm font-black text-navy">
-                  الخدمات المتوفرة
-                </h3>
-                <p className="mt-2 whitespace-pre-line text-sm leading-8 text-slate-600">
-                  {pharmacy.services}
-                </p>
-              </div>
-            ) : null}
           </Card>
 
           <Card>
@@ -389,6 +372,7 @@ export default async function PharmacyDetailsPage({
               <h2 className="text-lg font-black text-navy">
                 تنبيه مهم قبل الشراء أو الزيارة
               </h2>
+
               <p className="mt-2 text-sm leading-7 text-slate-600">
                 طب نت يساعدك على الوصول إلى الصيدلية والتواصل معها، ولا يضمن
                 توفر الدواء أو السعر النهائي. يُفضّل التأكد من التفاصيل عبر

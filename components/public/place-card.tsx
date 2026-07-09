@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Clock, ExternalLink, MapPin, MessageCircle } from "lucide-react";
+import { ExternalLink, MapPin, MessageCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -88,13 +88,13 @@ export function PlaceCard({ item, label }: { item: PlaceData; label: string }) {
   );
 
   const finalInquiryHref = inquiryHref || fallbackWhatsappUrl;
+
   const locationText = item.address
     ? item.address
     : `${item.governorate.name} - ${item.area.name}`;
 
   const kindLabel = isLab ? "مختبر طبي" : "صيدلية";
   const inquiryCount = item.inquiryCount ?? 0;
-  const summaryText = item.bio || item.services;
 
   return (
     <Card className="flex h-full flex-col overflow-hidden">
@@ -138,22 +138,6 @@ export function PlaceCard({ item, label }: { item: PlaceData; label: string }) {
           />
           <span>{locationText}</span>
         </p>
-
-        {item.workingHours ? (
-          <p className="mt-2 flex items-start gap-2 text-sm leading-7 text-slate-600">
-            <Clock
-              className="mt-1 h-4 w-4 shrink-0 text-primary"
-              aria-hidden="true"
-            />
-            <span>{item.workingHours}</span>
-          </p>
-        ) : null}
-
-        {summaryText ? (
-          <p className="mt-3 line-clamp-2 text-sm leading-7 text-slate-600">
-            {summaryText}
-          </p>
-        ) : null}
 
         <div className="mt-auto grid gap-2 pt-5 sm:grid-cols-2">
           {finalInquiryHref ? (

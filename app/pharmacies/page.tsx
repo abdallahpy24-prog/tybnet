@@ -9,17 +9,17 @@ import {
   getFilterOptions,
   getPublicPharmacies,
   readFilters,
-  type SearchParams
+  type SearchParams,
 } from "@/lib/queries";
 
 export const metadata: Metadata = {
   title: "ابحث عن صيدليات في العراق | طب نت",
   description:
-    "ابحث عن صيدليات في العراق حسب المحافظة والمنطقة، واطّلع على العنوان واللوكيشن ووسائل التواصل عبر منصة طب نت."
+    "ابحث عن صيدليات في العراق حسب المحافظة والمنطقة، واطّلع على معلومات التواصل عبر منصة طب نت.",
 };
 
 export default async function PharmaciesPage({
-  searchParams
+  searchParams,
 }: {
   searchParams?: Promise<SearchParams>;
 }) {
@@ -28,7 +28,7 @@ export default async function PharmaciesPage({
 
   const [options, pharmacies] = await Promise.all([
     getFilterOptions(),
-    getPublicPharmacies(params)
+    getPublicPharmacies(params),
   ]);
 
   return (

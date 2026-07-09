@@ -9,17 +9,17 @@ import {
   getFilterOptions,
   getPublicLabs,
   readFilters,
-  type SearchParams
+  type SearchParams,
 } from "@/lib/queries";
 
 export const metadata: Metadata = {
   title: "ابحث عن مختبرات طبية في العراق | طب نت",
   description:
-    "ابحث عن مختبرات طبية في العراق حسب المحافظة والمنطقة، واطّلع على الخدمات والعنوان واللوكيشن ووسائل التواصل عبر منصة طب نت."
+    "ابحث عن مختبرات طبية في العراق حسب المحافظة والمنطقة، واطّلع على معلومات التواصل عبر منصة طب نت.",
 };
 
 export default async function LabsPage({
-  searchParams
+  searchParams,
 }: {
   searchParams?: Promise<SearchParams>;
 }) {
@@ -28,7 +28,7 @@ export default async function LabsPage({
 
   const [options, labs] = await Promise.all([
     getFilterOptions(),
-    getPublicLabs(params)
+    getPublicLabs(params),
   ]);
 
   return (
@@ -37,7 +37,7 @@ export default async function LabsPage({
         <SectionTitle
           eyebrow="المختبرات"
           title="ابحث عن مختبر طبي حسب المحافظة والمنطقة"
-          description="استعرض المختبرات الطبية المتاحة على طب نت، وصفّي النتائج حسب المحافظة أو المنطقة أو اسم المختبر أو الخدمات."
+          description="استعرض المختبرات الطبية المتاحة على طب نت، وصفّي النتائج حسب المحافظة أو المنطقة أو اسم المختبر."
         />
 
         <FilterForm
@@ -57,7 +57,7 @@ export default async function LabsPage({
         ) : (
           <EmptyState
             title="لم نجد مختبرات مطابقة لبحثك"
-            description="جرّب تغيير المحافظة أو المنطقة، أو ابحث باسم المختبر أو الخدمة أو العنوان."
+            description="جرّب تغيير المحافظة أو المنطقة، أو ابحث باسم المختبر أو العنوان."
           />
         )}
       </section>

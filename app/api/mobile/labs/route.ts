@@ -119,35 +119,6 @@ function readMapUrlFromText(value?: string | null) {
   return normalizeMapUrl(match[0]);
 }
 
-function buildLabSummary(input: {
-  name: string;
-  bio?: string | null;
-  services?: string | null;
-  governorate?: string | null;
-  area?: string | null;
-  address?: string | null;
-  workingHours?: string | null;
-}) {
-  if (input.bio?.trim()) {
-    return input.bio.trim();
-  }
-
-  const location = [input.governorate, input.area]
-    .map(cleanText)
-    .filter(Boolean)
-    .join(" - ");
-
-  const lines = [
-    `مختبر ${input.name}${location ? ` في ${location}` : ""}.`,
-    input.services ? `الخدمات: ${input.services}` : null,
-    input.address ? `العنوان: ${input.address}` : null,
-    input.workingHours ? `أوقات العمل: ${input.workingHours}` : null,
-    "يمكنك الاستفسار عن التحاليل والخدمات والأسعار عبر واتساب أو الاتصال السريع عند توفر بيانات التواصل.",
-  ].filter(Boolean);
-
-  return lines.join("\n");
-}
-
 function buildLabWhatsappMessage(input: {
   name: string;
   governorate?: string | null;
@@ -255,16 +226,6 @@ export async function GET(request: NextRequest) {
           detailsUrl: profileUrl,
           shareUrl: profileUrl,
           inquiryUrl,
-
-          summary: buildLabSummary({
-            name: lab.name,
-            bio: lab.bio,
-            services: lab.services,
-            governorate: governorateName,
-            area: areaName,
-            address: lab.address,
-            workingHours: lab.workingHours,
-          }),
 
           primaryActionLabel: "استفسار",
           detailsActionLabel: "التفاصيل",

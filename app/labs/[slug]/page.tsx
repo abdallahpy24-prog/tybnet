@@ -11,7 +11,6 @@ import {
   Microscope,
   Phone,
   ShieldCheck,
-  Sparkles,
 } from "lucide-react";
 
 import { SiteShell } from "@/components/layout/site-shell";
@@ -19,10 +18,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getPublicLabBySlug } from "@/lib/queries";
-
-function cleanText(value?: string | null) {
-  return String(value || "").trim();
-}
 
 function buildTelUrl(phone?: string | null) {
   const cleanPhone = phone?.trim();
@@ -141,8 +136,8 @@ export default async function LabDetailsPage({
 
   const inquiryHref = `/api/mobile/labs/${lab.slug}/inquiry`;
   const phoneUrl = buildTelUrl(lab.phone);
-
-  const mapUrl = normalizeMapUrl(lab.mapurl) ?? getMapUrlFromAddress(lab.address);
+  const mapUrl =
+    normalizeMapUrl(lab.mapurl) ?? getMapUrlFromAddress(lab.address);
 
   const addressIsOnlyMapUrl = isOnlyUrl(lab.address) && Boolean(mapUrl);
 
@@ -307,35 +302,22 @@ export default async function LabDetailsPage({
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <Card>
             <h2 className="mb-4 flex items-center gap-2 text-xl font-black text-navy">
-              <Sparkles className="h-5 w-5 text-primary" aria-hidden="true" />
-              الخدمات والنبذة
+              <FlaskConical
+                className="h-5 w-5 text-primary"
+                aria-hidden="true"
+              />
+              التحاليل والخدمات المتوفرة
             </h2>
 
-            {lab.bio ? (
+            {lab.services ? (
               <p className="whitespace-pre-line text-sm leading-8 text-slate-600">
-                {lab.bio}
+                {lab.services}
               </p>
             ) : (
               <p className="text-sm leading-8 text-slate-500">
-                لم تتم إضافة نبذة تفصيلية بعد.
+                لم تتم إضافة الخدمات بعد.
               </p>
             )}
-
-            {lab.services ? (
-              <div className="mt-5 rounded-3xl border border-borderSoft bg-slate-50 p-4">
-                <h3 className="flex items-center gap-2 text-sm font-black text-navy">
-                  <FlaskConical
-                    className="h-4 w-4 text-primary"
-                    aria-hidden="true"
-                  />
-                  التحاليل والخدمات المتوفرة
-                </h3>
-
-                <p className="mt-2 whitespace-pre-line text-sm leading-8 text-slate-600">
-                  {lab.services}
-                </p>
-              </div>
-            ) : null}
           </Card>
 
           <Card>
@@ -392,6 +374,7 @@ export default async function LabDetailsPage({
               <h2 className="text-lg font-black text-navy">
                 تنبيه مهم قبل إجراء التحليل أو الزيارة
               </h2>
+
               <p className="mt-2 text-sm leading-7 text-slate-600">
                 طب نت يساعدك على الوصول إلى المختبر والتواصل معه، ولا يضمن توفر
                 التحليل أو السعر النهائي أو وقت ظهور النتائج. يُفضّل التأكد من
