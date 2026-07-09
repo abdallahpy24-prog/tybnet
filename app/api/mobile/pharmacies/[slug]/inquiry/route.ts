@@ -141,18 +141,18 @@ async function handleInquiry(
 
 export async function GET(
   request: NextRequest,
-  context: { params: { slug: string } }
+  context: { params: Promise<{ slug: string }> }
 ) {
-  return handleInquiry(
-    request,
-    decodeURIComponent(context.params.slug),
-    "redirect"
-  );
+  const { slug } = await context.params;
+
+  return handleInquiry(request, decodeURIComponent(slug), "redirect");
 }
 
 export async function POST(
   request: NextRequest,
-  context: { params: { slug: string } }
+  context: { params: Promise<{ slug: string }> }
 ) {
-  return handleInquiry(request, decodeURIComponent(context.params.slug), "json");
+  const { slug } = await context.params;
+
+  return handleInquiry(request, decodeURIComponent(slug), "json");
 }
