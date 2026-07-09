@@ -45,7 +45,7 @@ const optionalDateText = z
     if (Number.isNaN(date.getTime())) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "التاريخ غير صحيح"
+        message: "التاريخ غير صحيح",
       });
 
       return z.NEVER;
@@ -69,7 +69,7 @@ const optionalIraqWhatsapp = z
     if (!normalized) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "رقم واتساب عراقي غير صحيح"
+        message: "رقم واتساب عراقي غير صحيح",
       });
 
       return z.NEVER;
@@ -127,14 +127,14 @@ const optionalMapUrl = z
 
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "رابط اللوكيشن غير صحيح"
+        message: "رابط اللوكيشن غير صحيح",
       });
 
       return z.NEVER;
     } catch {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "رابط اللوكيشن غير صحيح"
+        message: "رابط اللوكيشن غير صحيح",
       });
 
       return z.NEVER;
@@ -145,7 +145,7 @@ export const governorateSchema = z.object({
   name: z.string().trim().min(2, "اسم المحافظة مطلوب"),
   slug: optionalSlug,
   sortOrder: z.coerce.number().int().default(0),
-  isActive: z.coerce.boolean().default(true)
+  isActive: z.coerce.boolean().default(true),
 });
 
 export const areaSchema = z.object({
@@ -153,7 +153,7 @@ export const areaSchema = z.object({
   name: z.string().trim().min(2, "اسم المنطقة مطلوب"),
   slug: optionalSlug,
   sortOrder: z.coerce.number().int().default(0),
-  isActive: z.coerce.boolean().default(true)
+  isActive: z.coerce.boolean().default(true),
 });
 
 export const specialtySchema = z.object({
@@ -161,7 +161,7 @@ export const specialtySchema = z.object({
   slug: optionalSlug,
   forType: z.enum(["DOCTOR", "DENTIST", "BOTH"]),
   icon: optionalText,
-  isActive: z.coerce.boolean().default(true)
+  isActive: z.coerce.boolean().default(true),
 });
 
 export const providerSchema = z.object({
@@ -187,7 +187,7 @@ export const providerSchema = z.object({
     .number()
     .int()
     .min(0, "عدد النقاط لا يمكن أن يكون أقل من صفر")
-    .default(0)
+    .default(0),
 });
 
 export const offerSchema = z.object({
@@ -199,7 +199,7 @@ export const offerSchema = z.object({
   startsAt: optionalDateText,
   endsAt: optionalDateText,
   isActive: z.coerce.boolean().default(true),
-  providerId: optionalText
+  providerId: optionalText,
 });
 
 export const appointmentSchema = z.object({
@@ -207,21 +207,29 @@ export const appointmentSchema = z.object({
   patientName: z.string().trim().min(2, "اسم المريض مطلوب"),
   patientPhone: z.string().trim().min(7, "رقم الهاتف مطلوب"),
   preferredDate: optionalText,
-  note: optionalText
+  note: optionalText,
 });
 
 export const servicePlaceSchema = z.object({
   name: z.string().trim().min(2, "الاسم مطلوب"),
   slug: optionalSlug,
+
   governorateId: idSchema,
   areaId: idSchema,
+
+  bio: optionalText,
+  services: optionalText,
+
   address: optionalText,
   mapurl: optionalMapUrl,
+
   phone: optionalText,
   whatsapp: optionalIraqWhatsapp,
+
   imageUrl: optionalText,
   workingHours: optionalText,
-  services: optionalText,
+
   status: z.enum(["DRAFT", "ACTIVE", "INACTIVE"]),
-  isFeatured: z.coerce.boolean().default(false)
+  isFeatured: z.coerce.boolean().default(false),
+  sortOrder: z.coerce.number().int().default(0),
 });

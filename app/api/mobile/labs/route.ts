@@ -20,6 +20,19 @@ function getBaseUrl(request: NextRequest) {
   return new URL(request.url).origin;
 }
 
+function getSiteUrl(baseUrl: string) {
+  return (
+    process.env.PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.AUTH_URL ||
+    baseUrl
+  ).replace(/\/$/, "");
+}
+
+function cleanText(value?: string | null) {
+  return String(value || "").trim();
+}
+
 function buildTelUrl(phone?: string | null) {
   const cleanPhone = phone?.trim();
 
@@ -106,10 +119,69 @@ function readMapUrlFromText(value?: string | null) {
   return normalizeMapUrl(match[0]);
 }
 
+function buildLabSummary(input: {
+  name: string;
+  bio?: string | null;
+  services?: string | null;
+  governorate?: string | null;
+  area?: string | null;
+  address?: string | null;
+  workingHours?: string | null;
+}) {
+  if (input.bio?.trim()) {
+    return input.bio.trim();
+  }
+
+  const location = [input.governorate, input.area]
+    .map(cleanText)
+    .filter(Boolean)
+    .join(" - ");
+
+  const lines = [
+    `مختبر ${input.name}${location ? ` في ${location}` : ""}.`,
+    input.services ? `الخدمات: ${input.services}` : null,
+    input.address ? `العنوان: ${input.address}` : null,
+    input.workingHours ? `أوقات العمل: ${input.workingHours}` : null,
+    "يمكنك الاستفسار عن التحاليل والخدمات والأسعار عبر واتساب أو الاتصال السريع عند توفر بيانات التواصل.",
+  ].filter(Boolean);
+
+  return lines.join("\n");
+}
+
+function buildLabWhatsappMessage(input: {
+  name: string;
+  governorate?: string | null;
+  area?: string | null;
+  address?: string | null;
+  workingHours?: string | null;
+  services?: string | null;
+  profileUrl: string;
+}) {
+  const location = [input.governorate, input.area]
+    .map(cleanText)
+    .filter(Boolean)
+    .join(" - ");
+
+  const lines = [
+    "مرحباً، وصلت لكم عن طريق طب نت وأرغب بالاستفسار عن تحليل أو خدمة.",
+    "",
+    `المختبر: ${input.name}`,
+    location ? `المنطقة: ${location}` : null,
+    input.services ? `الخدمات: ${input.services}` : null,
+    input.address ? `العنوان: ${input.address}` : null,
+    input.workingHours ? `أوقات العمل: ${input.workingHours}` : null,
+    "",
+    `رابط الصفحة: ${input.profileUrl}`,
+  ].filter(Boolean);
+
+  return lines.join("\n");
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const baseUrl = getBaseUrl(request);
+    const siteUrl = getSiteUrl(baseUrl);
 
     const labs = await getPublicLabs({
       q: searchParams.get("q") ?? undefined,
@@ -118,46 +190,88 @@ export async function GET(request: NextRequest) {
         searchParams.get("governorate") ??
         undefined,
       areaId:
-        searchParams.get("areaId") ?? searchParams.get("area") ?? undefined
+        searchParams.get("areaId") ?? searchParams.get("area") ?? undefined,
     });
 
     return NextResponse.json({
       ok: true,
       count: labs.length,
       items: labs.map((lab: (typeof labs)[number]) => {
+        const governorateName = lab.governorate?.name ?? "غير محددة";
+        const areaName = lab.area?.name ?? "غير محددة";
+
+        const profilePath = `/labs/${lab.slug}`;
+        const profileUrl = `${siteUrl}${profilePath}`;
+        const inquiryUrl = `${baseUrl}/api/mobile/labs/${lab.slug}/inquiry`;
+
         const mapUrl =
           normalizeMapUrl(lab.mapurl) ?? readMapUrlFromText(lab.address);
 
+        const whatsappMessage = buildLabWhatsappMessage({
+          name: lab.name,
+          governorate: governorateName,
+          area: areaName,
+          address: lab.address,
+          workingHours: lab.workingHours,
+          services: lab.services,
+          profileUrl,
+        });
+
         return {
           id: lab.id,
+          type: "lab",
+          kindLabel: "مختبر طبي",
+
           name: lab.name,
           slug: lab.slug,
 
           governorateId: lab.governorateId,
-          governorate: lab.governorate?.name ?? null,
+          governorate: governorateName,
 
           areaId: lab.areaId,
-          area: lab.area?.name ?? null,
+          area: areaName,
 
+          bio: lab.bio,
           services: lab.services,
+
           imageUrl: normalizeAssetUrl(lab.imageUrl, baseUrl),
 
           phone: lab.phone,
           phoneUrl: buildTelUrl(lab.phone),
 
           whatsapp: lab.whatsapp,
-          whatsappUrl: buildWhatsappUrl(
-            lab.whatsapp,
-            `مرحبا، وصلت لكم من تطبيق طب نت وأرغب بالاستفسار من ${lab.name}.`
-          ),
+          whatsappUrl: buildWhatsappUrl(lab.whatsapp, whatsappMessage),
 
           address: lab.address,
           mapUrl,
 
           workingHours: lab.workingHours,
-          isFeatured: lab.isFeatured
+          isFeatured: lab.isFeatured,
+
+          sortOrder: lab.sortOrder,
+          inquiryCount: lab.inquiryCount,
+
+          profileUrl,
+          detailsUrl: profileUrl,
+          shareUrl: profileUrl,
+          inquiryUrl,
+
+          summary: buildLabSummary({
+            name: lab.name,
+            bio: lab.bio,
+            services: lab.services,
+            governorate: governorateName,
+            area: areaName,
+            address: lab.address,
+            workingHours: lab.workingHours,
+          }),
+
+          primaryActionLabel: "استفسار",
+          detailsActionLabel: "التفاصيل",
+          secondaryActionLabel: "اتصال سريع",
+          mapActionLabel: "الموقع",
         };
-      })
+      }),
     });
   } catch (error) {
     console.error("Mobile labs API error", error);
@@ -165,7 +279,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         ok: false,
-        message: "صار خطأ أثناء جلب المختبرات"
+        message: "صار خطأ أثناء جلب المختبرات",
       },
       { status: 500 }
     );

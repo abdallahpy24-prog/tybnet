@@ -20,6 +20,19 @@ function getBaseUrl(request: NextRequest) {
   return new URL(request.url).origin;
 }
 
+function getSiteUrl(baseUrl: string) {
+  return (
+    process.env.PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.AUTH_URL ||
+    baseUrl
+  ).replace(/\/$/, "");
+}
+
+function cleanText(value?: string | null) {
+  return String(value || "").trim();
+}
+
 function buildTelUrl(phone?: string | null) {
   const cleanPhone = phone?.trim();
 
@@ -106,10 +119,69 @@ function readMapUrlFromText(value?: string | null) {
   return normalizeMapUrl(match[0]);
 }
 
+function buildPharmacySummary(input: {
+  name: string;
+  bio?: string | null;
+  services?: string | null;
+  governorate?: string | null;
+  area?: string | null;
+  address?: string | null;
+  workingHours?: string | null;
+}) {
+  if (input.bio?.trim()) {
+    return input.bio.trim();
+  }
+
+  const location = [input.governorate, input.area]
+    .map(cleanText)
+    .filter(Boolean)
+    .join(" - ");
+
+  const lines = [
+    `صيدلية ${input.name}${location ? ` في ${location}` : ""}.`,
+    input.services ? `الخدمات: ${input.services}` : null,
+    input.address ? `العنوان: ${input.address}` : null,
+    input.workingHours ? `أوقات العمل: ${input.workingHours}` : null,
+    "يمكنك الاستفسار عن توفر الأدوية والخدمات عبر واتساب أو الاتصال السريع عند توفر بيانات التواصل.",
+  ].filter(Boolean);
+
+  return lines.join("\n");
+}
+
+function buildPharmacyWhatsappMessage(input: {
+  name: string;
+  governorate?: string | null;
+  area?: string | null;
+  address?: string | null;
+  services?: string | null;
+  workingHours?: string | null;
+  profileUrl: string;
+}) {
+  const location = [input.governorate, input.area]
+    .map(cleanText)
+    .filter(Boolean)
+    .join(" - ");
+
+  const lines = [
+    "مرحباً، وصلت لكم عن طريق طب نت وأرغب بالاستفسار عن دواء أو خدمة.",
+    "",
+    `الصيدلية: ${input.name}`,
+    location ? `المنطقة: ${location}` : null,
+    input.address ? `العنوان: ${input.address}` : null,
+    input.services ? `الخدمات: ${input.services}` : null,
+    input.workingHours ? `أوقات العمل: ${input.workingHours}` : null,
+    "",
+    `رابط الصفحة: ${input.profileUrl}`,
+  ].filter(Boolean);
+
+  return lines.join("\n");
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const baseUrl = getBaseUrl(request);
+    const siteUrl = getSiteUrl(baseUrl);
 
     const pharmacies = await getPublicPharmacies({
       q: searchParams.get("q") ?? undefined,
@@ -118,27 +190,50 @@ export async function GET(request: NextRequest) {
         searchParams.get("governorate") ??
         undefined,
       areaId:
-        searchParams.get("areaId") ?? searchParams.get("area") ?? undefined
+        searchParams.get("areaId") ?? searchParams.get("area") ?? undefined,
     });
 
     return NextResponse.json({
       ok: true,
       count: pharmacies.length,
       items: pharmacies.map((pharmacy: (typeof pharmacies)[number]) => {
+        const governorateName = pharmacy.governorate?.name ?? "غير محددة";
+        const areaName = pharmacy.area?.name ?? "غير محددة";
+
+        const profilePath = `/pharmacies/${pharmacy.slug}`;
+        const profileUrl = `${siteUrl}${profilePath}`;
+        const inquiryUrl = `${baseUrl}/api/mobile/pharmacies/${pharmacy.slug}/inquiry`;
+
         const mapUrl =
           normalizeMapUrl(pharmacy.mapurl) ??
           readMapUrlFromText(pharmacy.address);
 
+        const whatsappMessage = buildPharmacyWhatsappMessage({
+          name: pharmacy.name,
+          governorate: governorateName,
+          area: areaName,
+          address: pharmacy.address,
+          services: pharmacy.services,
+          workingHours: pharmacy.workingHours,
+          profileUrl,
+        });
+
         return {
           id: pharmacy.id,
+          type: "pharmacy",
+          kindLabel: "صيدلية",
+
           name: pharmacy.name,
           slug: pharmacy.slug,
 
           governorateId: pharmacy.governorateId,
-          governorate: pharmacy.governorate?.name ?? null,
+          governorate: governorateName,
 
           areaId: pharmacy.areaId,
-          area: pharmacy.area?.name ?? null,
+          area: areaName,
+
+          bio: pharmacy.bio,
+          services: pharmacy.services,
 
           imageUrl: normalizeAssetUrl(pharmacy.imageUrl, baseUrl),
 
@@ -146,18 +241,38 @@ export async function GET(request: NextRequest) {
           phoneUrl: buildTelUrl(pharmacy.phone),
 
           whatsapp: pharmacy.whatsapp,
-          whatsappUrl: buildWhatsappUrl(
-            pharmacy.whatsapp,
-            `مرحبا، وصلت لكم من تطبيق طب نت وأرغب بالاستفسار من ${pharmacy.name}.`
-          ),
+          whatsappUrl: buildWhatsappUrl(pharmacy.whatsapp, whatsappMessage),
 
           address: pharmacy.address,
           mapUrl,
 
           workingHours: pharmacy.workingHours,
-          isFeatured: pharmacy.isFeatured
+          isFeatured: pharmacy.isFeatured,
+
+          sortOrder: pharmacy.sortOrder,
+          inquiryCount: pharmacy.inquiryCount,
+
+          profileUrl,
+          detailsUrl: profileUrl,
+          shareUrl: profileUrl,
+          inquiryUrl,
+
+          summary: buildPharmacySummary({
+            name: pharmacy.name,
+            bio: pharmacy.bio,
+            services: pharmacy.services,
+            governorate: governorateName,
+            area: areaName,
+            address: pharmacy.address,
+            workingHours: pharmacy.workingHours,
+          }),
+
+          primaryActionLabel: "استفسار",
+          detailsActionLabel: "التفاصيل",
+          secondaryActionLabel: "اتصال سريع",
+          mapActionLabel: "الموقع",
         };
-      })
+      }),
     });
   } catch (error) {
     console.error("Mobile pharmacies API error", error);
@@ -165,7 +280,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         ok: false,
-        message: "صار خطأ أثناء جلب الصيدليات"
+        message: "صار خطأ أثناء جلب الصيدليات",
       },
       { status: 500 }
     );

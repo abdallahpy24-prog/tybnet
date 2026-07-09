@@ -14,7 +14,7 @@ import {
   offerSchema,
   providerSchema,
   servicePlaceSchema,
-  specialtySchema
+  specialtySchema,
 } from "@/lib/validations";
 
 function requiredId(formData: FormData) {
@@ -60,8 +60,8 @@ async function ensureAreaBelongsToGovernorate(
   const area = await prisma.area.findFirst({
     where: {
       id: areaId,
-      governorateId
-    }
+      governorateId,
+    },
   });
 
   if (!area) {
@@ -79,8 +79,8 @@ async function ensureSpecialtyMatchesProviderType(
 
   const specialty = await prisma.specialty.findUnique({
     where: {
-      id: specialtyId
-    }
+      id: specialtyId,
+    },
   });
 
   if (!specialty || !specialty.isActive) {
@@ -101,8 +101,8 @@ async function uniqueGovernorateSlug(name: string, provided?: string | null) {
     const slug = uniqueSlug(base, index || undefined);
     const exists = await prisma.governorate.findUnique({
       where: {
-        slug
-      }
+        slug,
+      },
     });
 
     if (!exists) {
@@ -125,8 +125,8 @@ async function uniqueAreaSlug(
     const exists = await prisma.area.findFirst({
       where: {
         governorateId,
-        slug
-      }
+        slug,
+      },
     });
 
     if (!exists) {
@@ -149,8 +149,8 @@ async function uniqueSpecialtySlug(
     const exists = await prisma.specialty.findFirst({
       where: {
         forType,
-        slug
-      }
+        slug,
+      },
     });
 
     if (!exists) {
@@ -168,8 +168,8 @@ async function uniqueProviderSlug(name: string, provided?: string | null) {
     const slug = uniqueSlug(base, index || undefined);
     const exists = await prisma.provider.findUnique({
       where: {
-        slug
-      }
+        slug,
+      },
     });
 
     if (!exists) {
@@ -187,8 +187,8 @@ async function uniqueOfferSlug(title: string, provided?: string | null) {
     const slug = uniqueSlug(base, index || undefined);
     const exists = await prisma.offer.findUnique({
       where: {
-        slug
-      }
+        slug,
+      },
     });
 
     if (!exists) {
@@ -206,8 +206,8 @@ async function uniquePharmacySlug(name: string, provided?: string | null) {
     const slug = uniqueSlug(base, index || undefined);
     const exists = await prisma.pharmacy.findUnique({
       where: {
-        slug
-      }
+        slug,
+      },
     });
 
     if (!exists) {
@@ -225,8 +225,8 @@ async function uniqueLabSlug(name: string, provided?: string | null) {
     const slug = uniqueSlug(base, index || undefined);
     const exists = await prisma.lab.findUnique({
       where: {
-        slug
-      }
+        slug,
+      },
     });
 
     if (!exists) {
@@ -242,7 +242,7 @@ export async function createGovernorate(formData: FormData) {
 
   const parsed = governorateSchema.parse({
     ...formObject(formData),
-    isActive: boolFromForm(formData, "isActive")
+    isActive: boolFromForm(formData, "isActive"),
   });
 
   const row = await prisma.governorate.create({
@@ -250,8 +250,8 @@ export async function createGovernorate(formData: FormData) {
       name: parsed.name,
       slug: await uniqueGovernorateSlug(parsed.name, parsed.slug),
       sortOrder: parsed.sortOrder,
-      isActive: parsed.isActive
-    }
+      isActive: parsed.isActive,
+    },
   });
 
   await auditLog({
@@ -259,7 +259,7 @@ export async function createGovernorate(formData: FormData) {
     action: "create",
     entity: "Governorate",
     entityId: row.id,
-    afterJson: row
+    afterJson: row,
   });
 
   revalidatePath("/admin/governorates");
@@ -271,25 +271,25 @@ export async function updateGovernorate(formData: FormData) {
 
   const before = await prisma.governorate.findUniqueOrThrow({
     where: {
-      id
-    }
+      id,
+    },
   });
 
   const parsed = governorateSchema.parse({
     ...formObject(formData),
-    isActive: boolFromForm(formData, "isActive")
+    isActive: boolFromForm(formData, "isActive"),
   });
 
   const row = await prisma.governorate.update({
     where: {
-      id
+      id,
     },
     data: {
       name: parsed.name,
       slug: parsed.slug?.trim() || before.slug,
       sortOrder: parsed.sortOrder,
-      isActive: parsed.isActive
-    }
+      isActive: parsed.isActive,
+    },
   });
 
   await auditLog({
@@ -298,7 +298,7 @@ export async function updateGovernorate(formData: FormData) {
     entity: "Governorate",
     entityId: id,
     beforeJson: before,
-    afterJson: row
+    afterJson: row,
   });
 
   revalidatePath("/admin/governorates");
@@ -310,41 +310,41 @@ export async function deleteGovernorate(formData: FormData) {
 
   const before = await prisma.governorate.findUniqueOrThrow({
     where: {
-      id
-    }
+      id,
+    },
   });
 
   const linked = await Promise.all([
     prisma.area.count({
       where: {
-        governorateId: id
-      }
+        governorateId: id,
+      },
     }),
     prisma.provider.count({
       where: {
-        governorateId: id
-      }
+        governorateId: id,
+      },
     }),
     prisma.pharmacy.count({
       where: {
-        governorateId: id
-      }
+        governorateId: id,
+      },
     }),
     prisma.lab.count({
       where: {
-        governorateId: id
-      }
-    })
+        governorateId: id,
+      },
+    }),
   ]);
 
   if (linked.some(Boolean)) {
     const row = await prisma.governorate.update({
       where: {
-        id
+        id,
       },
       data: {
-        isActive: false
-      }
+        isActive: false,
+      },
     });
 
     await auditLog({
@@ -353,13 +353,13 @@ export async function deleteGovernorate(formData: FormData) {
       entity: "Governorate",
       entityId: id,
       beforeJson: before,
-      afterJson: row
+      afterJson: row,
     });
   } else {
     await prisma.governorate.delete({
       where: {
-        id
-      }
+        id,
+      },
     });
 
     await auditLog({
@@ -367,7 +367,7 @@ export async function deleteGovernorate(formData: FormData) {
       action: "delete",
       entity: "Governorate",
       entityId: id,
-      beforeJson: before
+      beforeJson: before,
     });
   }
 
@@ -379,7 +379,7 @@ export async function createArea(formData: FormData) {
 
   const parsed = areaSchema.parse({
     ...formObject(formData),
-    isActive: boolFromForm(formData, "isActive")
+    isActive: boolFromForm(formData, "isActive"),
   });
 
   const row = await prisma.area.create({
@@ -392,8 +392,8 @@ export async function createArea(formData: FormData) {
         parsed.slug
       ),
       sortOrder: parsed.sortOrder,
-      isActive: parsed.isActive
-    }
+      isActive: parsed.isActive,
+    },
   });
 
   await auditLog({
@@ -401,7 +401,7 @@ export async function createArea(formData: FormData) {
     action: "create",
     entity: "Area",
     entityId: row.id,
-    afterJson: row
+    afterJson: row,
   });
 
   revalidatePath("/admin/areas");
@@ -413,26 +413,26 @@ export async function updateArea(formData: FormData) {
 
   const before = await prisma.area.findUniqueOrThrow({
     where: {
-      id
-    }
+      id,
+    },
   });
 
   const parsed = areaSchema.parse({
     ...formObject(formData),
-    isActive: boolFromForm(formData, "isActive")
+    isActive: boolFromForm(formData, "isActive"),
   });
 
   const row = await prisma.area.update({
     where: {
-      id
+      id,
     },
     data: {
       governorateId: parsed.governorateId,
       name: parsed.name,
       slug: parsed.slug?.trim() || before.slug,
       sortOrder: parsed.sortOrder,
-      isActive: parsed.isActive
-    }
+      isActive: parsed.isActive,
+    },
   });
 
   await auditLog({
@@ -441,7 +441,7 @@ export async function updateArea(formData: FormData) {
     entity: "Area",
     entityId: id,
     beforeJson: before,
-    afterJson: row
+    afterJson: row,
   });
 
   revalidatePath("/admin/areas");
@@ -453,36 +453,36 @@ export async function deleteArea(formData: FormData) {
 
   const before = await prisma.area.findUniqueOrThrow({
     where: {
-      id
-    }
+      id,
+    },
   });
 
   const linked = await Promise.all([
     prisma.provider.count({
       where: {
-        areaId: id
-      }
+        areaId: id,
+      },
     }),
     prisma.pharmacy.count({
       where: {
-        areaId: id
-      }
+        areaId: id,
+      },
     }),
     prisma.lab.count({
       where: {
-        areaId: id
-      }
-    })
+        areaId: id,
+      },
+    }),
   ]);
 
   if (linked.some(Boolean)) {
     const row = await prisma.area.update({
       where: {
-        id
+        id,
       },
       data: {
-        isActive: false
-      }
+        isActive: false,
+      },
     });
 
     await auditLog({
@@ -491,13 +491,13 @@ export async function deleteArea(formData: FormData) {
       entity: "Area",
       entityId: id,
       beforeJson: before,
-      afterJson: row
+      afterJson: row,
     });
   } else {
     await prisma.area.delete({
       where: {
-        id
-      }
+        id,
+      },
     });
 
     await auditLog({
@@ -505,7 +505,7 @@ export async function deleteArea(formData: FormData) {
       action: "delete",
       entity: "Area",
       entityId: id,
-      beforeJson: before
+      beforeJson: before,
     });
   }
 
@@ -517,7 +517,7 @@ export async function createSpecialty(formData: FormData) {
 
   const parsed = specialtySchema.parse({
     ...formObject(formData),
-    isActive: boolFromForm(formData, "isActive")
+    isActive: boolFromForm(formData, "isActive"),
   });
 
   const row = await prisma.specialty.create({
@@ -530,8 +530,8 @@ export async function createSpecialty(formData: FormData) {
       ),
       forType: parsed.forType,
       icon: parsed.icon || null,
-      isActive: parsed.isActive
-    }
+      isActive: parsed.isActive,
+    },
   });
 
   await auditLog({
@@ -539,7 +539,7 @@ export async function createSpecialty(formData: FormData) {
     action: "create",
     entity: "Specialty",
     entityId: row.id,
-    afterJson: row
+    afterJson: row,
   });
 
   revalidatePath("/admin/specialties");
@@ -551,26 +551,26 @@ export async function updateSpecialty(formData: FormData) {
 
   const before = await prisma.specialty.findUniqueOrThrow({
     where: {
-      id
-    }
+      id,
+    },
   });
 
   const parsed = specialtySchema.parse({
     ...formObject(formData),
-    isActive: boolFromForm(formData, "isActive")
+    isActive: boolFromForm(formData, "isActive"),
   });
 
   const row = await prisma.specialty.update({
     where: {
-      id
+      id,
     },
     data: {
       name: parsed.name,
       slug: parsed.slug?.trim() || before.slug,
       forType: parsed.forType,
       icon: parsed.icon || null,
-      isActive: parsed.isActive
-    }
+      isActive: parsed.isActive,
+    },
   });
 
   await auditLog({
@@ -579,7 +579,7 @@ export async function updateSpecialty(formData: FormData) {
     entity: "Specialty",
     entityId: id,
     beforeJson: before,
-    afterJson: row
+    afterJson: row,
   });
 
   revalidatePath("/admin/specialties");
@@ -591,24 +591,24 @@ export async function deleteSpecialty(formData: FormData) {
 
   const before = await prisma.specialty.findUniqueOrThrow({
     where: {
-      id
-    }
+      id,
+    },
   });
 
   const linked = await prisma.provider.count({
     where: {
-      specialtyId: id
-    }
+      specialtyId: id,
+    },
   });
 
   if (linked) {
     const row = await prisma.specialty.update({
       where: {
-        id
+        id,
       },
       data: {
-        isActive: false
-      }
+        isActive: false,
+      },
     });
 
     await auditLog({
@@ -617,13 +617,13 @@ export async function deleteSpecialty(formData: FormData) {
       entity: "Specialty",
       entityId: id,
       beforeJson: before,
-      afterJson: row
+      afterJson: row,
     });
   } else {
     await prisma.specialty.delete({
       where: {
-        id
-      }
+        id,
+      },
     });
 
     await auditLog({
@@ -631,7 +631,7 @@ export async function deleteSpecialty(formData: FormData) {
       action: "delete",
       entity: "Specialty",
       entityId: id,
-      beforeJson: before
+      beforeJson: before,
     });
   }
 
@@ -643,7 +643,7 @@ export async function createProvider(formData: FormData) {
 
   const parsed = providerSchema.parse({
     ...formObject(formData),
-    isFeatured: boolFromForm(formData, "isFeatured")
+    isFeatured: boolFromForm(formData, "isFeatured"),
   });
 
   await ensureAreaBelongsToGovernorate(parsed.areaId, parsed.governorateId);
@@ -661,8 +661,8 @@ export async function createProvider(formData: FormData) {
       whatsapp: parsed.whatsapp || null,
       instagramUrl: parsed.instagramUrl || null,
       imageUrl: parsed.imageUrl || null,
-      workingHours: parsed.workingHours || null
-    }
+      workingHours: parsed.workingHours || null,
+    },
   });
 
   await auditLog({
@@ -670,7 +670,7 @@ export async function createProvider(formData: FormData) {
     action: "create",
     entity: "Provider",
     entityId: row.id,
-    afterJson: row
+    afterJson: row,
   });
 
   revalidatePath("/admin/providers");
@@ -685,8 +685,8 @@ export async function updateProvider(formData: FormData) {
 
   const before = await prisma.provider.findUniqueOrThrow({
     where: {
-      id
-    }
+      id,
+    },
   });
 
   const raw = formObject(formData);
@@ -697,7 +697,7 @@ export async function updateProvider(formData: FormData) {
 
   const parsed = providerSchema.parse({
     ...raw,
-    isFeatured: boolFromForm(formData, "isFeatured")
+    isFeatured: boolFromForm(formData, "isFeatured"),
   });
 
   await ensureAreaBelongsToGovernorate(parsed.areaId, parsed.governorateId);
@@ -705,7 +705,7 @@ export async function updateProvider(formData: FormData) {
 
   const row = await prisma.provider.update({
     where: {
-      id
+      id,
     },
     data: {
       ...parsed,
@@ -718,8 +718,8 @@ export async function updateProvider(formData: FormData) {
       whatsapp: parsed.whatsapp || null,
       instagramUrl: parsed.instagramUrl || null,
       imageUrl: parsed.imageUrl || null,
-      workingHours: parsed.workingHours || null
-    }
+      workingHours: parsed.workingHours || null,
+    },
   });
 
   await auditLog({
@@ -728,7 +728,7 @@ export async function updateProvider(formData: FormData) {
     entity: "Provider",
     entityId: id,
     beforeJson: before,
-    afterJson: row
+    afterJson: row,
   });
 
   revalidatePath("/admin/providers");
@@ -744,31 +744,31 @@ export async function deleteProvider(formData: FormData) {
 
   const before = await prisma.provider.findUniqueOrThrow({
     where: {
-      id
-    }
+      id,
+    },
   });
 
   const linked = await Promise.all([
     prisma.offer.count({
       where: {
-        providerId: id
-      }
+        providerId: id,
+      },
     }),
     prisma.appointment.count({
       where: {
-        providerId: id
-      }
-    })
+        providerId: id,
+      },
+    }),
   ]);
 
   if (linked.some(Boolean)) {
     const row = await prisma.provider.update({
       where: {
-        id
+        id,
       },
       data: {
-        status: "INACTIVE"
-      }
+        status: "INACTIVE",
+      },
     });
 
     await auditLog({
@@ -777,13 +777,13 @@ export async function deleteProvider(formData: FormData) {
       entity: "Provider",
       entityId: id,
       beforeJson: before,
-      afterJson: row
+      afterJson: row,
     });
   } else {
     await prisma.provider.delete({
       where: {
-        id
-      }
+        id,
+      },
     });
 
     await auditLog({
@@ -791,7 +791,7 @@ export async function deleteProvider(formData: FormData) {
       action: "delete",
       entity: "Provider",
       entityId: id,
-      beforeJson: before
+      beforeJson: before,
     });
   }
 
@@ -806,7 +806,7 @@ export async function createOffer(formData: FormData) {
 
   const parsed = offerSchema.parse({
     ...formObject(formData),
-    isActive: boolFromForm(formData, "isActive")
+    isActive: boolFromForm(formData, "isActive"),
   });
 
   const row = await prisma.offer.create({
@@ -819,8 +819,8 @@ export async function createOffer(formData: FormData) {
       startsAt: parsed.startsAt ? new Date(parsed.startsAt) : null,
       endsAt: parsed.endsAt ? new Date(parsed.endsAt) : null,
       isActive: parsed.isActive,
-      providerId: parsed.providerId || null
-    }
+      providerId: parsed.providerId || null,
+    },
   });
 
   await auditLog({
@@ -828,7 +828,7 @@ export async function createOffer(formData: FormData) {
     action: "create",
     entity: "Offer",
     entityId: row.id,
-    afterJson: row
+    afterJson: row,
   });
 
   revalidatePath("/admin/offers");
@@ -841,18 +841,18 @@ export async function updateOffer(formData: FormData) {
 
   const before = await prisma.offer.findUniqueOrThrow({
     where: {
-      id
-    }
+      id,
+    },
   });
 
   const parsed = offerSchema.parse({
     ...formObject(formData),
-    isActive: boolFromForm(formData, "isActive")
+    isActive: boolFromForm(formData, "isActive"),
   });
 
   const row = await prisma.offer.update({
     where: {
-      id
+      id,
     },
     data: {
       title: parsed.title,
@@ -863,8 +863,8 @@ export async function updateOffer(formData: FormData) {
       startsAt: parsed.startsAt ? new Date(parsed.startsAt) : null,
       endsAt: parsed.endsAt ? new Date(parsed.endsAt) : null,
       isActive: parsed.isActive,
-      providerId: parsed.providerId || null
-    }
+      providerId: parsed.providerId || null,
+    },
   });
 
   await auditLog({
@@ -873,7 +873,7 @@ export async function updateOffer(formData: FormData) {
     entity: "Offer",
     entityId: id,
     beforeJson: before,
-    afterJson: row
+    afterJson: row,
   });
 
   revalidatePath("/admin/offers");
@@ -886,14 +886,14 @@ export async function deleteOffer(formData: FormData) {
 
   const before = await prisma.offer.findUniqueOrThrow({
     where: {
-      id
-    }
+      id,
+    },
   });
 
   await prisma.offer.delete({
     where: {
-      id
-    }
+      id,
+    },
   });
 
   await auditLog({
@@ -901,7 +901,7 @@ export async function deleteOffer(formData: FormData) {
     action: "delete",
     entity: "Offer",
     entityId: id,
-    beforeJson: before
+    beforeJson: before,
   });
 
   revalidatePath("/admin/offers");
@@ -913,7 +913,7 @@ export async function createPharmacy(formData: FormData) {
 
   const parsed = servicePlaceSchema.parse({
     ...formObject(formData),
-    isFeatured: boolFromForm(formData, "isFeatured")
+    isFeatured: boolFromForm(formData, "isFeatured"),
   });
 
   await ensureAreaBelongsToGovernorate(parsed.areaId, parsed.governorateId);
@@ -924,6 +924,8 @@ export async function createPharmacy(formData: FormData) {
       slug: await uniquePharmacySlug(parsed.name, parsed.slug),
       governorateId: parsed.governorateId,
       areaId: parsed.areaId,
+      bio: parsed.bio || null,
+      services: parsed.services || null,
       address: parsed.address || null,
       mapurl: parsed.mapurl || null,
       phone: parsed.phone || null,
@@ -931,8 +933,9 @@ export async function createPharmacy(formData: FormData) {
       imageUrl: parsed.imageUrl || null,
       workingHours: parsed.workingHours || null,
       status: parsed.status,
-      isFeatured: parsed.isFeatured
-    }
+      isFeatured: parsed.isFeatured,
+      sortOrder: parsed.sortOrder,
+    },
   });
 
   await auditLog({
@@ -940,11 +943,12 @@ export async function createPharmacy(formData: FormData) {
     action: "create",
     entity: "Pharmacy",
     entityId: row.id,
-    afterJson: row
+    afterJson: row,
   });
 
   revalidatePath("/admin/pharmacies");
   revalidatePath("/pharmacies");
+  revalidatePath(`/pharmacies/${row.slug}`);
 }
 
 export async function updatePharmacy(formData: FormData) {
@@ -953,26 +957,28 @@ export async function updatePharmacy(formData: FormData) {
 
   const before = await prisma.pharmacy.findUniqueOrThrow({
     where: {
-      id
-    }
+      id,
+    },
   });
 
   const parsed = servicePlaceSchema.parse({
     ...formObject(formData),
-    isFeatured: boolFromForm(formData, "isFeatured")
+    isFeatured: boolFromForm(formData, "isFeatured"),
   });
 
   await ensureAreaBelongsToGovernorate(parsed.areaId, parsed.governorateId);
 
   const row = await prisma.pharmacy.update({
     where: {
-      id
+      id,
     },
     data: {
       name: parsed.name,
       slug: parsed.slug?.trim() || before.slug,
       governorateId: parsed.governorateId,
       areaId: parsed.areaId,
+      bio: parsed.bio || null,
+      services: parsed.services || null,
       address: parsed.address || null,
       mapurl: parsed.mapurl || null,
       phone: parsed.phone || null,
@@ -980,8 +986,9 @@ export async function updatePharmacy(formData: FormData) {
       imageUrl: parsed.imageUrl || null,
       workingHours: parsed.workingHours || null,
       status: parsed.status,
-      isFeatured: parsed.isFeatured
-    }
+      isFeatured: parsed.isFeatured,
+      sortOrder: parsed.sortOrder,
+    },
   });
 
   await auditLog({
@@ -990,11 +997,13 @@ export async function updatePharmacy(formData: FormData) {
     entity: "Pharmacy",
     entityId: id,
     beforeJson: before,
-    afterJson: row
+    afterJson: row,
   });
 
   revalidatePath("/admin/pharmacies");
   revalidatePath("/pharmacies");
+  revalidatePath(`/pharmacies/${before.slug}`);
+  revalidatePath(`/pharmacies/${row.slug}`);
 }
 
 export async function deletePharmacy(formData: FormData) {
@@ -1003,14 +1012,14 @@ export async function deletePharmacy(formData: FormData) {
 
   const before = await prisma.pharmacy.findUniqueOrThrow({
     where: {
-      id
-    }
+      id,
+    },
   });
 
   await prisma.pharmacy.delete({
     where: {
-      id
-    }
+      id,
+    },
   });
 
   await auditLog({
@@ -1018,11 +1027,12 @@ export async function deletePharmacy(formData: FormData) {
     action: "delete",
     entity: "Pharmacy",
     entityId: id,
-    beforeJson: before
+    beforeJson: before,
   });
 
   revalidatePath("/admin/pharmacies");
   revalidatePath("/pharmacies");
+  revalidatePath(`/pharmacies/${before.slug}`);
 }
 
 export async function createLab(formData: FormData) {
@@ -1030,7 +1040,7 @@ export async function createLab(formData: FormData) {
 
   const parsed = servicePlaceSchema.parse({
     ...formObject(formData),
-    isFeatured: boolFromForm(formData, "isFeatured")
+    isFeatured: boolFromForm(formData, "isFeatured"),
   });
 
   await ensureAreaBelongsToGovernorate(parsed.areaId, parsed.governorateId);
@@ -1041,6 +1051,7 @@ export async function createLab(formData: FormData) {
       slug: await uniqueLabSlug(parsed.name, parsed.slug),
       governorateId: parsed.governorateId,
       areaId: parsed.areaId,
+      bio: parsed.bio || null,
       services: parsed.services || null,
       address: parsed.address || null,
       mapurl: parsed.mapurl || null,
@@ -1049,8 +1060,9 @@ export async function createLab(formData: FormData) {
       imageUrl: parsed.imageUrl || null,
       workingHours: parsed.workingHours || null,
       status: parsed.status,
-      isFeatured: parsed.isFeatured
-    }
+      isFeatured: parsed.isFeatured,
+      sortOrder: parsed.sortOrder,
+    },
   });
 
   await auditLog({
@@ -1058,11 +1070,12 @@ export async function createLab(formData: FormData) {
     action: "create",
     entity: "Lab",
     entityId: row.id,
-    afterJson: row
+    afterJson: row,
   });
 
   revalidatePath("/admin/labs");
   revalidatePath("/labs");
+  revalidatePath(`/labs/${row.slug}`);
 }
 
 export async function updateLab(formData: FormData) {
@@ -1071,26 +1084,27 @@ export async function updateLab(formData: FormData) {
 
   const before = await prisma.lab.findUniqueOrThrow({
     where: {
-      id
-    }
+      id,
+    },
   });
 
   const parsed = servicePlaceSchema.parse({
     ...formObject(formData),
-    isFeatured: boolFromForm(formData, "isFeatured")
+    isFeatured: boolFromForm(formData, "isFeatured"),
   });
 
   await ensureAreaBelongsToGovernorate(parsed.areaId, parsed.governorateId);
 
   const row = await prisma.lab.update({
     where: {
-      id
+      id,
     },
     data: {
       name: parsed.name,
       slug: parsed.slug?.trim() || before.slug,
       governorateId: parsed.governorateId,
       areaId: parsed.areaId,
+      bio: parsed.bio || null,
       services: parsed.services || null,
       address: parsed.address || null,
       mapurl: parsed.mapurl || null,
@@ -1099,8 +1113,9 @@ export async function updateLab(formData: FormData) {
       imageUrl: parsed.imageUrl || null,
       workingHours: parsed.workingHours || null,
       status: parsed.status,
-      isFeatured: parsed.isFeatured
-    }
+      isFeatured: parsed.isFeatured,
+      sortOrder: parsed.sortOrder,
+    },
   });
 
   await auditLog({
@@ -1109,11 +1124,13 @@ export async function updateLab(formData: FormData) {
     entity: "Lab",
     entityId: id,
     beforeJson: before,
-    afterJson: row
+    afterJson: row,
   });
 
   revalidatePath("/admin/labs");
   revalidatePath("/labs");
+  revalidatePath(`/labs/${before.slug}`);
+  revalidatePath(`/labs/${row.slug}`);
 }
 
 export async function deleteLab(formData: FormData) {
@@ -1122,14 +1139,14 @@ export async function deleteLab(formData: FormData) {
 
   const before = await prisma.lab.findUniqueOrThrow({
     where: {
-      id
-    }
+      id,
+    },
   });
 
   await prisma.lab.delete({
     where: {
-      id
-    }
+      id,
+    },
   });
 
   await auditLog({
@@ -1137,11 +1154,12 @@ export async function deleteLab(formData: FormData) {
     action: "delete",
     entity: "Lab",
     entityId: id,
-    beforeJson: before
+    beforeJson: before,
   });
 
   revalidatePath("/admin/labs");
   revalidatePath("/labs");
+  revalidatePath(`/labs/${before.slug}`);
 }
 
 export async function updateAppointmentStatus(formData: FormData) {
@@ -1157,17 +1175,17 @@ export async function updateAppointmentStatus(formData: FormData) {
 
   const before = await prisma.appointment.findUniqueOrThrow({
     where: {
-      id
-    }
+      id,
+    },
   });
 
   const row = await prisma.appointment.update({
     where: {
-      id
+      id,
     },
     data: {
-      status: status as AppointmentStatus
-    }
+      status: status as AppointmentStatus,
+    },
   });
 
   await auditLog({
@@ -1176,7 +1194,7 @@ export async function updateAppointmentStatus(formData: FormData) {
     entity: "Appointment",
     entityId: id,
     beforeJson: before,
-    afterJson: row
+    afterJson: row,
   });
 
   revalidatePath("/admin/appointments");
@@ -1188,14 +1206,14 @@ export async function deleteAppointment(formData: FormData) {
 
   const before = await prisma.appointment.findUniqueOrThrow({
     where: {
-      id
-    }
+      id,
+    },
   });
 
   await prisma.appointment.delete({
     where: {
-      id
-    }
+      id,
+    },
   });
 
   await auditLog({
@@ -1203,7 +1221,7 @@ export async function deleteAppointment(formData: FormData) {
     action: "delete",
     entity: "Appointment",
     entityId: id,
-    beforeJson: before
+    beforeJson: before,
   });
 
   revalidatePath("/admin/appointments");
@@ -1221,8 +1239,8 @@ export async function deleteAllAppointments() {
     action: "delete-all",
     entity: "Appointment",
     afterJson: {
-      deletedCount: count
-    }
+      deletedCount: count,
+    },
   });
 
   revalidatePath("/admin/appointments");
@@ -1239,7 +1257,7 @@ export async function updateSettings(formData: FormData) {
     "supportWhatsapp",
     "facebookUrl",
     "instagramUrl",
-    "logoUrl"
+    "logoUrl",
   ];
 
   for (const key of allowed) {
@@ -1247,15 +1265,15 @@ export async function updateSettings(formData: FormData) {
 
     await prisma.setting.upsert({
       where: {
-        key
+        key,
       },
       update: {
-        value: typeof value === "string" ? value : null
+        value: typeof value === "string" ? value : null,
       },
       create: {
         key,
-        value: typeof value === "string" ? value : null
-      }
+        value: typeof value === "string" ? value : null,
+      },
     });
   }
 
@@ -1263,7 +1281,7 @@ export async function updateSettings(formData: FormData) {
     userId,
     action: "update",
     entity: "Setting",
-    afterJson: allowed
+    afterJson: allowed,
   });
 
   revalidatePath("/");
@@ -1293,8 +1311,8 @@ export async function createUser(formData: FormData) {
       username,
       role,
       passwordHash: await bcrypt.hash(password, 12),
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
   await auditLog({
@@ -1306,8 +1324,8 @@ export async function createUser(formData: FormData) {
       id: row.id,
       email: row.email,
       username: row.username,
-      role: row.role
-    }
+      role: row.role,
+    },
   });
 
   revalidatePath("/admin/users");
@@ -1319,8 +1337,8 @@ export async function updateUser(formData: FormData) {
 
   const before = await prisma.user.findUniqueOrThrow({
     where: {
-      id
-    }
+      id,
+    },
   });
 
   const name = textFromForm(formData, "name");
@@ -1339,8 +1357,8 @@ export async function updateUser(formData: FormData) {
   const activeAdmins = await prisma.user.count({
     where: {
       role: Role.ADMIN,
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
   if (
@@ -1364,7 +1382,7 @@ export async function updateUser(formData: FormData) {
     email,
     username,
     role,
-    isActive
+    isActive,
   };
 
   const password = String(formData.get("password") ?? "");
@@ -1379,9 +1397,9 @@ export async function updateUser(formData: FormData) {
 
   const row = await prisma.user.update({
     where: {
-      id
+      id,
     },
-    data
+    data,
   });
 
   await auditLog({
@@ -1393,14 +1411,14 @@ export async function updateUser(formData: FormData) {
       id: before.id,
       email: before.email,
       role: before.role,
-      isActive: before.isActive
+      isActive: before.isActive,
     },
     afterJson: {
       id: row.id,
       email: row.email,
       role: row.role,
-      isActive: row.isActive
-    }
+      isActive: row.isActive,
+    },
   });
 
   revalidatePath("/admin/users");

@@ -149,6 +149,8 @@ model Pharmacy {
   areaId        String
   governorate   Governorate   @relation(fields: [governorateId], references: [id])
   area          Area          @relation(fields: [areaId], references: [id])
+  bio           String?
+  services      String?
   address       String?
   mapurl        String?
   phone         String?
@@ -157,11 +159,16 @@ model Pharmacy {
   workingHours  String?
   status        PublishStatus @default(DRAFT)
   isFeatured    Boolean       @default(false)
+  sortOrder     Int           @default(0)
+  inquiryCount  Int           @default(0)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
   @@index([status, governorateId, areaId])
   @@index([status, isFeatured])
+  @@index([status, isFeatured, inquiryCount])
+  @@index([status, sortOrder])
+  @@index([inquiryCount])
   @@index([createdAt])
 }
 
@@ -173,6 +180,7 @@ model Lab {
   areaId        String
   governorate   Governorate   @relation(fields: [governorateId], references: [id])
   area          Area          @relation(fields: [areaId], references: [id])
+  bio           String?
   services      String?
   address       String?
   mapurl        String?
@@ -182,11 +190,16 @@ model Lab {
   workingHours  String?
   status        PublishStatus @default(DRAFT)
   isFeatured    Boolean       @default(false)
+  sortOrder     Int           @default(0)
+  inquiryCount  Int           @default(0)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
   @@index([status, governorateId, areaId])
   @@index([status, isFeatured])
+  @@index([status, isFeatured, inquiryCount])
+  @@index([status, sortOrder])
+  @@index([inquiryCount])
   @@index([createdAt])
 }
 

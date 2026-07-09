@@ -17,17 +17,17 @@ function publicProviderWhere(type: ProviderType): Prisma.ProviderWhereInput {
     type,
     status: "ACTIVE",
     governorate: {
-      isActive: true
+      isActive: true,
     },
     area: {
-      isActive: true
+      isActive: true,
     },
     specialty: {
       isActive: true,
       forType: {
-        in: specialtyTypesForProvider(type)
-      }
-    }
+        in: specialtyTypesForProvider(type),
+      },
+    },
   };
 }
 
@@ -35,10 +35,10 @@ function publicAnyProviderWhere(): Prisma.ProviderWhereInput {
   return {
     status: "ACTIVE",
     governorate: {
-      isActive: true
+      isActive: true,
     },
     area: {
-      isActive: true
+      isActive: true,
     },
     OR: [
       {
@@ -46,20 +46,20 @@ function publicAnyProviderWhere(): Prisma.ProviderWhereInput {
         specialty: {
           isActive: true,
           forType: {
-            in: ["DOCTOR", "BOTH"]
-          }
-        }
+            in: ["DOCTOR", "BOTH"],
+          },
+        },
       },
       {
         type: "DENTIST",
         specialty: {
           isActive: true,
           forType: {
-            in: ["DENTIST", "BOTH"]
-          }
-        }
-      }
-    ]
+            in: ["DENTIST", "BOTH"],
+          },
+        },
+      },
+    ],
   };
 }
 
@@ -69,10 +69,10 @@ function publicPharmacyWhere(
   return {
     status: "ACTIVE",
     governorate: {
-      isActive: true
+      isActive: true,
     },
     area: {
-      isActive: true
+      isActive: true,
     },
     governorateId: filters.governorateId,
     areaId: filters.areaId,
@@ -81,33 +81,45 @@ function publicPharmacyWhere(
           {
             name: {
               contains: filters.q,
-              mode: "insensitive"
-            }
+              mode: "insensitive",
+            },
+          },
+          {
+            bio: {
+              contains: filters.q,
+              mode: "insensitive",
+            },
+          },
+          {
+            services: {
+              contains: filters.q,
+              mode: "insensitive",
+            },
           },
           {
             address: {
               contains: filters.q,
-              mode: "insensitive"
-            }
+              mode: "insensitive",
+            },
           },
           {
             governorate: {
               name: {
                 contains: filters.q,
-                mode: "insensitive"
-              }
-            }
+                mode: "insensitive",
+              },
+            },
           },
           {
             area: {
               name: {
                 contains: filters.q,
-                mode: "insensitive"
-              }
-            }
-          }
+                mode: "insensitive",
+              },
+            },
+          },
         ]
-      : undefined
+      : undefined,
   };
 }
 
@@ -117,10 +129,10 @@ function publicLabWhere(
   return {
     status: "ACTIVE",
     governorate: {
-      isActive: true
+      isActive: true,
     },
     area: {
-      isActive: true
+      isActive: true,
     },
     governorateId: filters.governorateId,
     areaId: filters.areaId,
@@ -129,39 +141,45 @@ function publicLabWhere(
           {
             name: {
               contains: filters.q,
-              mode: "insensitive"
-            }
+              mode: "insensitive",
+            },
+          },
+          {
+            bio: {
+              contains: filters.q,
+              mode: "insensitive",
+            },
           },
           {
             services: {
               contains: filters.q,
-              mode: "insensitive"
-            }
+              mode: "insensitive",
+            },
           },
           {
             address: {
               contains: filters.q,
-              mode: "insensitive"
-            }
+              mode: "insensitive",
+            },
           },
           {
             governorate: {
               name: {
                 contains: filters.q,
-                mode: "insensitive"
-              }
-            }
+                mode: "insensitive",
+              },
+            },
           },
           {
             area: {
               name: {
                 contains: filters.q,
-                mode: "insensitive"
-              }
-            }
-          }
+                mode: "insensitive",
+              },
+            },
+          },
         ]
-      : undefined
+      : undefined,
   };
 }
 
@@ -170,7 +188,7 @@ export function readFilters(params: SearchParams = {}) {
     q: scalar(params.q)?.trim() || undefined,
     governorateId: scalar(params.governorateId) || undefined,
     areaId: scalar(params.areaId) || undefined,
-    specialtyId: scalar(params.specialtyId) || undefined
+    specialtyId: scalar(params.specialtyId) || undefined,
   };
 }
 
@@ -182,22 +200,22 @@ export async function getFilterOptions(forType?: ProviderType) {
   const [governorates, areas, specialties] = await Promise.all([
     prisma.governorate.findMany({
       where: {
-        isActive: true
+        isActive: true,
       },
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
 
     prisma.area.findMany({
       where: {
         isActive: true,
         governorate: {
-          isActive: true
-        }
+          isActive: true,
+        },
       },
       include: {
-        governorate: true
+        governorate: true,
       },
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
 
     prisma.specialty.findMany({
@@ -205,18 +223,18 @@ export async function getFilterOptions(forType?: ProviderType) {
         isActive: true,
         forType: specialtyFor
           ? {
-              in: specialtyFor
+              in: specialtyFor,
             }
-          : undefined
+          : undefined,
       },
-      orderBy: [{ name: "asc" }]
-    })
+      orderBy: [{ name: "asc" }],
+    }),
   ]);
 
   return {
     governorates,
     areas,
-    specialties
+    specialties,
   };
 }
 
@@ -246,45 +264,45 @@ export async function searchProviders(
       {
         name: {
           contains: filters.q,
-          mode: "insensitive"
-        }
+          mode: "insensitive",
+        },
       },
       {
         bio: {
           contains: filters.q,
-          mode: "insensitive"
-        }
+          mode: "insensitive",
+        },
       },
       {
         address: {
           contains: filters.q,
-          mode: "insensitive"
-        }
+          mode: "insensitive",
+        },
       },
       {
         governorate: {
           name: {
             contains: filters.q,
-            mode: "insensitive"
-          }
-        }
+            mode: "insensitive",
+          },
+        },
       },
       {
         area: {
           name: {
             contains: filters.q,
-            mode: "insensitive"
-          }
-        }
+            mode: "insensitive",
+          },
+        },
       },
       {
         specialty: {
           name: {
             contains: filters.q,
-            mode: "insensitive"
-          }
-        }
-      }
+            mode: "insensitive",
+          },
+        },
+      },
     ];
   }
 
@@ -293,15 +311,15 @@ export async function searchProviders(
     include: {
       specialty: true,
       governorate: true,
-      area: true
+      area: true,
     },
     orderBy: [
       { isFeatured: "desc" },
       { bookingPoints: "desc" },
       { sortOrder: "asc" },
-      { updatedAt: "desc" }
+      { updatedAt: "desc" },
     ],
-    take
+    take,
   });
 }
 
@@ -309,36 +327,36 @@ export async function getHomeData() {
   const [counts, featured] = await Promise.all([
     Promise.all([
       prisma.provider.count({
-        where: publicProviderWhere("DOCTOR")
+        where: publicProviderWhere("DOCTOR"),
       }),
 
       prisma.provider.count({
-        where: publicProviderWhere("DENTIST")
+        where: publicProviderWhere("DENTIST"),
       }),
 
       prisma.pharmacy.count({
         where: {
           status: "ACTIVE",
           governorate: {
-            isActive: true
+            isActive: true,
           },
           area: {
-            isActive: true
-          }
-        }
+            isActive: true,
+          },
+        },
       }),
 
       prisma.lab.count({
         where: {
           status: "ACTIVE",
           governorate: {
-            isActive: true
+            isActive: true,
           },
           area: {
-            isActive: true
-          }
-        }
-      })
+            isActive: true,
+          },
+        },
+      }),
     ]),
 
     prisma.provider.findMany({
@@ -346,10 +364,10 @@ export async function getHomeData() {
         status: "ACTIVE",
         isFeatured: true,
         governorate: {
-          isActive: true
+          isActive: true,
         },
         area: {
-          isActive: true
+          isActive: true,
         },
         OR: [
           {
@@ -357,33 +375,33 @@ export async function getHomeData() {
             specialty: {
               isActive: true,
               forType: {
-                in: ["DOCTOR", "BOTH"]
-              }
-            }
+                in: ["DOCTOR", "BOTH"],
+              },
+            },
           },
           {
             type: "DENTIST",
             specialty: {
               isActive: true,
               forType: {
-                in: ["DENTIST", "BOTH"]
-              }
-            }
-          }
-        ]
+                in: ["DENTIST", "BOTH"],
+              },
+            },
+          },
+        ],
       },
       include: {
         specialty: true,
         governorate: true,
-        area: true
+        area: true,
       },
       orderBy: [
         { bookingPoints: "desc" },
         { sortOrder: "asc" },
-        { updatedAt: "desc" }
+        { updatedAt: "desc" },
       ],
-      take: 6
-    })
+      take: 6,
+    }),
   ]);
 
   return {
@@ -391,9 +409,9 @@ export async function getHomeData() {
       doctors: counts[0],
       dentists: counts[1],
       pharmacies: counts[2],
-      labs: counts[3]
+      labs: counts[3],
     },
-    featured
+    featured,
   };
 }
 
@@ -403,10 +421,10 @@ export async function getProviderBySlug(slug: string) {
       slug,
       status: "ACTIVE",
       governorate: {
-        isActive: true
+        isActive: true,
       },
       area: {
-        isActive: true
+        isActive: true,
       },
       OR: [
         {
@@ -414,20 +432,20 @@ export async function getProviderBySlug(slug: string) {
           specialty: {
             isActive: true,
             forType: {
-              in: ["DOCTOR", "BOTH"]
-            }
-          }
+              in: ["DOCTOR", "BOTH"],
+            },
+          },
         },
         {
           type: "DENTIST",
           specialty: {
             isActive: true,
             forType: {
-              in: ["DENTIST", "BOTH"]
-            }
-          }
-        }
-      ]
+              in: ["DENTIST", "BOTH"],
+            },
+          },
+        },
+      ],
     },
     include: {
       specialty: true,
@@ -436,10 +454,10 @@ export async function getProviderBySlug(slug: string) {
       offers: {
         where: activeOfferWhere(),
         orderBy: {
-          updatedAt: "desc"
-        }
-      }
-    }
+          updatedAt: "desc",
+        },
+      },
+    },
   });
 }
 
@@ -450,12 +468,12 @@ export function activeOfferWhere(): Prisma.OfferWhereInput {
     isActive: true,
     AND: [
       {
-        OR: [{ startsAt: null }, { startsAt: { lte: now } }]
+        OR: [{ startsAt: null }, { startsAt: { lte: now } }],
       },
       {
-        OR: [{ endsAt: null }, { endsAt: { gte: now } }]
-      }
-    ]
+        OR: [{ endsAt: null }, { endsAt: { gte: now } }],
+      },
+    ],
   };
 }
 
@@ -467,27 +485,27 @@ export async function getOffers() {
         {
           OR: [
             {
-              providerId: null
+              providerId: null,
             },
             {
               provider: {
-                is: publicAnyProviderWhere()
-              }
-            }
-          ]
-        }
-      ]
+                is: publicAnyProviderWhere(),
+              },
+            },
+          ],
+        },
+      ],
     },
     include: {
       provider: {
         include: {
           specialty: true,
           governorate: true,
-          area: true
-        }
-      }
+          area: true,
+        },
+      },
     },
-    orderBy: [{ endsAt: "asc" }, { updatedAt: "desc" }]
+    orderBy: [{ endsAt: "asc" }, { updatedAt: "desc" }],
   });
 }
 
@@ -498,9 +516,14 @@ export async function getPublicPharmacies(params: SearchParams = {}) {
     where: publicPharmacyWhere(filters),
     include: {
       governorate: true,
-      area: true
+      area: true,
     },
-    orderBy: [{ isFeatured: "desc" }, { updatedAt: "desc" }]
+    orderBy: [
+      { isFeatured: "desc" },
+      { inquiryCount: "desc" },
+      { sortOrder: "asc" },
+      { updatedAt: "desc" },
+    ],
   });
 }
 
@@ -511,8 +534,79 @@ export async function getPublicLabs(params: SearchParams = {}) {
     where: publicLabWhere(filters),
     include: {
       governorate: true,
-      area: true
+      area: true,
     },
-    orderBy: [{ isFeatured: "desc" }, { updatedAt: "desc" }]
+    orderBy: [
+      { isFeatured: "desc" },
+      { inquiryCount: "desc" },
+      { sortOrder: "asc" },
+      { updatedAt: "desc" },
+    ],
+  });
+}
+
+export async function getPublicPharmacyBySlug(slug: string) {
+  return prisma.pharmacy.findFirst({
+    where: {
+      slug,
+      status: "ACTIVE",
+      governorate: {
+        isActive: true,
+      },
+      area: {
+        isActive: true,
+      },
+    },
+    include: {
+      governorate: true,
+      area: true,
+    },
+  });
+}
+
+export async function getPublicLabBySlug(slug: string) {
+  return prisma.lab.findFirst({
+    where: {
+      slug,
+      status: "ACTIVE",
+      governorate: {
+        isActive: true,
+      },
+      area: {
+        isActive: true,
+      },
+    },
+    include: {
+      governorate: true,
+      area: true,
+    },
+  });
+}
+
+export async function incrementPharmacyInquiryCount(slug: string) {
+  return prisma.pharmacy.updateMany({
+    where: {
+      slug,
+      status: "ACTIVE",
+    },
+    data: {
+      inquiryCount: {
+        increment: 1,
+      },
+    },
+  });
+}
+
+export async function incrementLabInquiryCount(slug: string) {
+  return prisma.lab.updateMany({
+    where: {
+      slug,
+      status: "ACTIVE",
+    },
+    data: {
+      inquiryCount: {
+        increment: 1,
+      },
+    },
   });
 }

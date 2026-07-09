@@ -10,35 +10,40 @@ import { Card } from "@/components/ui/card";
 export default async function LabsAdminPage() {
   const [governorates, areas, rows] = await Promise.all([
     prisma.governorate.findMany({
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
+
     prisma.area.findMany({
       include: {
-        governorate: true
+        governorate: true,
       },
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
+
     prisma.lab.findMany({
       include: {
         governorate: true,
-        area: true
+        area: true,
       },
-      orderBy: {
-        updatedAt: "desc"
-      }
-    })
+      orderBy: [
+        { isFeatured: "desc" },
+        { inquiryCount: "desc" },
+        { sortOrder: "asc" },
+        { updatedAt: "desc" },
+      ],
+    }),
   ]);
 
   const governorateOptions = governorates.map((governorate) => ({
     id: governorate.id,
-    name: governorate.name
+    name: governorate.name,
   }));
 
   const areaOptions = areas.map((area) => ({
     id: area.id,
     name: area.name,
     governorateId: area.governorateId,
-    governorateName: area.governorate.name
+    governorateName: area.governorate.name,
   }));
 
   const canCreate = governorateOptions.length > 0 && areaOptions.length > 0;
@@ -47,7 +52,7 @@ export default async function LabsAdminPage() {
     <>
       <PageHeader
         title="المختبرات"
-        description="إدارة المختبرات من مكان واحد: البيانات، الموقع، التواصل، الصورة، الخدمات، وساعات العمل."
+        description="إدارة بروفايلات المختبرات: النبذة، الخدمات والتحاليل، الصورة، الموقع، التواصل، أوقات الدوام، وعدد الاستفسارات."
       />
 
       <FormShell title="إضافة مختبر">
@@ -90,7 +95,10 @@ export default async function LabsAdminPage() {
                   address: row.address,
                   mapurl: row.mapurl,
                   workingHours: row.workingHours,
-                  services: row.services
+                  bio: row.bio,
+                  services: row.services,
+                  sortOrder: row.sortOrder,
+                  inquiryCount: row.inquiryCount,
                 }}
               />
 
@@ -102,9 +110,29 @@ export default async function LabsAdminPage() {
                     {row.governorate.name} - {row.area.name}
                   </span>
 
+                  <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-extrabold text-primary">
+                    {row.inquiryCount} استفسار
+                  </span>
+
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
+                    ترتيب {row.sortOrder}
+                  </span>
+
                   {row.isFeatured ? (
                     <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-extrabold text-amber-700">
                       مميز
+                    </span>
+                  ) : null}
+
+                  {row.bio ? (
+                    <span className="rounded-full bg-purple-50 px-3 py-1 text-xs font-extrabold text-purple-700">
+                      نبذة
+                    </span>
+                  ) : null}
+
+                  {row.services ? (
+                    <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-extrabold text-violet-700">
+                      خدمات
                     </span>
                   ) : null}
 
@@ -120,9 +148,15 @@ export default async function LabsAdminPage() {
                     </span>
                   ) : null}
 
-                  {row.services ? (
-                    <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-extrabold text-violet-700">
-                      خدمات
+                  {row.whatsapp ? (
+                    <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-extrabold text-green-700">
+                      واتساب
+                    </span>
+                  ) : null}
+
+                  {row.phone ? (
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
+                      اتصال
                     </span>
                   ) : null}
                 </div>

@@ -1,7 +1,7 @@
 import {
   createPharmacy,
   deletePharmacy,
-  updatePharmacy
+  updatePharmacy,
 } from "@/lib/actions/admin";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/admin/page-header";
@@ -14,35 +14,40 @@ import { Card } from "@/components/ui/card";
 export default async function PharmaciesAdminPage() {
   const [governorates, areas, rows] = await Promise.all([
     prisma.governorate.findMany({
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
+
     prisma.area.findMany({
       include: {
-        governorate: true
+        governorate: true,
       },
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
+
     prisma.pharmacy.findMany({
       include: {
         governorate: true,
-        area: true
+        area: true,
       },
-      orderBy: {
-        updatedAt: "desc"
-      }
-    })
+      orderBy: [
+        { isFeatured: "desc" },
+        { inquiryCount: "desc" },
+        { sortOrder: "asc" },
+        { updatedAt: "desc" },
+      ],
+    }),
   ]);
 
   const governorateOptions = governorates.map((governorate) => ({
     id: governorate.id,
-    name: governorate.name
+    name: governorate.name,
   }));
 
   const areaOptions = areas.map((area) => ({
     id: area.id,
     name: area.name,
     governorateId: area.governorateId,
-    governorateName: area.governorate.name
+    governorateName: area.governorate.name,
   }));
 
   const canCreate = governorateOptions.length > 0 && areaOptions.length > 0;
@@ -51,7 +56,7 @@ export default async function PharmaciesAdminPage() {
     <>
       <PageHeader
         title="الصيدليات"
-        description="إدارة الصيدليات من مكان واحد: البيانات، الموقع، التواصل، الصورة، وساعات العمل."
+        description="إدارة بروفايلات الصيدليات: النبذة، الخدمات، الصورة، الموقع، التواصل، أوقات الدوام، وعدد الاستفسارات."
       />
 
       <FormShell title="إضافة صيدلية">
@@ -93,7 +98,11 @@ export default async function PharmaciesAdminPage() {
                   isFeatured: row.isFeatured,
                   address: row.address,
                   mapurl: row.mapurl,
-                  workingHours: row.workingHours
+                  workingHours: row.workingHours,
+                  bio: row.bio,
+                  services: row.services,
+                  sortOrder: row.sortOrder,
+                  inquiryCount: row.inquiryCount,
                 }}
               />
 
@@ -105,9 +114,29 @@ export default async function PharmaciesAdminPage() {
                     {row.governorate.name} - {row.area.name}
                   </span>
 
+                  <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-extrabold text-primary">
+                    {row.inquiryCount} استفسار
+                  </span>
+
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
+                    ترتيب {row.sortOrder}
+                  </span>
+
                   {row.isFeatured ? (
                     <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-extrabold text-amber-700">
                       مميز
+                    </span>
+                  ) : null}
+
+                  {row.bio ? (
+                    <span className="rounded-full bg-purple-50 px-3 py-1 text-xs font-extrabold text-purple-700">
+                      نبذة
+                    </span>
+                  ) : null}
+
+                  {row.services ? (
+                    <span className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-extrabold text-cyan-700">
+                      خدمات
                     </span>
                   ) : null}
 
@@ -120,6 +149,18 @@ export default async function PharmaciesAdminPage() {
                   {row.mapurl ? (
                     <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
                       لوكيشن
+                    </span>
+                  ) : null}
+
+                  {row.whatsapp ? (
+                    <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-extrabold text-green-700">
+                      واتساب
+                    </span>
+                  ) : null}
+
+                  {row.phone ? (
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
+                      اتصال
                     </span>
                   ) : null}
                 </div>

@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type ReactNode,
+} from "react";
 
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
@@ -34,7 +40,11 @@ type ServicePlaceRow = {
   address: string | null;
   mapurl?: string | null;
   workingHours: string | null;
+
+  bio?: string | null;
   services?: string | null;
+  sortOrder?: number | null;
+  inquiryCount?: number | null;
 };
 
 type FormAction = (formData: FormData) => void | Promise<void>;
@@ -67,7 +77,9 @@ function AdminSection({ title, description, children }: AdminSectionProps) {
         ) : null}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{children}</div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {children}
+      </div>
     </section>
   );
 }
@@ -85,12 +97,12 @@ function ImageUploadField({
   label,
   placeholder,
   onChange,
-  onUploadingChange
+  onUploadingChange,
 }: ImageUploadFieldProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleImageChange(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
 
     if (!file) return;
@@ -118,7 +130,7 @@ function ImageUploadField({
     try {
       const response = await fetch("/api/upload", {
         method: "POST",
-        body: formData
+        body: formData,
       });
 
       const data = (await response.json().catch(() => null)) as
@@ -238,7 +250,7 @@ export function ServicePlaceForm({
   governorates,
   areas,
   submit,
-  row
+  row,
 }: ServicePlaceFormProps) {
   const isEdit = Boolean(row);
   const isLab = kind === "lab";
@@ -277,6 +289,19 @@ export function ServicePlaceForm({
 
   const placeNameLabel = isLab ? "اسم المختبر" : "اسم الصيدلية";
   const placeNamePlaceholder = isLab ? "مختبر الشفاء" : "صيدلية الشفاء";
+
+  const bioPlaceholder = isLab
+    ? "اكتب نبذة مختصرة عن المختبر، مثل نوع الفحوصات، سرعة النتائج، وخدمة السحب المنزلي إذا متوفرة."
+    : "اكتب نبذة مختصرة عن الصيدلية، مثل توفر الأدوية، خدمة التوصيل، أو الاستشارات الدوائية.";
+
+  const servicesPlaceholder = isLab
+    ? "مثلاً: تحاليل دم، PCR، فحوصات هرمونات، سحب منزلي..."
+    : "مثلاً: أدوية مزمنة، مستلزمات طبية، قياس ضغط وسكر، توصيل قريب...";
+
+  const workingHoursPlaceholder = isLab
+    ? "مثلاً: السبت إلى الخميس من 8 صباحاً إلى 8 مساءً"
+    : "مثلاً: يومياً من 9 صباحاً إلى 11 مساءً";
+
   const imagePlaceholder = isLab
     ? "/uploads/lab.webp"
     : "/uploads/pharmacy.webp";
@@ -317,6 +342,17 @@ export function ServicePlaceForm({
           </Select>
         </Field>
 
+        <Field label="الترتيب اليدوي">
+          <Input
+            name="sortOrder"
+            type="number"
+            min={0}
+            step={1}
+            defaultValue={String(row?.sortOrder ?? 0)}
+            placeholder="0"
+          />
+        </Field>
+
         <label className="flex h-11 items-center gap-2 rounded-2xl border border-borderSoft bg-slate-50 px-3 text-sm font-bold text-slate-700">
           <input
             name="isFeatured"
@@ -325,6 +361,15 @@ export function ServicePlaceForm({
           />
           مميز
         </label>
+
+        {isEdit ? (
+          <div className="flex h-11 items-center justify-between rounded-2xl border border-borderSoft bg-primary-soft px-3 text-sm font-bold text-slate-700">
+            <span>عدد الاستفسارات</span>
+            <span className="font-black text-primary">
+              {row?.inquiryCount ?? 0}
+            </span>
+          </div>
+        ) : null}
       </AdminSection>
 
       <AdminSection
@@ -402,7 +447,7 @@ export function ServicePlaceForm({
 
       <AdminSection
         title="التواصل"
-        description="الواتساب يستخدم للزر الأساسي، والهاتف يستخدم للاتصال المباشر."
+        description="الواتساب يستخدم للاستفسارات، والهاتف يستخدم للاتصال المباشر."
       >
         <Field label="واتساب">
           <Input
@@ -437,30 +482,38 @@ export function ServicePlaceForm({
       </AdminSection>
 
       <AdminSection
-        title="التفاصيل"
-        description="هذه التفاصيل تظهر داخل صفحة الصيدلية أو المختبر."
+        title="البروفايل والتفاصيل"
+        description="هذه المعلومات تظهر داخل صفحة التفاصيل وتساعد المستخدم يعرف الخدمات والدوام قبل التواصل."
       >
         <div className="md:col-span-2 xl:col-span-3">
-          <Field label="ساعات العمل">
+          <Field label="النبذة">
             <Textarea
-              name="workingHours"
-              defaultValue={row?.workingHours ?? ""}
-              placeholder="مثلاً: يومياً من 9 صباحاً إلى 11 مساءً"
+              name="bio"
+              defaultValue={row?.bio ?? ""}
+              placeholder={bioPlaceholder}
             />
           </Field>
         </div>
 
-        {isLab ? (
-          <div className="md:col-span-2 xl:col-span-3">
-            <Field label="الخدمات">
-              <Textarea
-                name="services"
-                defaultValue={row?.services ?? ""}
-                placeholder="تحاليل دم، PCR، فحوصات هرمونات..."
-              />
-            </Field>
-          </div>
-        ) : null}
+        <div className="md:col-span-2 xl:col-span-3">
+          <Field label={isLab ? "الخدمات والتحاليل" : "الخدمات"}>
+            <Textarea
+              name="services"
+              defaultValue={row?.services ?? ""}
+              placeholder={servicesPlaceholder}
+            />
+          </Field>
+        </div>
+
+        <div className="md:col-span-2 xl:col-span-3">
+          <Field label="أيام وساعات العمل">
+            <Textarea
+              name="workingHours"
+              defaultValue={row?.workingHours ?? ""}
+              placeholder={workingHoursPlaceholder}
+            />
+          </Field>
+        </div>
       </AdminSection>
 
       <Button
