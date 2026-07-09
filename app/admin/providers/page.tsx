@@ -1,4 +1,8 @@
-﻿import { createProvider, deleteProvider, updateProvider } from "@/lib/actions/admin";
+﻿import {
+  createProvider,
+  deleteProvider,
+  updateProvider
+} from "@/lib/actions/admin";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/admin/page-header";
 import { FormShell } from "@/components/admin/form-shell";
@@ -7,6 +11,10 @@ import { StatusPill } from "@/components/admin/status-pill";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
+function providerTypeLabel(type: "DOCTOR" | "DENTIST") {
+  return type === "DENTIST" ? "طبيب أسنان" : "طبيب";
+}
+
 export default async function ProvidersPage() {
   const [governorates, areas, specialties, rows] = await Promise.all([
     prisma.governorate.findMany({
@@ -14,7 +22,9 @@ export default async function ProvidersPage() {
     }),
 
     prisma.area.findMany({
-      include: { governorate: true },
+      include: {
+        governorate: true
+      },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
     }),
 
@@ -29,7 +39,9 @@ export default async function ProvidersPage() {
         specialty: true
       },
       orderBy: [
+        { isFeatured: "desc" },
         { bookingPoints: "desc" },
+        { sortOrder: "asc" },
         { updatedAt: "desc" }
       ]
     })
@@ -62,7 +74,7 @@ export default async function ProvidersPage() {
     <>
       <PageHeader
         title="الأطباء وأطباء الأسنان"
-        description="إدارة الأطباء وأطباء الأسنان مع عدد النقاط والترتيب حسب الحجوزات عبر المنصة."
+        description="إدارة الأطباء وأطباء الأسنان من مكان واحد: البيانات، الاختصاص، الموقع، التواصل، الصورة، النقاط، والترتيب."
       />
 
       <FormShell title="إضافة مقدم خدمة">
@@ -76,7 +88,8 @@ export default async function ProvidersPage() {
           />
         ) : (
           <p className="text-sm font-bold text-red-700">
-            أكمل بيانات المحافظات والمناطق والاختصاصات من الإعدادات الأساسية.
+            أكمل بيانات المحافظات والمناطق والاختصاصات أولاً قبل إضافة الأطباء
+            وأطباء الأسنان.
           </p>
         )}
       </FormShell>
@@ -116,16 +129,48 @@ export default async function ProvidersPage() {
               />
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-borderSoft pt-4 text-sm text-slate-600">
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <StatusPill value={row.status} />
-                  <span>{row.type}</span>
-                  <span>{row.specialty?.name ?? "بدون اختصاص"}</span>
-                  <span className="font-black text-primary-dark">
+
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
+                    {providerTypeLabel(row.type)}
+                  </span>
+
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
+                    {row.specialty?.name ?? "بدون اختصاص"}
+                  </span>
+
+                  <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-extrabold text-primary-dark">
                     النقاط: {row.bookingPoints}
                   </span>
-                  <span>
+
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
                     {row.governorate.name} - {row.area.name}
                   </span>
+
+                  {row.isFeatured ? (
+                    <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-extrabold text-amber-700">
+                      مميز
+                    </span>
+                  ) : null}
+
+                  {row.imageUrl ? (
+                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-700">
+                      صورة
+                    </span>
+                  ) : null}
+
+                  {row.mapurl ? (
+                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+                      لوكيشن
+                    </span>
+                  ) : null}
+
+                  {row.whatsapp ? (
+                    <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-extrabold text-green-700">
+                      واتساب
+                    </span>
+                  ) : null}
                 </div>
 
                 <form action={deleteProvider}>

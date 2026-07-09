@@ -1,4 +1,5 @@
 import { Prisma, ProviderType, SpecialtyFor } from "@prisma/client";
+
 import { prisma } from "@/lib/prisma";
 
 export type SearchParams = Record<string, string | string[] | undefined>;
@@ -59,6 +60,108 @@ function publicAnyProviderWhere(): Prisma.ProviderWhereInput {
         }
       }
     ]
+  };
+}
+
+function publicPharmacyWhere(
+  filters: ReturnType<typeof readFilters>
+): Prisma.PharmacyWhereInput {
+  return {
+    status: "ACTIVE",
+    governorate: {
+      isActive: true
+    },
+    area: {
+      isActive: true
+    },
+    governorateId: filters.governorateId,
+    areaId: filters.areaId,
+    OR: filters.q
+      ? [
+          {
+            name: {
+              contains: filters.q,
+              mode: "insensitive"
+            }
+          },
+          {
+            address: {
+              contains: filters.q,
+              mode: "insensitive"
+            }
+          },
+          {
+            governorate: {
+              name: {
+                contains: filters.q,
+                mode: "insensitive"
+              }
+            }
+          },
+          {
+            area: {
+              name: {
+                contains: filters.q,
+                mode: "insensitive"
+              }
+            }
+          }
+        ]
+      : undefined
+  };
+}
+
+function publicLabWhere(
+  filters: ReturnType<typeof readFilters>
+): Prisma.LabWhereInput {
+  return {
+    status: "ACTIVE",
+    governorate: {
+      isActive: true
+    },
+    area: {
+      isActive: true
+    },
+    governorateId: filters.governorateId,
+    areaId: filters.areaId,
+    OR: filters.q
+      ? [
+          {
+            name: {
+              contains: filters.q,
+              mode: "insensitive"
+            }
+          },
+          {
+            services: {
+              contains: filters.q,
+              mode: "insensitive"
+            }
+          },
+          {
+            address: {
+              contains: filters.q,
+              mode: "insensitive"
+            }
+          },
+          {
+            governorate: {
+              name: {
+                contains: filters.q,
+                mode: "insensitive"
+              }
+            }
+          },
+          {
+            area: {
+              name: {
+                contains: filters.q,
+                mode: "insensitive"
+              }
+            }
+          }
+        ]
+      : undefined
   };
 }
 
@@ -156,6 +259,22 @@ export async function searchProviders(
         address: {
           contains: filters.q,
           mode: "insensitive"
+        }
+      },
+      {
+        governorate: {
+          name: {
+            contains: filters.q,
+            mode: "insensitive"
+          }
+        }
+      },
+      {
+        area: {
+          name: {
+            contains: filters.q,
+            mode: "insensitive"
+          }
         }
       },
       {
@@ -376,23 +495,7 @@ export async function getPublicPharmacies(params: SearchParams = {}) {
   const filters = readFilters(params);
 
   return prisma.pharmacy.findMany({
-    where: {
-      status: "ACTIVE",
-      governorate: {
-        isActive: true
-      },
-      area: {
-        isActive: true
-      },
-      governorateId: filters.governorateId,
-      areaId: filters.areaId,
-      name: filters.q
-        ? {
-            contains: filters.q,
-            mode: "insensitive"
-          }
-        : undefined
-    },
+    where: publicPharmacyWhere(filters),
     include: {
       governorate: true,
       area: true
@@ -405,33 +508,7 @@ export async function getPublicLabs(params: SearchParams = {}) {
   const filters = readFilters(params);
 
   return prisma.lab.findMany({
-    where: {
-      status: "ACTIVE",
-      governorate: {
-        isActive: true
-      },
-      area: {
-        isActive: true
-      },
-      governorateId: filters.governorateId,
-      areaId: filters.areaId,
-      OR: filters.q
-        ? [
-            {
-              name: {
-                contains: filters.q,
-                mode: "insensitive"
-              }
-            },
-            {
-              services: {
-                contains: filters.q,
-                mode: "insensitive"
-              }
-            }
-          ]
-        : undefined
-    },
+    where: publicLabWhere(filters),
     include: {
       governorate: true,
       area: true

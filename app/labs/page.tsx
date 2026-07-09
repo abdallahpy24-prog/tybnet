@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import { SiteShell } from "@/components/layout/site-shell";
 import { FilterForm } from "@/components/public/filter-form";
 import { PlaceCard } from "@/components/public/place-card";
@@ -14,7 +15,7 @@ import {
 export const metadata: Metadata = {
   title: "ابحث عن مختبرات طبية في العراق | طب نت",
   description:
-    "ابحث عن مختبرات طبية في العراق حسب المحافظة والمنطقة، واطّلع على الخدمات والعنوان ووسائل التواصل عبر منصة طب نت."
+    "ابحث عن مختبرات طبية في العراق حسب المحافظة والمنطقة، واطّلع على الخدمات والعنوان واللوكيشن ووسائل التواصل عبر منصة طب نت."
 };
 
 export default async function LabsPage({
@@ -36,7 +37,7 @@ export default async function LabsPage({
         <SectionTitle
           eyebrow="المختبرات"
           title="ابحث عن مختبر طبي حسب المحافظة والمنطقة"
-          description="استعرض المختبرات الطبية المتاحة على طب نت، وتعرّف على الخدمات، العنوان، أوقات الدوام، ووسائل التواصل عند توفرها."
+          description="استعرض المختبرات الطبية المتاحة على طب نت، وصفّي النتائج حسب المحافظة أو المنطقة أو اسم المختبر أو الخدمات."
         />
 
         <FilterForm
@@ -56,7 +57,7 @@ export default async function LabsPage({
         ) : (
           <EmptyState
             title="لم نجد مختبرات مطابقة لبحثك"
-            description="جرّب تغيير المحافظة أو المنطقة، أو ابحث باسم المختبر إن كان متوفراً."
+            description="جرّب تغيير المحافظة أو المنطقة، أو ابحث باسم المختبر أو الخدمة أو العنوان."
           />
         )}
       </section>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { requireAdminApi } from "@/lib/permissions";
 import { saveImage } from "@/lib/upload";
 
@@ -10,8 +11,12 @@ function isUnauthorizedError(message: string) {
   return (
     message.includes("غير مصرح") ||
     message.includes("Unauthorized") ||
-    message.includes("admin")
+    message.toLowerCase().includes("admin")
   );
+}
+
+function isValidImageType(type: string) {
+  return ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(type);
 }
 
 export async function POST(request: NextRequest) {
@@ -24,6 +29,7 @@ export async function POST(request: NextRequest) {
     if (!(file instanceof File)) {
       return NextResponse.json(
         {
+          ok: false,
           error: "الصورة مطلوبة"
         },
         {
@@ -32,10 +38,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!file.type.startsWith("image/")) {
+    if (!file.size) {
       return NextResponse.json(
         {
-          error: "الملف يجب أن يكون صورة فقط"
+          ok: false,
+          error: "ملف الصورة فارغ"
+        },
+        {
+          status: 400
+        }
+      );
+    }
+
+    if (!file.type.startsWith("image/") || !isValidImageType(file.type)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "الملف يجب أن يكون صورة بصيغة JPG أو PNG أو WebP أو GIF"
         },
         {
           status: 400
@@ -46,6 +65,7 @@ export async function POST(request: NextRequest) {
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         {
+          ok: false,
           error: "حجم الصورة يجب ألا يتجاوز 3MB"
         },
         {
@@ -57,7 +77,10 @@ export async function POST(request: NextRequest) {
     const url = await saveImage(file);
 
     return NextResponse.json({
-      url
+      ok: true,
+      url,
+      imageUrl: url,
+      path: url
     });
   } catch (error) {
     const message =
@@ -65,6 +88,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
+        ok: false,
         error: message
       },
       {

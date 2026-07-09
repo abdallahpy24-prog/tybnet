@@ -1,4 +1,8 @@
-import { createPharmacy, deletePharmacy, updatePharmacy } from "@/lib/actions/admin";
+import {
+  createPharmacy,
+  deletePharmacy,
+  updatePharmacy
+} from "@/lib/actions/admin";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/admin/page-header";
 import { FormShell } from "@/components/admin/form-shell";
@@ -13,12 +17,19 @@ export default async function PharmaciesAdminPage() {
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
     }),
     prisma.area.findMany({
-      include: { governorate: true },
+      include: {
+        governorate: true
+      },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
     }),
     prisma.pharmacy.findMany({
-      include: { governorate: true, area: true },
-      orderBy: { updatedAt: "desc" }
+      include: {
+        governorate: true,
+        area: true
+      },
+      orderBy: {
+        updatedAt: "desc"
+      }
     })
   ]);
 
@@ -40,7 +51,7 @@ export default async function PharmaciesAdminPage() {
     <>
       <PageHeader
         title="الصيدليات"
-        description="إدارة الصيدليات مع اختيار المحافظة والمنطقة بشكل ذكي. الصيدلية الجديدة تُفعّل تلقائياً."
+        description="إدارة الصيدليات من مكان واحد: البيانات، الموقع، التواصل، الصورة، وساعات العمل."
       />
 
       <FormShell title="إضافة صيدلية">
@@ -81,16 +92,36 @@ export default async function PharmaciesAdminPage() {
                   status: row.status,
                   isFeatured: row.isFeatured,
                   address: row.address,
+                  mapurl: row.mapurl,
                   workingHours: row.workingHours
                 }}
               />
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-borderSoft pt-4 text-sm text-slate-600">
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <StatusPill value={row.status} />
+
                   <span>
                     {row.governorate.name} - {row.area.name}
                   </span>
+
+                  {row.isFeatured ? (
+                    <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-extrabold text-amber-700">
+                      مميز
+                    </span>
+                  ) : null}
+
+                  {row.imageUrl ? (
+                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-700">
+                      صورة
+                    </span>
+                  ) : null}
+
+                  {row.mapurl ? (
+                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+                      لوكيشن
+                    </span>
+                  ) : null}
                 </div>
 
                 <form action={deletePharmacy}>

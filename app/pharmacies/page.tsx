@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import { SiteShell } from "@/components/layout/site-shell";
 import { FilterForm } from "@/components/public/filter-form";
 import { PlaceCard } from "@/components/public/place-card";
@@ -14,7 +15,7 @@ import {
 export const metadata: Metadata = {
   title: "ابحث عن صيدليات في العراق | طب نت",
   description:
-    "ابحث عن صيدليات في العراق حسب المحافظة والمنطقة، واطّلع على العنوان ووسائل التواصل عبر منصة طب نت."
+    "ابحث عن صيدليات في العراق حسب المحافظة والمنطقة، واطّلع على العنوان واللوكيشن ووسائل التواصل عبر منصة طب نت."
 };
 
 export default async function PharmaciesPage({
@@ -36,7 +37,7 @@ export default async function PharmaciesPage({
         <SectionTitle
           eyebrow="الصيدليات"
           title="ابحث عن صيدلية حسب المحافظة والمنطقة"
-          description="استعرض الصيدليات المتاحة على طب نت، وصفّي النتائج حسب المحافظة والمنطقة للوصول إلى الصيدلية المناسبة لك."
+          description="استعرض الصيدليات المتاحة على طب نت، وصفّي النتائج حسب المحافظة أو المنطقة أو اسم الصيدلية للوصول إلى المكان المناسب."
         />
 
         <FilterForm
@@ -56,7 +57,7 @@ export default async function PharmaciesPage({
         ) : (
           <EmptyState
             title="لم نجد صيدليات مطابقة لبحثك"
-            description="جرّب تغيير المحافظة أو المنطقة، أو ابحث باسم الصيدلية إن كان متوفراً."
+            description="جرّب تغيير المحافظة أو المنطقة، أو ابحث باسم الصيدلية أو العنوان."
           />
         )}
       </section>

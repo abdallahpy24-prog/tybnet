@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { normalizeInstagram } from "@/lib/instagram";
 import { normalizeIraqWhatsapp } from "@/lib/whatsapp";
 
@@ -90,6 +91,56 @@ const optionalInstagramUrl = z
     return normalizeInstagram(value);
   });
 
+const optionalMapUrl = z
+  .string()
+  .trim()
+  .optional()
+  .nullable()
+  .transform((value, ctx) => {
+    if (!value) {
+      return null;
+    }
+
+    const cleanValue = value.trim();
+
+    try {
+      if (/^https?:\/\//i.test(cleanValue)) {
+        return new URL(cleanValue).toString();
+      }
+
+      if (
+        cleanValue.startsWith("www.google.com/maps") ||
+        cleanValue.startsWith("google.com/maps") ||
+        cleanValue.startsWith("maps.google.com") ||
+        cleanValue.startsWith("maps.app.goo.gl") ||
+        cleanValue.startsWith("goo.gl/maps") ||
+        cleanValue.startsWith("maps.apple.com")
+      ) {
+        return new URL(`https://${cleanValue}`).toString();
+      }
+
+      if (/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(cleanValue)) {
+        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+          cleanValue
+        )}`;
+      }
+
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "رابط اللوكيشن غير صحيح"
+      });
+
+      return z.NEVER;
+    } catch {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "رابط اللوكيشن غير صحيح"
+      });
+
+      return z.NEVER;
+    }
+  });
+
 export const governorateSchema = z.object({
   name: z.string().trim().min(2, "اسم المحافظة مطلوب"),
   slug: optionalSlug,
@@ -123,6 +174,7 @@ export const providerSchema = z.object({
   areaId: idSchema,
   bio: optionalText,
   address: optionalText,
+  mapurl: optionalMapUrl,
   phone: optionalText,
   whatsapp: optionalIraqWhatsapp,
   instagramUrl: optionalInstagramUrl,
@@ -164,6 +216,7 @@ export const servicePlaceSchema = z.object({
   governorateId: idSchema,
   areaId: idSchema,
   address: optionalText,
+  mapurl: optionalMapUrl,
   phone: optionalText,
   whatsapp: optionalIraqWhatsapp,
   imageUrl: optionalText,

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { AppointmentStatus, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
+
 import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
 import { requireAdmin } from "@/lib/permissions";
@@ -645,8 +646,6 @@ export async function createProvider(formData: FormData) {
     isFeatured: boolFromForm(formData, "isFeatured")
   });
 
-  const mapurl = textFromForm(formData, "mapurl") || null;
-
   await ensureAreaBelongsToGovernorate(parsed.areaId, parsed.governorateId);
   await ensureSpecialtyMatchesProviderType(parsed.specialtyId, parsed.type);
 
@@ -657,10 +656,10 @@ export async function createProvider(formData: FormData) {
       specialtyId: parsed.specialtyId || null,
       bio: parsed.bio || null,
       address: parsed.address || null,
+      mapurl: parsed.mapurl || null,
       phone: parsed.phone || null,
       whatsapp: parsed.whatsapp || null,
       instagramUrl: parsed.instagramUrl || null,
-      mapurl,
       imageUrl: parsed.imageUrl || null,
       workingHours: parsed.workingHours || null
     }
@@ -701,8 +700,6 @@ export async function updateProvider(formData: FormData) {
     isFeatured: boolFromForm(formData, "isFeatured")
   });
 
-  const mapurl = textFromForm(formData, "mapurl") || null;
-
   await ensureAreaBelongsToGovernorate(parsed.areaId, parsed.governorateId);
   await ensureSpecialtyMatchesProviderType(parsed.specialtyId, parsed.type);
 
@@ -716,10 +713,10 @@ export async function updateProvider(formData: FormData) {
       specialtyId: parsed.specialtyId || null,
       bio: parsed.bio || null,
       address: parsed.address || null,
+      mapurl: parsed.mapurl || null,
       phone: parsed.phone || null,
       whatsapp: parsed.whatsapp || null,
       instagramUrl: parsed.instagramUrl || null,
-      mapurl,
       imageUrl: parsed.imageUrl || null,
       workingHours: parsed.workingHours || null
     }
@@ -928,6 +925,7 @@ export async function createPharmacy(formData: FormData) {
       governorateId: parsed.governorateId,
       areaId: parsed.areaId,
       address: parsed.address || null,
+      mapurl: parsed.mapurl || null,
       phone: parsed.phone || null,
       whatsapp: parsed.whatsapp || null,
       imageUrl: parsed.imageUrl || null,
@@ -976,6 +974,7 @@ export async function updatePharmacy(formData: FormData) {
       governorateId: parsed.governorateId,
       areaId: parsed.areaId,
       address: parsed.address || null,
+      mapurl: parsed.mapurl || null,
       phone: parsed.phone || null,
       whatsapp: parsed.whatsapp || null,
       imageUrl: parsed.imageUrl || null,
@@ -1044,6 +1043,7 @@ export async function createLab(formData: FormData) {
       areaId: parsed.areaId,
       services: parsed.services || null,
       address: parsed.address || null,
+      mapurl: parsed.mapurl || null,
       phone: parsed.phone || null,
       whatsapp: parsed.whatsapp || null,
       imageUrl: parsed.imageUrl || null,
@@ -1093,6 +1093,7 @@ export async function updateLab(formData: FormData) {
       areaId: parsed.areaId,
       services: parsed.services || null,
       address: parsed.address || null,
+      mapurl: parsed.mapurl || null,
       phone: parsed.phone || null,
       whatsapp: parsed.whatsapp || null,
       imageUrl: parsed.imageUrl || null,
@@ -1180,6 +1181,7 @@ export async function updateAppointmentStatus(formData: FormData) {
 
   revalidatePath("/admin/appointments");
 }
+
 export async function deleteAppointment(formData: FormData) {
   const userId = await currentUserId();
   const id = requiredId(formData);
@@ -1281,9 +1283,7 @@ export async function createUser(formData: FormData) {
       : Role.EDITOR;
 
   if (!name || !email || !username || password.length < 8) {
-    throw new Error(
-      "الاسم والبريد واسم المستخدم وكلمة مرور 8 أحرف مطلوبة"
-    );
+    throw new Error("الاسم والبريد واسم المستخدم وكلمة مرور 8 أحرف مطلوبة");
   }
 
   const row = await prisma.user.create({

@@ -43,7 +43,7 @@ model User {
   email        String     @unique
   username     String     @unique
   passwordHash String
-  role         Role       @default(ADMIN)
+  role         Role       @default(EDITOR)
   isActive     Boolean    @default(true)
   auditLogs    AuditLog[]
   createdAt    DateTime   @default(now())
@@ -150,6 +150,7 @@ model Pharmacy {
   governorate   Governorate   @relation(fields: [governorateId], references: [id])
   area          Area          @relation(fields: [areaId], references: [id])
   address       String?
+  mapurl        String?
   phone         String?
   whatsapp      String?
   imageUrl      String?
@@ -174,6 +175,7 @@ model Lab {
   area          Area          @relation(fields: [areaId], references: [id])
   services      String?
   address       String?
+  mapurl        String?
   phone         String?
   whatsapp      String?
   imageUrl      String?
