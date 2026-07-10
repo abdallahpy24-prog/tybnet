@@ -139,7 +139,7 @@ async function uniqueAreaSlug(
 
 async function uniqueSpecialtySlug(
   name: string,
-  forType: "DOCTOR" | "DENTIST" | "BOTH",
+  forType: "DOCTOR" | "DENTIST" | "COSMETIC_DOCTOR" | "BOTH",
   provided?: string | null
 ) {
   const base = provided?.trim() || name;

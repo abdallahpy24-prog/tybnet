@@ -45,7 +45,7 @@ const optionalDateText = z
     if (Number.isNaN(date.getTime())) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "التاريخ غير صحيح",
+        message: "التاريخ غير صحيح"
       });
 
       return z.NEVER;
@@ -69,7 +69,7 @@ const optionalIraqWhatsapp = z
     if (!normalized) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "رقم واتساب عراقي غير صحيح",
+        message: "رقم واتساب عراقي غير صحيح"
       });
 
       return z.NEVER;
@@ -119,7 +119,9 @@ const optionalMapUrl = z
         return new URL(`https://${cleanValue}`).toString();
       }
 
-      if (/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(cleanValue)) {
+      if (
+        /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(cleanValue)
+      ) {
         return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
           cleanValue
         )}`;
@@ -127,14 +129,14 @@ const optionalMapUrl = z
 
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "رابط اللوكيشن غير صحيح",
+        message: "رابط اللوكيشن غير صحيح"
       });
 
       return z.NEVER;
     } catch {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "رابط اللوكيشن غير صحيح",
+        message: "رابط اللوكيشن غير صحيح"
       });
 
       return z.NEVER;
@@ -145,7 +147,7 @@ export const governorateSchema = z.object({
   name: z.string().trim().min(2, "اسم المحافظة مطلوب"),
   slug: optionalSlug,
   sortOrder: z.coerce.number().int().default(0),
-  isActive: z.coerce.boolean().default(true),
+  isActive: z.coerce.boolean().default(true)
 });
 
 export const areaSchema = z.object({
@@ -153,19 +155,23 @@ export const areaSchema = z.object({
   name: z.string().trim().min(2, "اسم المنطقة مطلوب"),
   slug: optionalSlug,
   sortOrder: z.coerce.number().int().default(0),
-  isActive: z.coerce.boolean().default(true),
+  isActive: z.coerce.boolean().default(true)
 });
 
 export const specialtySchema = z.object({
   name: z.string().trim().min(2, "اسم الاختصاص مطلوب"),
   slug: optionalSlug,
-  forType: z.enum(["DOCTOR", "DENTIST", "BOTH"]),
+  forType: z.enum([
+    "DOCTOR",
+    "DENTIST",
+    "COSMETIC_DOCTOR",
+    "BOTH"
+  ]),
   icon: optionalText,
-  isActive: z.coerce.boolean().default(true),
+  isActive: z.coerce.boolean().default(true)
 });
 
-export const providerSchema = z.object({
-  type: z.enum(["DOCTOR", "DENTIST"]),
+const providerBaseSchema = z.object({
   name: z.string().trim().min(2, "اسم مقدم الخدمة مطلوب"),
   slug: optionalSlug,
   titlePrefix: z.string().trim().default("د."),
@@ -187,7 +193,15 @@ export const providerSchema = z.object({
     .number()
     .int()
     .min(0, "عدد النقاط لا يمكن أن يكون أقل من صفر")
-    .default(0),
+    .default(0)
+});
+
+export const providerSchema = providerBaseSchema.extend({
+  type: z.enum(["DOCTOR", "DENTIST"])
+});
+
+export const cosmeticDoctorSchema = providerBaseSchema.extend({
+  type: z.literal("COSMETIC_DOCTOR")
 });
 
 export const offerSchema = z.object({
@@ -199,7 +213,7 @@ export const offerSchema = z.object({
   startsAt: optionalDateText,
   endsAt: optionalDateText,
   isActive: z.coerce.boolean().default(true),
-  providerId: optionalText,
+  providerId: optionalText
 });
 
 export const appointmentSchema = z.object({
@@ -207,7 +221,7 @@ export const appointmentSchema = z.object({
   patientName: z.string().trim().min(2, "اسم المريض مطلوب"),
   patientPhone: z.string().trim().min(7, "رقم الهاتف مطلوب"),
   preferredDate: optionalText,
-  note: optionalText,
+  note: optionalText
 });
 
 export const servicePlaceSchema = z.object({
@@ -231,5 +245,9 @@ export const servicePlaceSchema = z.object({
 
   status: z.enum(["DRAFT", "ACTIVE", "INACTIVE"]),
   isFeatured: z.coerce.boolean().default(false),
-  sortOrder: z.coerce.number().int().default(0),
+  sortOrder: z.coerce.number().int().default(0)
+});
+
+export const cosmeticCenterSchema = servicePlaceSchema.extend({
+  instagramUrl: optionalInstagramUrl
 });

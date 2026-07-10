@@ -12,9 +12,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
 
-type ProviderType = "DOCTOR" | "DENTIST";
-type SpecialtyFor = "DOCTOR" | "DENTIST" | "BOTH";
+type ProviderType = "DOCTOR" | "DENTIST" | "COSMETIC_DOCTOR";
+
+type SpecialtyFor =
+  | "DOCTOR"
+  | "DENTIST"
+  | "COSMETIC_DOCTOR"
+  | "BOTH";
+
 type ProviderStatus = "DRAFT" | "ACTIVE" | "INACTIVE";
+type ProviderCategory = "GENERAL" | "COSMETIC";
 
 type GovernorateOption = {
   id: string;
@@ -65,6 +72,7 @@ type ProviderFormProps = {
   governorates: GovernorateOption[];
   areas: AreaOption[];
   specialties: SpecialtyOption[];
+  category?: ProviderCategory;
   row?: ProviderRow;
 };
 
@@ -74,7 +82,11 @@ type AdminSectionProps = {
   children: ReactNode;
 };
 
-function AdminSection({ title, description, children }: AdminSectionProps) {
+function AdminSection({
+  title,
+  description,
+  children
+}: AdminSectionProps) {
   return (
     <section className="rounded-3xl border border-borderSoft bg-white p-4 shadow-sm md:col-span-2 xl:col-span-3">
       <div className="mb-4 border-b border-borderSoft pb-3">
@@ -87,17 +99,34 @@ function AdminSection({ title, description, children }: AdminSectionProps) {
         ) : null}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{children}</div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {children}
+      </div>
     </section>
   );
 }
 
-function isSpecialtyAllowed(specialty: SpecialtyOption, type: ProviderType) {
+function isSpecialtyAllowed(
+  specialty: SpecialtyOption,
+  type: ProviderType
+) {
+  if (type === "COSMETIC_DOCTOR") {
+    return specialty.forType === "COSMETIC_DOCTOR";
+  }
+
   return specialty.forType === "BOTH" || specialty.forType === type;
 }
 
 function providerTypeLabel(type: ProviderType) {
-  return type === "DENTIST" ? "طبيب أسنان" : "طبيب";
+  if (type === "DENTIST") {
+    return "طبيب أسنان";
+  }
+
+  if (type === "COSMETIC_DOCTOR") {
+    return "طبيب تجميل";
+  }
+
+  return "طبيب";
 }
 
 type ImageUploadFieldProps = {
@@ -117,7 +146,11 @@ function ImageUploadField({
   const [message, setMessage] = useState<string | null>(null);
 
   const label =
-    providerType === "DENTIST" ? "صورة طبيب الأسنان" : "صورة الطبيب";
+    providerType === "DENTIST"
+      ? "صورة طبيب الأسنان"
+      : providerType === "COSMETIC_DOCTOR"
+        ? "صورة طبيب التجميل"
+        : "صورة الطبيب";
 
   async function uploadImage(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -167,7 +200,8 @@ function ImageUploadField({
         );
       }
 
-      const uploadedUrl = result?.url || result?.imageUrl || result?.path;
+      const uploadedUrl =
+        result?.url || result?.imageUrl || result?.path;
 
       if (!uploadedUrl) {
         throw new Error("تم الرفع لكن الخادم لم يرجع رابط الصورة.");
@@ -176,7 +210,9 @@ function ImageUploadField({
       onChange(uploadedUrl);
       setMessage("تم رفع الصورة بنجاح.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "فشل رفع الصورة.");
+      setMessage(
+        error instanceof Error ? error.message : "فشل رفع الصورة."
+      );
     } finally {
       setUploading(false);
       onUploadingChange(false);
@@ -222,14 +258,17 @@ function ImageUploadField({
             <p className="text-sm font-extrabold text-slate-800">
               رفع صورة من الجهاز
             </p>
+
             <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-              يفضل صورة واضحة بصيغة JPG أو PNG أو WebP، والحجم أقل من 3MB.
+              يفضل صورة واضحة بصيغة JPG أو PNG أو WebP، والحجم أقل من
+              3MB.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
             <label className="focus-ring inline-flex h-10 cursor-pointer items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white transition hover:brightness-105">
               {uploading ? "جاري الرفع..." : "اختيار صورة"}
+
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/*"
@@ -283,24 +322,33 @@ export function ProviderForm({
   governorates,
   areas,
   specialties,
+  category = "GENERAL",
   row
 }: ProviderFormProps) {
   const isCreate = mode === "create";
+  const isCosmetic = category === "COSMETIC";
 
   const [providerType, setProviderType] = useState<ProviderType>(
-    row?.type ?? "DOCTOR"
+    row?.type ?? (isCosmetic ? "COSMETIC_DOCTOR" : "DOCTOR")
   );
 
-  const firstGovernorateId = row?.governorateId ?? governorates[0]?.id ?? "";
-  const [governorateId, setGovernorateId] = useState(firstGovernorateId);
+  const firstGovernorateId =
+    row?.governorateId ?? governorates[0]?.id ?? "";
+
+  const [governorateId, setGovernorateId] =
+    useState(firstGovernorateId);
 
   const filteredAreas = useMemo(() => {
-    return areas.filter((area) => area.governorateId === governorateId);
+    return areas.filter(
+      (area) => area.governorateId === governorateId
+    );
   }, [areas, governorateId]);
 
   const firstAreaId =
     row?.areaId ??
-    areas.find((area) => area.governorateId === firstGovernorateId)?.id ??
+    areas.find(
+      (area) => area.governorateId === firstGovernorateId
+    )?.id ??
     "";
 
   const [areaId, setAreaId] = useState(firstAreaId);
@@ -311,7 +359,10 @@ export function ProviderForm({
     );
   }, [specialties, providerType]);
 
-  const [specialtyId, setSpecialtyId] = useState(row?.specialtyId ?? "");
+  const [specialtyId, setSpecialtyId] = useState(
+    row?.specialtyId ?? ""
+  );
+
   const [imageUrl, setImageUrl] = useState(row?.imageUrl ?? "");
   const [isImageUploading, setIsImageUploading] = useState(false);
 
@@ -322,7 +373,9 @@ export function ProviderForm({
   }, [governorateId, governorates]);
 
   useEffect(() => {
-    const currentAreaIsValid = filteredAreas.some((area) => area.id === areaId);
+    const currentAreaIsValid = filteredAreas.some(
+      (area) => area.id === areaId
+    );
 
     if (!currentAreaIsValid) {
       setAreaId(filteredAreas[0]?.id ?? "");
@@ -340,29 +393,61 @@ export function ProviderForm({
   }, [filteredSpecialties, specialtyId]);
 
   const canSubmit = Boolean(
-    governorateId && areaId && specialtyId && !isImageUploading
+    governorateId &&
+      areaId &&
+      specialtyId &&
+      !isImageUploading
   );
 
   return (
-    <form action={action} className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-      {!isCreate ? <input type="hidden" name="id" value={row?.id} /> : null}
+    <form
+      action={action}
+      className="grid gap-5 md:grid-cols-2 xl:grid-cols-3"
+    >
+      {!isCreate ? (
+        <input type="hidden" name="id" value={row?.id} />
+      ) : null}
 
       <AdminSection
         title="البيانات الأساسية"
-        description="هذه البيانات تظهر في القوائم وبطاقات الأطباء وأطباء الأسنان."
+        description={
+          isCosmetic
+            ? "هذه البيانات تظهر في قوائم وبطاقات أطباء التجميل."
+            : "هذه البيانات تظهر في القوائم وبطاقات الأطباء وأطباء الأسنان."
+        }
       >
         <Field label="النوع">
-          <Select
-            name="type"
-            value={providerType}
-            onChange={(event) =>
-              setProviderType(event.target.value as ProviderType)
-            }
-            required
-          >
-            <option value="DOCTOR">طبيب</option>
-            <option value="DENTIST">طبيب أسنان</option>
-          </Select>
+          {isCosmetic ? (
+            <>
+              <input
+                type="hidden"
+                name="type"
+                value="COSMETIC_DOCTOR"
+              />
+
+              <Select
+                value="COSMETIC_DOCTOR"
+                disabled
+                aria-label="نوع مقدم الخدمة"
+              >
+                <option value="COSMETIC_DOCTOR">طبيب تجميل</option>
+              </Select>
+            </>
+          ) : (
+            <Select
+              name="type"
+              value={providerType}
+              onChange={(event) =>
+                setProviderType(
+                  event.target.value as ProviderType
+                )
+              }
+              required
+            >
+              <option value="DOCTOR">طبيب</option>
+              <option value="DENTIST">طبيب أسنان</option>
+            </Select>
+          )}
         </Field>
 
         <Field label="اللقب">
@@ -378,7 +463,9 @@ export function ProviderForm({
             name="name"
             required
             defaultValue={row?.name ?? ""}
-            placeholder="أحمد الخفاجي"
+            placeholder={
+              isCosmetic ? "اسم طبيب التجميل" : "أحمد الخفاجي"
+            }
           />
         </Field>
 
@@ -386,7 +473,9 @@ export function ProviderForm({
           <Select
             name="specialtyId"
             value={specialtyId}
-            onChange={(event) => setSpecialtyId(event.target.value)}
+            onChange={(event) =>
+              setSpecialtyId(event.target.value)
+            }
             required
             disabled={!filteredSpecialties.length}
           >
@@ -403,13 +492,20 @@ export function ProviderForm({
           <Input
             name="slug"
             defaultValue={row?.slug ?? ""}
-            placeholder="doctor-name"
+            placeholder={
+              isCosmetic
+                ? "cosmetic-doctor-name"
+                : "doctor-name"
+            }
             className="ltr"
           />
         </Field>
 
         <Field label="الحالة">
-          <Select name="status" defaultValue={row?.status ?? "ACTIVE"}>
+          <Select
+            name="status"
+            defaultValue={row?.status ?? "ACTIVE"}
+          >
             <option value="DRAFT">Draft</option>
             <option value="ACTIVE">Active</option>
             <option value="INACTIVE">Inactive</option>
@@ -434,12 +530,17 @@ export function ProviderForm({
           <Select
             name="governorateId"
             value={governorateId}
-            onChange={(event) => setGovernorateId(event.target.value)}
+            onChange={(event) =>
+              setGovernorateId(event.target.value)
+            }
             required
             disabled={!governorates.length}
           >
             {governorates.map((governorate) => (
-              <option key={governorate.id} value={governorate.id}>
+              <option
+                key={governorate.id}
+                value={governorate.id}
+              >
                 {governorate.name}
               </option>
             ))}
@@ -484,19 +585,21 @@ export function ProviderForm({
         <div className="rounded-2xl border border-borderSoft bg-slate-50 p-4 text-sm font-bold leading-7 text-slate-600 md:col-span-2 xl:col-span-3">
           {filteredAreas.length ? (
             <p>
-              المناطق المعروضة مرتبطة بالمحافظة المختارة فقط. إذا اخترت بغداد،
-              تظهر مناطق بغداد فقط.
+              المناطق المعروضة مرتبطة بالمحافظة المختارة فقط. إذا اخترت
+              بغداد، تظهر مناطق بغداد فقط.
             </p>
           ) : (
             <p className="text-red-700">
-              لا توجد مناطق مرتبطة بهذه المحافظة. أضف منطقة لهذه المحافظة أولاً.
+              لا توجد مناطق مرتبطة بهذه المحافظة. أضف منطقة لهذه
+              المحافظة أولاً.
             </p>
           )}
 
           {!filteredSpecialties.length ? (
             <p className="mt-1 text-red-700">
-              لا توجد اختصاصات مناسبة لهذا النوع. أضف اختصاص مناسب للطبيب أو
-              طبيب الأسنان أولاً.
+              {isCosmetic
+                ? "لا توجد اختصاصات لأطباء التجميل. أضف اختصاصاً خاصاً بأطباء التجميل أولاً."
+                : "لا توجد اختصاصات مناسبة لهذا النوع. أضف اختصاصاً مناسباً للطبيب أو طبيب الأسنان أولاً."}
             </p>
           ) : null}
         </div>
@@ -548,7 +651,11 @@ export function ProviderForm({
 
       <AdminSection
         title="التفاصيل والظهور"
-        description="النقاط والترتيب تساعدك تتحكم بمن يظهر أولاً، والنبذة وساعات الدوام تظهر داخل صفحة الطبيب."
+        description={
+          isCosmetic
+            ? "النقاط والترتيب تساعدك تتحكم بمن يظهر أولاً، والنبذة وساعات الدوام تظهر داخل صفحة طبيب التجميل."
+            : "النقاط والترتيب تساعدك تتحكم بمن يظهر أولاً، والنبذة وساعات الدوام تظهر داخل صفحة الطبيب."
+        }
       >
         <Field label="الترتيب اليدوي">
           <Input
@@ -582,7 +689,11 @@ export function ProviderForm({
             <Textarea
               name="bio"
               defaultValue={row?.bio ?? ""}
-              placeholder="نبذة مختصرة عن الطبيب أو الخبرة أو الخدمات..."
+              placeholder={
+                isCosmetic
+                  ? "نبذة عن طبيب التجميل وخبرته وخدماته..."
+                  : "نبذة مختصرة عن الطبيب أو الخبرة أو الخدمات..."
+              }
             />
           </Field>
         </div>
@@ -597,7 +708,9 @@ export function ProviderForm({
         {isImageUploading
           ? "انتظر حتى يكتمل رفع الصورة..."
           : isCreate
-            ? "إضافة مقدم خدمة"
+            ? isCosmetic
+              ? "إضافة طبيب تجميل"
+              : "إضافة مقدم خدمة"
             : "حفظ التعديل"}
       </Button>
     </form>

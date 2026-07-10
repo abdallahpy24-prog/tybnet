@@ -8,9 +8,17 @@ import {
 } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Field, Input, Select, Textarea } from "@/components/ui/input";
+import {
+  Field,
+  Input,
+  Select,
+  Textarea
+} from "@/components/ui/input";
 
-type ProviderType = "DOCTOR" | "DENTIST";
+type ProviderType =
+  | "DOCTOR"
+  | "DENTIST"
+  | "COSMETIC_DOCTOR";
 
 type ProviderOption = {
   id: string;
@@ -32,7 +40,9 @@ type OfferRow = {
   providerId: string | null;
 };
 
-type FormAction = (formData: FormData) => void | Promise<void>;
+type FormAction = (
+  formData: FormData
+) => void | Promise<void>;
 
 type OfferFormProps = {
   mode: "create" | "edit";
@@ -48,11 +58,17 @@ type AdminSectionProps = {
   children: ReactNode;
 };
 
-function AdminSection({ title, description, children }: AdminSectionProps) {
+function AdminSection({
+  title,
+  description,
+  children
+}: AdminSectionProps) {
   return (
     <section className="rounded-3xl border border-borderSoft bg-white p-4 shadow-sm md:col-span-2 xl:col-span-3">
       <div className="mb-4 border-b border-borderSoft pb-3">
-        <h3 className="text-base font-extrabold text-slate-900">{title}</h3>
+        <h3 className="text-base font-extrabold text-slate-900">
+          {title}
+        </h3>
 
         {description ? (
           <p className="mt-1 text-sm font-semibold leading-6 text-slate-500">
@@ -61,16 +77,28 @@ function AdminSection({ title, description, children }: AdminSectionProps) {
         ) : null}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{children}</div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {children}
+      </div>
     </section>
   );
 }
 
 function providerTypeLabel(type: ProviderType) {
-  return type === "DENTIST" ? "طبيب أسنان" : "طبيب";
+  if (type === "DENTIST") {
+    return "طبيب أسنان";
+  }
+
+  if (type === "COSMETIC_DOCTOR") {
+    return "طبيب تجميل";
+  }
+
+  return "طبيب";
 }
 
-function dateInputValue(value: Date | string | null | undefined) {
+function dateInputValue(
+  value: Date | string | null | undefined
+) {
   if (!value) return "";
 
   if (value instanceof Date) {
@@ -97,10 +125,15 @@ function ImageUploadField({
   onChange,
   onUploadingChange
 }: ImageUploadFieldProps) {
-  const [uploading, setUploading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [uploading, setUploading] =
+    useState(false);
 
-  async function uploadImage(event: ChangeEvent<HTMLInputElement>) {
+  const [message, setMessage] =
+    useState<string | null>(null);
+
+  async function uploadImage(
+    event: ChangeEvent<HTMLInputElement>
+  ) {
     const file = event.target.files?.[0];
 
     if (!file) return;
@@ -114,7 +147,9 @@ function ImageUploadField({
     }
 
     if (file.size > 3 * 1024 * 1024) {
-      setMessage("حجم الصورة يجب ألا يتجاوز 3MB.");
+      setMessage(
+        "حجم الصورة يجب ألا يتجاوز 3MB."
+      );
       event.target.value = "";
       return;
     }
@@ -131,7 +166,9 @@ function ImageUploadField({
         body: formData
       });
 
-      const result = (await response.json().catch(() => null)) as
+      const result = (await response
+        .json()
+        .catch(() => null)) as
         | {
             ok?: boolean;
             url?: string;
@@ -144,20 +181,31 @@ function ImageUploadField({
 
       if (!response.ok) {
         throw new Error(
-          result?.message || result?.error || "فشل رفع الصورة."
+          result?.message ||
+            result?.error ||
+            "فشل رفع الصورة."
         );
       }
 
-      const uploadedUrl = result?.url || result?.imageUrl || result?.path;
+      const uploadedUrl =
+        result?.url ||
+        result?.imageUrl ||
+        result?.path;
 
       if (!uploadedUrl) {
-        throw new Error("تم الرفع لكن الخادم لم يرجع رابط الصورة.");
+        throw new Error(
+          "تم الرفع لكن الخادم لم يرجع رابط الصورة."
+        );
       }
 
       onChange(uploadedUrl);
       setMessage("تم رفع الصورة بنجاح.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "فشل رفع الصورة.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "فشل رفع الصورة."
+      );
     } finally {
       setUploading(false);
       onUploadingChange(false);
@@ -203,15 +251,19 @@ function ImageUploadField({
             <p className="text-sm font-extrabold text-slate-800">
               رفع صورة من الجهاز
             </p>
+
             <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-              يفضل صورة أفقية واضحة للعرض، بصيغة JPG أو PNG أو WebP، والحجم أقل
-              من 3MB.
+              يفضل صورة أفقية واضحة للعرض، بصيغة JPG
+              أو PNG أو WebP، والحجم أقل من 3MB.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
             <label className="focus-ring inline-flex h-10 cursor-pointer items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white transition hover:brightness-105">
-              {uploading ? "جاري الرفع..." : "اختيار صورة"}
+              {uploading
+                ? "جاري الرفع..."
+                : "اختيار صورة"}
+
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/*"
@@ -268,12 +320,27 @@ export function OfferForm({
 }: OfferFormProps) {
   const isEdit = mode === "edit";
 
-  const [imageUrl, setImageUrl] = useState(row?.imageUrl ?? "");
-  const [isImageUploading, setIsImageUploading] = useState(false);
+  const [imageUrl, setImageUrl] = useState(
+    row?.imageUrl ?? ""
+  );
+
+  const [
+    isImageUploading,
+    setIsImageUploading
+  ] = useState(false);
 
   return (
-    <form action={action} className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-      {isEdit ? <input type="hidden" name="id" value={row?.id} /> : null}
+    <form
+      action={action}
+      className="grid gap-5 md:grid-cols-2 xl:grid-cols-3"
+    >
+      {isEdit ? (
+        <input
+          type="hidden"
+          name="id"
+          value={row?.id}
+        />
+      ) : null}
 
       <AdminSection
         title="بيانات العرض"
@@ -300,19 +367,32 @@ export function OfferForm({
         <Field label="نص الخصم">
           <Input
             name="discountText"
-            defaultValue={row?.discountText ?? ""}
+            defaultValue={
+              row?.discountText ?? ""
+            }
             placeholder="خصم 20%"
           />
         </Field>
 
         <Field label="مقدم الخدمة">
-          <Select name="providerId" defaultValue={row?.providerId ?? ""}>
+          <Select
+            name="providerId"
+            defaultValue={
+              row?.providerId ?? ""
+            }
+          >
             <option value="">بدون ربط</option>
 
             {providers.map((provider) => (
-              <option key={provider.id} value={provider.id}>
-                {provider.titlePrefix} {provider.name} -{" "}
-                {providerTypeLabel(provider.type)}
+              <option
+                key={provider.id}
+                value={provider.id}
+              >
+                {provider.titlePrefix}{" "}
+                {provider.name} -{" "}
+                {providerTypeLabel(
+                  provider.type
+                )}
               </option>
             ))}
           </Select>
@@ -322,7 +402,9 @@ export function OfferForm({
           <input
             name="isActive"
             type="checkbox"
-            defaultChecked={row?.isActive ?? true}
+            defaultChecked={
+              row?.isActive ?? true
+            }
           />
           نشط
         </label>
@@ -336,7 +418,9 @@ export function OfferForm({
           <Input
             name="startsAt"
             type="date"
-            defaultValue={dateInputValue(row?.startsAt)}
+            defaultValue={dateInputValue(
+              row?.startsAt
+            )}
           />
         </Field>
 
@@ -344,7 +428,9 @@ export function OfferForm({
           <Input
             name="endsAt"
             type="date"
-            defaultValue={dateInputValue(row?.endsAt)}
+            defaultValue={dateInputValue(
+              row?.endsAt
+            )}
           />
         </Field>
       </AdminSection>
@@ -356,7 +442,9 @@ export function OfferForm({
         <ImageUploadField
           value={imageUrl}
           onChange={setImageUrl}
-          onUploadingChange={setIsImageUploading}
+          onUploadingChange={
+            setIsImageUploading
+          }
         />
       </AdminSection>
 
@@ -368,7 +456,9 @@ export function OfferForm({
           <Field label="الوصف">
             <Textarea
               name="description"
-              defaultValue={row?.description ?? ""}
+              defaultValue={
+                row?.description ?? ""
+              }
               placeholder="تفاصيل العرض، الشروط، أو الخدمات المشمولة..."
             />
           </Field>
@@ -378,10 +468,14 @@ export function OfferForm({
       <Button
         type="submit"
         disabled={isImageUploading}
-        variant={isEdit ? "secondary" : undefined}
+        variant={
+          isEdit ? "secondary" : undefined
+        }
         className="md:col-span-2 xl:col-span-3"
       >
-        {isImageUploading ? "انتظر حتى يكتمل رفع الصورة..." : submit}
+        {isImageUploading
+          ? "انتظر حتى يكتمل رفع الصورة..."
+          : submit}
       </Button>
     </form>
   );

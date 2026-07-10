@@ -16,11 +16,13 @@ enum Role {
 enum ProviderType {
   DOCTOR
   DENTIST
+  COSMETIC_DOCTOR
 }
 
 enum SpecialtyFor {
   DOCTOR
   DENTIST
+  COSMETIC_DOCTOR
   BOTH
 }
 
@@ -54,34 +56,36 @@ model User {
 }
 
 model Governorate {
-  id         String     @id @default(cuid())
-  name       String     @unique
-  slug       String     @unique
-  sortOrder  Int        @default(0)
-  isActive   Boolean    @default(true)
-  areas      Area[]
-  providers  Provider[]
-  pharmacies Pharmacy[]
-  labs       Lab[]
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  id              String           @id @default(cuid())
+  name            String           @unique
+  slug            String           @unique
+  sortOrder       Int              @default(0)
+  isActive        Boolean          @default(true)
+  areas           Area[]
+  providers       Provider[]
+  pharmacies      Pharmacy[]
+  labs            Lab[]
+  cosmeticCenters CosmeticCenter[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   @@index([isActive, sortOrder])
 }
 
 model Area {
-  id            String      @id @default(cuid())
-  name          String
-  slug          String
-  governorateId String
-  governorate   Governorate @relation(fields: [governorateId], references: [id])
-  sortOrder     Int         @default(0)
-  isActive      Boolean     @default(true)
-  providers     Provider[]
-  pharmacies    Pharmacy[]
-  labs          Lab[]
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id              String           @id @default(cuid())
+  name            String
+  slug            String
+  governorateId   String
+  governorate     Governorate      @relation(fields: [governorateId], references: [id])
+  sortOrder       Int              @default(0)
+  isActive        Boolean          @default(true)
+  providers       Provider[]
+  pharmacies      Pharmacy[]
+  labs            Lab[]
+  cosmeticCenters CosmeticCenter[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   @@unique([governorateId, name])
   @@unique([governorateId, slug])
@@ -186,6 +190,38 @@ model Lab {
   mapurl        String?
   phone         String?
   whatsapp      String?
+  imageUrl      String?
+  workingHours  String?
+  status        PublishStatus @default(DRAFT)
+  isFeatured    Boolean       @default(false)
+  sortOrder     Int           @default(0)
+  inquiryCount  Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([status, governorateId, areaId])
+  @@index([status, isFeatured])
+  @@index([status, isFeatured, inquiryCount])
+  @@index([status, sortOrder])
+  @@index([inquiryCount])
+  @@index([createdAt])
+}
+
+model CosmeticCenter {
+  id            String        @id @default(cuid())
+  name          String
+  slug          String        @unique
+  governorateId String
+  areaId        String
+  governorate   Governorate   @relation(fields: [governorateId], references: [id])
+  area          Area          @relation(fields: [areaId], references: [id])
+  bio           String?
+  services      String?
+  address       String?
+  mapurl        String?
+  phone         String?
+  whatsapp      String?
+  instagramUrl  String?
   imageUrl      String?
   workingHours  String?
   status        PublishStatus @default(DRAFT)

@@ -12,17 +12,20 @@ import {
   Stethoscope,
   UserPlus
 } from "lucide-react";
+
 import { SiteShell } from "@/components/layout/site-shell";
+import { BeautyCategoryCard } from "@/components/public/beauty-category-card";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getHomeData } from "@/lib/queries";
 import { getSettingsMap } from "@/lib/settings";
 
 export default async function HomePage() {
-  const [settings, homeData] = await Promise.all([
-    getSettingsMap(),
-    getHomeData()
-  ]);
+  const [settings, homeData] =
+    await Promise.all([
+      getSettingsMap(),
+      getHomeData()
+    ]);
 
   const stats = [
     {
@@ -54,17 +57,20 @@ export default async function HomePage() {
   const services = [
     {
       title: "ابحث حسب المحافظة والمنطقة",
-      description: "صفّي النتائج حسب موقعك حتى تصل إلى مقدم خدمة مناسب وقريب منك.",
+      description:
+        "صفّي النتائج حسب موقعك حتى تصل إلى مقدم خدمة مناسب وقريب منك.",
       icon: MapPin
     },
     {
       title: "راجع التفاصيل قبل التواصل",
-      description: "اطّلع على الاختصاص، العنوان، أوقات الدوام، ووسائل التواصل المتاحة.",
+      description:
+        "اطّلع على الاختصاص، العنوان، أوقات الدوام، ووسائل التواصل المتاحة.",
       icon: Search
     },
     {
       title: "أرسل طلب موعد بسهولة",
-      description: "استخدم نموذج طلب الموعد أو تواصل مباشرة عبر واتساب عند توفره.",
+      description:
+        "استخدم نموذج طلب الموعد أو تواصل مباشرة عبر واتساب عند توفره.",
       icon: CalendarCheck
     }
   ];
@@ -75,7 +81,7 @@ export default async function HomePage() {
 
   const heroDescription =
     settings.heroDescription ||
-    "طب نت منصة عراقية تنظّم بيانات الأطباء وأطباء الأسنان والصيدليات والمختبرات، وتساعدك على البحث حسب المحافظة والمنطقة والاختصاص، مع إمكانية التواصل أو طلب موعد بسهولة.";
+    "طب نت منصة عراقية تنظّم بيانات الأطباء وأطباء الأسنان وأطباء التجميل ومراكز التجميل والصيدليات والمختبرات، وتساعدك على البحث حسب المحافظة والمنطقة والاختصاص، مع إمكانية التواصل أو طلب موعد بسهولة.";
 
   return (
     <SiteShell>
@@ -83,7 +89,10 @@ export default async function HomePage() {
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div>
             <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-primary-soft px-4 py-2 text-sm font-black text-primary-dark">
-              <Sparkles className="h-4 w-4" aria-hidden="true" />
+              <Sparkles
+                className="h-4 w-4"
+                aria-hidden="true"
+              />
               منصة عراقية للخدمات الطبية
             </div>
 
@@ -98,14 +107,23 @@ export default async function HomePage() {
             <div className="mt-7 flex flex-wrap gap-3">
               <Link href="/doctors">
                 <Button type="button">
-                  <Search className="h-4 w-4" aria-hidden="true" />
+                  <Search
+                    className="h-4 w-4"
+                    aria-hidden="true"
+                  />
                   ابحث عن طبيب
                 </Button>
               </Link>
 
               <Link href="/join">
-                <Button type="button" variant="secondary">
-                  <UserPlus className="h-4 w-4" aria-hidden="true" />
+                <Button
+                  type="button"
+                  variant="secondary"
+                >
+                  <UserPlus
+                    className="h-4 w-4"
+                    aria-hidden="true"
+                  />
                   انضم إلى طب نت
                 </Button>
               </Link>
@@ -113,25 +131,42 @@ export default async function HomePage() {
 
             <div className="mt-6 flex flex-col gap-2 text-sm font-bold text-slate-500 sm:flex-row sm:flex-wrap">
               <span>أطباء</span>
-              <span className="hidden sm:inline">•</span>
+              <span className="hidden sm:inline">
+                •
+              </span>
               <span>أطباء أسنان</span>
-              <span className="hidden sm:inline">•</span>
+              <span className="hidden sm:inline">
+                •
+              </span>
+              <span>التجميل</span>
+              <span className="hidden sm:inline">
+                •
+              </span>
               <span>صيدليات</span>
-              <span className="hidden sm:inline">•</span>
+              <span className="hidden sm:inline">
+                •
+              </span>
               <span>مختبرات</span>
-              <span className="hidden sm:inline">•</span>
+              <span className="hidden sm:inline">
+                •
+              </span>
               <span>عروض طبية</span>
             </div>
           </div>
 
           <Card className="overflow-hidden p-0">
             <div className="bg-gradient-to-br from-primary to-primary-dark p-6 text-white">
-              <p className="text-sm font-bold opacity-90">ابدأ من هنا</p>
+              <p className="text-sm font-bold opacity-90">
+                ابدأ من هنا
+              </p>
+
               <h2 className="mt-2 text-3xl font-black">
                 اختر نوع الخدمة التي تبحث عنها
               </h2>
+
               <p className="mt-3 text-sm leading-7 opacity-90">
-                النتائج تظهر من قاعدة بيانات طب نت بعد تفعيلها من لوحة الإدارة.
+                النتائج تظهر من قاعدة بيانات طب نت بعد
+                تفعيلها من لوحة الإدارة.
               </p>
             </div>
 
@@ -145,16 +180,30 @@ export default async function HomePage() {
                     href={stat.href}
                     className="rounded-2xl border border-borderSoft bg-surface p-4 transition hover:border-primary-soft hover:bg-primary-soft"
                   >
-                    <Icon className="h-6 w-6 text-primary" aria-hidden="true" />
+                    <Icon
+                      className="h-6 w-6 text-primary"
+                      aria-hidden="true"
+                    />
+
                     <p className="mt-3 text-3xl font-black text-navy">
                       {stat.value}
                     </p>
+
                     <p className="text-sm font-bold text-slate-500">
                       {stat.label}
                     </p>
                   </Link>
                 );
               })}
+
+              <BeautyCategoryCard
+                cosmeticDoctorsCount={
+                  homeData.counts.cosmeticDoctors
+                }
+                cosmeticCentersCount={
+                  homeData.counts.cosmeticCenters
+                }
+              />
             </div>
           </Card>
         </div>
@@ -168,7 +217,10 @@ export default async function HomePage() {
             return (
               <Card key={service.title}>
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary">
-                  <Icon className="h-6 w-6" aria-hidden="true" />
+                  <Icon
+                    className="h-6 w-6"
+                    aria-hidden="true"
+                  />
                 </div>
 
                 <h2 className="mt-4 text-xl font-black text-navy">
@@ -188,16 +240,22 @@ export default async function HomePage() {
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <Card>
             <div className="flex items-center gap-3">
-              <ShieldCheck className="h-8 w-8 text-primary" aria-hidden="true" />
+              <ShieldCheck
+                className="h-8 w-8 text-primary"
+                aria-hidden="true"
+              />
+
               <h2 className="text-2xl font-black text-navy">
                 معلومات أوضح قبل قرار الزيارة
               </h2>
             </div>
 
             <p className="mt-4 text-sm leading-8 text-slate-600">
-              يساعدك طب نت على مراجعة البيانات الأساسية لمقدم الخدمة قبل
-              التواصل، مثل الاختصاص، المنطقة، العنوان، أوقات الدوام، والصور
-              المتاحة. ننصح دائماً بالتأكد من التفاصيل مباشرة قبل الزيارة.
+              يساعدك طب نت على مراجعة البيانات الأساسية
+              لمقدم الخدمة قبل التواصل، مثل الاختصاص،
+              المنطقة، العنوان، أوقات الدوام، والصور
+              المتاحة. ننصح دائماً بالتأكد من التفاصيل
+              مباشرة قبل الزيارة.
             </p>
 
             <Link
@@ -205,7 +263,10 @@ export default async function HomePage() {
               className="mt-5 inline-flex items-center gap-2 text-sm font-black text-primary-dark transition hover:text-primary"
             >
               اقرأ إخلاء المسؤولية الطبية
-              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              <ArrowLeft
+                className="h-4 w-4"
+                aria-hidden="true"
+              />
             </Link>
           </Card>
 
@@ -219,21 +280,29 @@ export default async function HomePage() {
             </h2>
 
             <p className="mt-3 max-w-2xl text-sm leading-8 text-slate-600">
-              إذا كنت طبيباً، طبيب أسنان، صيدلية، مختبراً، أو مركزاً صحياً،
-              يمكنك طلب إضافة بياناتك داخل المنصة حتى يصل إليك الزائرون بشكل
-              أسهل وأكثر تنظيماً.
+              إذا كنت طبيباً، طبيب أسنان، طبيب تجميل،
+              مركز تجميل، صيدلية، مختبراً، أو مركزاً
+              صحياً، يمكنك طلب إضافة بياناتك داخل المنصة
+              حتى يصل إليك الزائرون بشكل أسهل وأكثر
+              تنظيماً.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
               <Link href="/join">
                 <Button type="button">
-                  <UserPlus className="h-4 w-4" aria-hidden="true" />
+                  <UserPlus
+                    className="h-4 w-4"
+                    aria-hidden="true"
+                  />
                   انضم إلى طب نت
                 </Button>
               </Link>
 
               <Link href="/contact">
-                <Button type="button" variant="secondary">
+                <Button
+                  type="button"
+                  variant="secondary"
+                >
                   تواصل معنا
                 </Button>
               </Link>

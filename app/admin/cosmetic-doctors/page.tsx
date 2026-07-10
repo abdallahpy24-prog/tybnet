@@ -1,8 +1,8 @@
-﻿import {
-  createProvider,
-  deleteProvider,
-  updateProvider
-} from "@/lib/actions/admin";
+import {
+  createCosmeticDoctor,
+  deleteCosmeticDoctor,
+  updateCosmeticDoctor
+} from "@/lib/actions/cosmetic";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/admin/page-header";
 import { FormShell } from "@/components/admin/form-shell";
@@ -11,66 +11,60 @@ import { StatusPill } from "@/components/admin/status-pill";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
-function providerTypeLabel(
-  type: "DOCTOR" | "DENTIST" | "COSMETIC_DOCTOR"
-) {
-  if (type === "DENTIST") {
-    return "طبيب أسنان";
-  }
+export default async function CosmeticDoctorsPage() {
+  const [governorates, areas, specialties, rows] =
+    await Promise.all([
+      prisma.governorate.findMany({
+        orderBy: [
+          { sortOrder: "asc" },
+          { name: "asc" }
+        ]
+      }),
 
-  if (type === "COSMETIC_DOCTOR") {
-    return "طبيب تجميل";
-  }
+      prisma.area.findMany({
+        include: {
+          governorate: true
+        },
+        orderBy: [
+          { sortOrder: "asc" },
+          { name: "asc" }
+        ]
+      }),
 
-  return "طبيب";
-}
+      prisma.specialty.findMany({
+        where: {
+          forType: "COSMETIC_DOCTOR"
+        },
+        orderBy: [
+          { isActive: "desc" },
+          { name: "asc" }
+        ]
+      }),
 
-export default async function ProvidersPage() {
-  const [governorates, areas, specialties, rows] = await Promise.all([
-    prisma.governorate.findMany({
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
-    }),
+      prisma.provider.findMany({
+        where: {
+          type: "COSMETIC_DOCTOR"
+        },
+        include: {
+          governorate: true,
+          area: true,
+          specialty: true
+        },
+        orderBy: [
+          { isFeatured: "desc" },
+          { bookingPoints: "desc" },
+          { sortOrder: "asc" },
+          { updatedAt: "desc" }
+        ]
+      })
+    ]);
 
-    prisma.area.findMany({
-      include: {
-        governorate: true
-      },
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
-    }),
-
-    prisma.specialty.findMany({
-      where: {
-        forType: {
-          in: ["DOCTOR", "DENTIST", "BOTH"]
-        }
-      },
-      orderBy: [{ name: "asc" }]
-    }),
-
-    prisma.provider.findMany({
-      where: {
-        type: {
-          in: ["DOCTOR", "DENTIST"]
-        }
-      },
-      include: {
-        governorate: true,
-        area: true,
-        specialty: true
-      },
-      orderBy: [
-        { isFeatured: "desc" },
-        { bookingPoints: "desc" },
-        { sortOrder: "asc" },
-        { updatedAt: "desc" }
-      ]
+  const governorateOptions = governorates.map(
+    (governorate) => ({
+      id: governorate.id,
+      name: governorate.name
     })
-  ]);
-
-  const governorateOptions = governorates.map((governorate) => ({
-    id: governorate.id,
-    name: governorate.name
-  }));
+  );
 
   const areaOptions = areas.map((area) => ({
     id: area.id,
@@ -79,38 +73,48 @@ export default async function ProvidersPage() {
     governorateName: area.governorate.name
   }));
 
-  const specialtyOptions = specialties.map((specialty) => ({
-    id: specialty.id,
-    name: specialty.name,
-    forType: specialty.forType
-  }));
+  const specialtyOptions = specialties.map(
+    (specialty) => ({
+      id: specialty.id,
+      name: specialty.name,
+      forType: specialty.forType
+    })
+  );
 
   const canCreate =
     governorateOptions.length > 0 &&
     areaOptions.length > 0 &&
-    specialtyOptions.length > 0;
+    specialtyOptions.some(
+      (specialty) => specialty.forType === "COSMETIC_DOCTOR"
+    );
 
   return (
     <>
       <PageHeader
-        title="الأطباء وأطباء الأسنان"
-        description="إدارة الأطباء وأطباء الأسنان من مكان واحد: البيانات، الاختصاص، الموقع، التواصل، الصورة، النقاط، والترتيب."
+        title="أطباء التجميل"
+        description="إدارة أطباء التجميل بصورة مستقلة: الاختصاص، الموقع، التواصل، الصورة، النقاط، الظهور والترتيب."
       />
 
-      <FormShell title="إضافة مقدم خدمة">
+      <FormShell title="إضافة طبيب تجميل">
         {canCreate ? (
           <ProviderForm
             mode="create"
-            action={createProvider}
+            category="COSMETIC"
+            action={createCosmeticDoctor}
             governorates={governorateOptions}
             areas={areaOptions}
             specialties={specialtyOptions}
           />
         ) : (
-          <p className="text-sm font-bold text-red-700">
-            أكمل بيانات المحافظات والمناطق والاختصاصات أولاً قبل إضافة الأطباء
-            وأطباء الأسنان.
-          </p>
+          <div className="space-y-2 text-sm font-bold text-red-700">
+            <p>
+              أكمل بيانات المحافظات والمناطق أولاً.
+            </p>
+            <p>
+              يجب أيضاً إضافة اختصاص واحد على الأقل من نوع
+              أطباء التجميل داخل صفحة الاختصاصات.
+            </p>
+          </div>
         )}
       </FormShell>
 
@@ -120,7 +124,8 @@ export default async function ProvidersPage() {
             <Card key={row.id}>
               <ProviderForm
                 mode="edit"
-                action={updateProvider}
+                category="COSMETIC"
+                action={updateCosmeticDoctor}
                 governorates={governorateOptions}
                 areas={areaOptions}
                 specialties={specialtyOptions}
@@ -152,8 +157,8 @@ export default async function ProvidersPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusPill value={row.status} />
 
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
-                    {providerTypeLabel(row.type)}
+                  <span className="rounded-full bg-fuchsia-50 px-3 py-1 text-xs font-extrabold text-fuchsia-700">
+                    طبيب تجميل
                   </span>
 
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
@@ -191,10 +196,21 @@ export default async function ProvidersPage() {
                       واتساب
                     </span>
                   ) : null}
+
+                  {row.instagramUrl ? (
+                    <span className="rounded-full bg-pink-50 px-3 py-1 text-xs font-extrabold text-pink-700">
+                      إنستغرام
+                    </span>
+                  ) : null}
                 </div>
 
-                <form action={deleteProvider}>
-                  <input type="hidden" name="id" value={row.id} />
+                <form action={deleteCosmeticDoctor}>
+                  <input
+                    type="hidden"
+                    name="id"
+                    value={row.id}
+                  />
+
                   <Button type="submit" variant="danger">
                     حذف/تعطيل آمن
                   </Button>
@@ -204,7 +220,7 @@ export default async function ProvidersPage() {
           ))
         ) : (
           <Card className="text-center text-sm font-bold text-slate-500">
-            لا توجد بيانات أطباء بعد.
+            لا يوجد أطباء تجميل بعد.
           </Card>
         )}
       </div>

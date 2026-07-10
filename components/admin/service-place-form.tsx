@@ -5,14 +5,23 @@ import {
   useMemo,
   useState,
   type ChangeEvent,
-  type ReactNode,
+  type ReactNode
 } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Field, Input, Select, Textarea } from "@/components/ui/input";
+import {
+  Field,
+  Input,
+  Select,
+  Textarea
+} from "@/components/ui/input";
 
 type Status = "DRAFT" | "ACTIVE" | "INACTIVE";
-type ServiceKind = "pharmacy" | "lab";
+
+type ServiceKind =
+  | "pharmacy"
+  | "lab"
+  | "cosmetic-center";
 
 type GovernorateOption = {
   id: string;
@@ -34,20 +43,22 @@ type ServicePlaceRow = {
   areaId: string;
   whatsapp: string | null;
   phone: string | null;
+  instagramUrl?: string | null;
   imageUrl: string | null;
   status: Status;
   isFeatured: boolean;
   address: string | null;
   mapurl?: string | null;
   workingHours: string | null;
-
   bio?: string | null;
   services?: string | null;
   sortOrder?: number | null;
   inquiryCount?: number | null;
 };
 
-type FormAction = (formData: FormData) => void | Promise<void>;
+type FormAction = (
+  formData: FormData
+) => void | Promise<void>;
 
 type ServicePlaceFormProps = {
   kind: ServiceKind;
@@ -64,11 +75,17 @@ type AdminSectionProps = {
   children: ReactNode;
 };
 
-function AdminSection({ title, description, children }: AdminSectionProps) {
+function AdminSection({
+  title,
+  description,
+  children
+}: AdminSectionProps) {
   return (
     <section className="rounded-3xl border border-borderSoft bg-white p-4 shadow-sm md:col-span-2 xl:col-span-3">
       <div className="mb-4 border-b border-borderSoft pb-3">
-        <h3 className="text-base font-extrabold text-slate-900">{title}</h3>
+        <h3 className="text-base font-extrabold text-slate-900">
+          {title}
+        </h3>
 
         {description ? (
           <p className="mt-1 text-sm font-semibold leading-6 text-slate-500">
@@ -97,12 +114,17 @@ function ImageUploadField({
   label,
   placeholder,
   onChange,
-  onUploadingChange,
+  onUploadingChange
 }: ImageUploadFieldProps) {
-  const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] =
+    useState(false);
 
-  async function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
+  const [error, setError] =
+    useState<string | null>(null);
+
+  async function handleImageChange(
+    event: ChangeEvent<HTMLInputElement>
+  ) {
     const file = event.target.files?.[0];
 
     if (!file) return;
@@ -130,10 +152,12 @@ function ImageUploadField({
     try {
       const response = await fetch("/api/upload", {
         method: "POST",
-        body: formData,
+        body: formData
       });
 
-      const data = (await response.json().catch(() => null)) as
+      const data = (await response
+        .json()
+        .catch(() => null)) as
         | {
             ok?: boolean;
             url?: string;
@@ -146,14 +170,21 @@ function ImageUploadField({
 
       if (!response.ok) {
         throw new Error(
-          data?.message || data?.error || "صار خطأ أثناء رفع الصورة."
+          data?.message ||
+            data?.error ||
+            "صار خطأ أثناء رفع الصورة."
         );
       }
 
-      const uploadedUrl = data?.url || data?.imageUrl || data?.path;
+      const uploadedUrl =
+        data?.url ||
+        data?.imageUrl ||
+        data?.path;
 
       if (!uploadedUrl) {
-        throw new Error("تم الرفع لكن السيرفر ما رجّع رابط الصورة.");
+        throw new Error(
+          "تم الرفع لكن السيرفر ما رجّع رابط الصورة."
+        );
       }
 
       onChange(uploadedUrl);
@@ -176,7 +207,9 @@ function ImageUploadField({
         <Input
           name="imageUrl"
           value={value}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) =>
+            onChange(event.target.value)
+          }
           placeholder={placeholder}
           className="ltr"
         />
@@ -188,13 +221,18 @@ function ImageUploadField({
             <p className="text-sm font-extrabold text-slate-800">
               رفع صورة من الجهاز
             </p>
+
             <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-              يفضل صورة واضحة بصيغة JPG أو PNG أو WebP، والحجم أقل من 3MB.
+              يفضل صورة واضحة بصيغة JPG أو PNG أو WebP،
+              والحجم أقل من 3MB.
             </p>
           </div>
 
           <label className="inline-flex h-11 cursor-pointer items-center justify-center rounded-2xl bg-primary px-5 text-sm font-extrabold text-white transition hover:opacity-90">
-            {isUploading ? "جاري الرفع..." : "اختيار صورة"}
+            {isUploading
+              ? "جاري الرفع..."
+              : "اختيار صورة"}
+
             <input
               type="file"
               accept="image/*"
@@ -250,26 +288,47 @@ export function ServicePlaceForm({
   governorates,
   areas,
   submit,
-  row,
+  row
 }: ServicePlaceFormProps) {
   const isEdit = Boolean(row);
   const isLab = kind === "lab";
+  const isCosmeticCenter =
+    kind === "cosmetic-center";
 
-  const firstGovernorateId = row?.governorateId ?? governorates[0]?.id ?? "";
-  const [governorateId, setGovernorateId] = useState(firstGovernorateId);
+  const firstGovernorateId =
+    row?.governorateId ??
+    governorates[0]?.id ??
+    "";
+
+  const [governorateId, setGovernorateId] =
+    useState(firstGovernorateId);
 
   const filteredAreas = useMemo(() => {
-    return areas.filter((area) => area.governorateId === governorateId);
+    return areas.filter(
+      (area) =>
+        area.governorateId === governorateId
+    );
   }, [areas, governorateId]);
 
   const firstAreaId =
     row?.areaId ??
-    areas.find((area) => area.governorateId === firstGovernorateId)?.id ??
+    areas.find(
+      (area) =>
+        area.governorateId === firstGovernorateId
+    )?.id ??
     "";
 
-  const [areaId, setAreaId] = useState(firstAreaId);
-  const [imageUrl, setImageUrl] = useState(row?.imageUrl ?? "");
-  const [isImageUploading, setIsImageUploading] = useState(false);
+  const [areaId, setAreaId] =
+    useState(firstAreaId);
+
+  const [imageUrl, setImageUrl] = useState(
+    row?.imageUrl ?? ""
+  );
+
+  const [
+    isImageUploading,
+    setIsImageUploading
+  ] = useState(false);
 
   useEffect(() => {
     if (!governorateId && governorates[0]?.id) {
@@ -278,37 +337,83 @@ export function ServicePlaceForm({
   }, [governorateId, governorates]);
 
   useEffect(() => {
-    const currentAreaIsValid = filteredAreas.some((area) => area.id === areaId);
+    const currentAreaIsValid =
+      filteredAreas.some(
+        (area) => area.id === areaId
+      );
 
     if (!currentAreaIsValid) {
       setAreaId(filteredAreas[0]?.id ?? "");
     }
   }, [filteredAreas, areaId]);
 
-  const canSubmit = Boolean(governorateId && areaId && !isImageUploading);
+  const canSubmit = Boolean(
+    governorateId &&
+      areaId &&
+      !isImageUploading
+  );
 
-  const placeNameLabel = isLab ? "اسم المختبر" : "اسم الصيدلية";
-  const placeNamePlaceholder = isLab ? "مختبر الشفاء" : "صيدلية الشفاء";
+  const placeNameLabel = isCosmeticCenter
+    ? "اسم مركز التجميل"
+    : isLab
+      ? "اسم المختبر"
+      : "اسم الصيدلية";
 
-  const bioPlaceholder = isLab
-    ? "اكتب نبذة مختصرة عن المختبر، مثل نوع الفحوصات، سرعة النتائج، وخدمة السحب المنزلي إذا متوفرة."
-    : "اكتب نبذة مختصرة عن الصيدلية، مثل توفر الأدوية، خدمة التوصيل، أو الاستشارات الدوائية.";
+  const placeNamePlaceholder = isCosmeticCenter
+    ? "مركز الجمال للتجميل"
+    : isLab
+      ? "مختبر الشفاء"
+      : "صيدلية الشفاء";
 
-  const servicesPlaceholder = isLab
-    ? "مثلاً: تحاليل دم، PCR، فحوصات هرمونات، سحب منزلي..."
-    : "مثلاً: أدوية مزمنة، مستلزمات طبية، قياس ضغط وسكر، توصيل قريب...";
+  const slugPlaceholder = isCosmeticCenter
+    ? "cosmetic-center-name"
+    : isLab
+      ? "lab-name"
+      : "pharmacy-name";
 
-  const workingHoursPlaceholder = isLab
-    ? "مثلاً: السبت إلى الخميس من 8 صباحاً إلى 8 مساءً"
-    : "مثلاً: يومياً من 9 صباحاً إلى 11 مساءً";
+  const bioPlaceholder = isCosmeticCenter
+    ? "اكتب نبذة مختصرة عن مركز التجميل وخبرته وأبرز الخدمات التي يقدمها."
+    : isLab
+      ? "اكتب نبذة مختصرة عن المختبر، مثل نوع الفحوصات، سرعة النتائج، وخدمة السحب المنزلي إذا متوفرة."
+      : "اكتب نبذة مختصرة عن الصيدلية، مثل توفر الأدوية، خدمة التوصيل، أو الاستشارات الدوائية.";
 
-  const imagePlaceholder = isLab
-    ? "/uploads/lab.webp"
-    : "/uploads/pharmacy.webp";
+  const servicesPlaceholder = isCosmeticCenter
+    ? "مثلاً: العناية بالبشرة، الليزر، الحقن التجميلية، نحت الجسم..."
+    : isLab
+      ? "مثلاً: تحاليل دم، PCR، فحوصات هرمونات، سحب منزلي..."
+      : "مثلاً: أدوية مزمنة، مستلزمات طبية، قياس ضغط وسكر، توصيل قريب...";
+
+  const workingHoursPlaceholder =
+    isCosmeticCenter
+      ? "مثلاً: السبت إلى الخميس من 10 صباحاً إلى 8 مساءً"
+      : isLab
+        ? "مثلاً: السبت إلى الخميس من 8 صباحاً إلى 8 مساءً"
+        : "مثلاً: يومياً من 9 صباحاً إلى 11 مساءً";
+
+  const imagePlaceholder = isCosmeticCenter
+    ? "/uploads/cosmetic-center.webp"
+    : isLab
+      ? "/uploads/lab.webp"
+      : "/uploads/pharmacy.webp";
+
+  const imageLabel = isCosmeticCenter
+    ? "صورة مركز التجميل"
+    : isLab
+      ? "صورة المختبر"
+      : "صورة الصيدلية";
 
   return (
-    <form action={action} className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-      {isEdit ? <input type="hidden" name="id" value={row?.id} /> : null}
+    <form
+      action={action}
+      className="grid gap-5 md:grid-cols-2 xl:grid-cols-3"
+    >
+      {isEdit ? (
+        <input
+          type="hidden"
+          name="id"
+          value={row?.id}
+        />
+      ) : null}
 
       <AdminSection
         title="البيانات الأساسية"
@@ -329,16 +434,21 @@ export function ServicePlaceForm({
               name="slug"
               className="ltr"
               defaultValue={row?.slug ?? ""}
-              placeholder={isLab ? "lab-name" : "pharmacy-name"}
+              placeholder={slugPlaceholder}
             />
           </Field>
         ) : null}
 
         <Field label="الحالة">
-          <Select name="status" defaultValue={row?.status ?? "ACTIVE"}>
+          <Select
+            name="status"
+            defaultValue={row?.status ?? "ACTIVE"}
+          >
             <option value="DRAFT">Draft</option>
             <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">Inactive</option>
+            <option value="INACTIVE">
+              Inactive
+            </option>
           </Select>
         </Field>
 
@@ -348,7 +458,9 @@ export function ServicePlaceForm({
             type="number"
             min={0}
             step={1}
-            defaultValue={String(row?.sortOrder ?? 0)}
+            defaultValue={String(
+              row?.sortOrder ?? 0
+            )}
             placeholder="0"
           />
         </Field>
@@ -357,7 +469,9 @@ export function ServicePlaceForm({
           <input
             name="isFeatured"
             type="checkbox"
-            defaultChecked={row?.isFeatured ?? false}
+            defaultChecked={
+              row?.isFeatured ?? false
+            }
           />
           مميز
         </label>
@@ -365,6 +479,7 @@ export function ServicePlaceForm({
         {isEdit ? (
           <div className="flex h-11 items-center justify-between rounded-2xl border border-borderSoft bg-primary-soft px-3 text-sm font-bold text-slate-700">
             <span>عدد الاستفسارات</span>
+
             <span className="font-black text-primary">
               {row?.inquiryCount ?? 0}
             </span>
@@ -380,15 +495,24 @@ export function ServicePlaceForm({
           <Select
             name="governorateId"
             value={governorateId}
-            onChange={(event) => setGovernorateId(event.target.value)}
+            onChange={(event) =>
+              setGovernorateId(
+                event.target.value
+              )
+            }
             required
             disabled={!governorates.length}
           >
-            {governorates.map((governorate) => (
-              <option key={governorate.id} value={governorate.id}>
-                {governorate.name}
-              </option>
-            ))}
+            {governorates.map(
+              (governorate) => (
+                <option
+                  key={governorate.id}
+                  value={governorate.id}
+                >
+                  {governorate.name}
+                </option>
+              )
+            )}
           </Select>
         </Field>
 
@@ -396,12 +520,17 @@ export function ServicePlaceForm({
           <Select
             name="areaId"
             value={areaId}
-            onChange={(event) => setAreaId(event.target.value)}
+            onChange={(event) =>
+              setAreaId(event.target.value)
+            }
             required
             disabled={!filteredAreas.length}
           >
             {filteredAreas.map((area) => (
-              <option key={area.id} value={area.id}>
+              <option
+                key={area.id}
+                value={area.id}
+              >
                 {area.name}
               </option>
             ))}
@@ -421,11 +550,15 @@ export function ServicePlaceForm({
           <Field label="العنوان التفصيلي">
             <Textarea
               name="address"
-              defaultValue={row?.address ?? ""}
+              defaultValue={
+                row?.address ?? ""
+              }
               placeholder={
-                isLab
+                isCosmeticCenter
                   ? "مثلاً: بغداد، المنصور، قرب ..."
-                  : "مثلاً: بغداد، الكرادة، قرب ..."
+                  : isLab
+                    ? "مثلاً: بغداد، المنصور، قرب ..."
+                    : "مثلاً: بغداد، الكرادة، قرب ..."
               }
             />
           </Field>
@@ -434,12 +567,14 @@ export function ServicePlaceForm({
         <div className="rounded-2xl border border-borderSoft bg-slate-50 p-4 text-sm font-bold leading-7 text-slate-600 md:col-span-2 xl:col-span-3">
           {filteredAreas.length ? (
             <p>
-              المناطق المعروضة مرتبطة بالمحافظة المختارة فقط. إذا اخترت بغداد،
+              المناطق المعروضة مرتبطة بالمحافظة
+              المختارة فقط. إذا اخترت بغداد،
               تظهر مناطق بغداد فقط.
             </p>
           ) : (
             <p className="text-red-700">
-              لا توجد مناطق مرتبطة بهذه المحافظة. أضف منطقة لهذه المحافظة أولاً.
+              لا توجد مناطق مرتبطة بهذه المحافظة.
+              أضف منطقة لهذه المحافظة أولاً.
             </p>
           )}
         </div>
@@ -447,12 +582,18 @@ export function ServicePlaceForm({
 
       <AdminSection
         title="التواصل"
-        description="الواتساب يستخدم للاستفسارات، والهاتف يستخدم للاتصال المباشر."
+        description={
+          isCosmeticCenter
+            ? "الواتساب يستخدم للاستفسارات، والهاتف للاتصال المباشر، والإنستغرام يظهر كرابط خارجي."
+            : "الواتساب يستخدم للاستفسارات، والهاتف يستخدم للاتصال المباشر."
+        }
       >
         <Field label="واتساب">
           <Input
             name="whatsapp"
-            defaultValue={row?.whatsapp ?? ""}
+            defaultValue={
+              row?.whatsapp ?? ""
+            }
             placeholder="0770xxxxxxx"
             className="ltr"
           />
@@ -466,6 +607,19 @@ export function ServicePlaceForm({
             className="ltr"
           />
         </Field>
+
+        {isCosmeticCenter ? (
+          <Field label="إنستغرام">
+            <Input
+              name="instagramUrl"
+              defaultValue={
+                row?.instagramUrl ?? ""
+              }
+              placeholder="@center.name"
+              className="ltr"
+            />
+          </Field>
+        ) : null}
       </AdminSection>
 
       <AdminSection
@@ -473,11 +627,13 @@ export function ServicePlaceForm({
         description="ارفع الصورة من الجهاز أو ضع رابط صورة جاهز."
       >
         <ImageUploadField
-          label={isLab ? "صورة المختبر" : "صورة الصيدلية"}
+          label={imageLabel}
           value={imageUrl}
           placeholder={imagePlaceholder}
           onChange={setImageUrl}
-          onUploadingChange={setIsImageUploading}
+          onUploadingChange={
+            setIsImageUploading
+          }
         />
       </AdminSection>
 
@@ -496,11 +652,23 @@ export function ServicePlaceForm({
         </div>
 
         <div className="md:col-span-2 xl:col-span-3">
-          <Field label={isLab ? "الخدمات والتحاليل" : "الخدمات"}>
+          <Field
+            label={
+              isCosmeticCenter
+                ? "الخدمات التجميلية"
+                : isLab
+                  ? "الخدمات والتحاليل"
+                  : "الخدمات"
+            }
+          >
             <Textarea
               name="services"
-              defaultValue={row?.services ?? ""}
-              placeholder={servicesPlaceholder}
+              defaultValue={
+                row?.services ?? ""
+              }
+              placeholder={
+                servicesPlaceholder
+              }
             />
           </Field>
         </div>
@@ -509,8 +677,12 @@ export function ServicePlaceForm({
           <Field label="أيام وساعات العمل">
             <Textarea
               name="workingHours"
-              defaultValue={row?.workingHours ?? ""}
-              placeholder={workingHoursPlaceholder}
+              defaultValue={
+                row?.workingHours ?? ""
+              }
+              placeholder={
+                workingHoursPlaceholder
+              }
             />
           </Field>
         </div>
@@ -519,10 +691,14 @@ export function ServicePlaceForm({
       <Button
         type="submit"
         disabled={!canSubmit}
-        variant={isEdit ? "secondary" : undefined}
+        variant={
+          isEdit ? "secondary" : undefined
+        }
         className="md:col-span-2 xl:col-span-3"
       >
-        {isImageUploading ? "انتظر حتى يكتمل رفع الصورة..." : submit}
+        {isImageUploading
+          ? "انتظر حتى يكتمل رفع الصورة..."
+          : submit}
       </Button>
     </form>
   );
