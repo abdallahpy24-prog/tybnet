@@ -478,7 +478,7 @@ export function ServicePlaceForm({
 
         {isEdit ? (
           <div className="flex h-11 items-center justify-between rounded-2xl border border-borderSoft bg-primary-soft px-3 text-sm font-bold text-slate-700">
-            <span>عدد الاستفسارات</span>
+            <span>النقاط</span>
 
             <span className="font-black text-primary">
               {row?.inquiryCount ?? 0}

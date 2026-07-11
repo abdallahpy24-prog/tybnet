@@ -185,7 +185,7 @@ export default async function PharmacyDetailsPage({
                   </span>
 
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">
-                    {pharmacy.inquiryCount} استفسار
+                    النقاط: {pharmacy.inquiryCount}
                   </span>
                 </div>
 
@@ -261,7 +261,7 @@ export default async function PharmacyDetailsPage({
             </p>
 
             <div className="mt-5 rounded-3xl border border-borderSoft bg-primary-soft p-4">
-              <p className="text-sm font-black text-primary">عدد الاستفسارات</p>
+              <p className="text-sm font-black text-primary">النقاط</p>
               <p className="mt-2 text-4xl font-black text-navy">
                 {pharmacy.inquiryCount}
               </p>

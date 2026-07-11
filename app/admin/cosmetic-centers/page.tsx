@@ -128,7 +128,7 @@ export default async function CosmeticCentersPage() {
                   </span>
 
                   <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-extrabold text-primary-dark">
-                    الاستفسارات: {row.inquiryCount}
+                    النقاط: {row.inquiryCount}
                   </span>
 
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">

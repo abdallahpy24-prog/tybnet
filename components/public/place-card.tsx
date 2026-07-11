@@ -247,7 +247,7 @@ export function PlaceCard({
             </span>
 
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">
-              {inquiryCount} استفسار
+              النقاط: {inquiryCount}
             </span>
           </div>
 

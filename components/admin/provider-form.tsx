@@ -665,7 +665,7 @@ export function ProviderForm({
           />
         </Field>
 
-        <Field label="عدد النقاط">
+        <Field label="النقاط">
           <Input
             name="bookingPoints"
             type="number"

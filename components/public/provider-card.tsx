@@ -98,7 +98,7 @@ export function ProviderCard({
                 className="h-3 w-3 text-accent"
                 aria-hidden="true"
               />
-              {bookingPoints} نقطة
+              النقاط: {bookingPoints}
             </span>
           </div>
 
