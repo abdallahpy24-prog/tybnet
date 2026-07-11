@@ -1,14 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
+import {
+  NextRequest,
+  NextResponse
+} from "next/server";
 
 import { searchProviders } from "@/lib/queries";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
 
-type MobileProviderType = Parameters<typeof searchProviders>[0];
+type MobileProviderType =
+  Parameters<typeof searchProviders>[0];
 
-function readProviderType(value: string | null): MobileProviderType | null {
-  if (value === "DOCTOR" || value === "DENTIST") {
+function readProviderType(
+  value: string | null
+): MobileProviderType | null {
+  if (
+    value === "DOCTOR" ||
+    value === "DENTIST" ||
+    value === "COSMETIC_DOCTOR"
+  ) {
     return value;
   }
 
@@ -22,17 +32,33 @@ function clampTake(value: string | null) {
     return 24;
   }
 
-  return Math.min(Math.max(Math.trunc(parsed), 1), 50);
+  return Math.min(
+    Math.max(Math.trunc(parsed), 1),
+    50
+  );
 }
 
 function getBaseUrl(request: NextRequest) {
-  const forwardedHost = request.headers.get("x-forwarded-host");
-  const host = forwardedHost ?? request.headers.get("host");
-  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const forwardedHost = request.headers.get(
+    "x-forwarded-host"
+  );
+
+  const host =
+    forwardedHost ??
+    request.headers.get("host");
+
+  const forwardedProto = request.headers.get(
+    "x-forwarded-proto"
+  );
 
   if (host) {
-    const protocol = forwardedProto?.split(",")[0]?.trim() || "https";
-    const cleanHost = host.split(",")[0]?.trim();
+    const protocol =
+      forwardedProto
+        ?.split(",")[0]
+        ?.trim() || "https";
+
+    const cleanHost =
+      host.split(",")[0]?.trim();
 
     return `${protocol}://${cleanHost}`;
   }
@@ -40,34 +66,60 @@ function getBaseUrl(request: NextRequest) {
   return new URL(request.url).origin;
 }
 
-function buildTelUrl(phone?: string | null) {
+function buildTelUrl(
+  phone?: string | null
+) {
   const cleanPhone = phone?.trim();
 
-  if (!cleanPhone) return null;
+  if (!cleanPhone) {
+    return null;
+  }
 
-  const telValue = cleanPhone.replace(/[^\d+]/g, "");
+  const telValue = cleanPhone.replace(
+    /[^\d+]/g,
+    ""
+  );
 
-  if (!telValue) return null;
+  if (!telValue) {
+    return null;
+  }
 
   return `tel:${telValue}`;
 }
 
-function normalizeAssetUrl(value: string | null | undefined, baseUrl: string) {
+function normalizeAssetUrl(
+  value: string | null | undefined,
+  baseUrl: string
+) {
   const cleanValue = value?.trim();
 
-  if (!cleanValue) return null;
+  if (!cleanValue) {
+    return null;
+  }
 
   try {
-    if (/^(https?:)?\/\//i.test(cleanValue)) {
-      return cleanValue.startsWith("//") ? `https:${cleanValue}` : cleanValue;
+    if (
+      /^(https?:)?\/\//i.test(
+        cleanValue
+      )
+    ) {
+      return cleanValue.startsWith("//")
+        ? `https:${cleanValue}`
+        : cleanValue;
     }
 
-    if (/^(data:|blob:)/i.test(cleanValue)) {
+    if (
+      /^(data:|blob:)/i.test(
+        cleanValue
+      )
+    ) {
       return cleanValue;
     }
 
     return new URL(
-      cleanValue.startsWith("/") ? cleanValue : `/${cleanValue}`,
+      cleanValue.startsWith("/")
+        ? cleanValue
+        : `/${cleanValue}`,
       baseUrl
     ).toString();
   } catch {
@@ -75,28 +127,54 @@ function normalizeAssetUrl(value: string | null | undefined, baseUrl: string) {
   }
 }
 
-function normalizeMapUrl(value?: string | null) {
+function normalizeMapUrl(
+  value?: string | null
+) {
   const cleanValue = value?.trim();
 
-  if (!cleanValue) return null;
+  if (!cleanValue) {
+    return null;
+  }
 
   try {
-    if (/^https?:\/\//i.test(cleanValue)) {
-      return new URL(cleanValue).toString();
+    if (
+      /^https?:\/\//i.test(cleanValue)
+    ) {
+      return new URL(
+        cleanValue
+      ).toString();
     }
 
     if (
-      cleanValue.startsWith("www.google.com/maps") ||
-      cleanValue.startsWith("google.com/maps") ||
-      cleanValue.startsWith("maps.google.com") ||
-      cleanValue.startsWith("maps.app.goo.gl") ||
-      cleanValue.startsWith("goo.gl/maps") ||
-      cleanValue.startsWith("maps.apple.com")
+      cleanValue.startsWith(
+        "www.google.com/maps"
+      ) ||
+      cleanValue.startsWith(
+        "google.com/maps"
+      ) ||
+      cleanValue.startsWith(
+        "maps.google.com"
+      ) ||
+      cleanValue.startsWith(
+        "maps.app.goo.gl"
+      ) ||
+      cleanValue.startsWith(
+        "goo.gl/maps"
+      ) ||
+      cleanValue.startsWith(
+        "maps.apple.com"
+      )
     ) {
-      return new URL(`https://${cleanValue}`).toString();
+      return new URL(
+        `https://${cleanValue}`
+      ).toString();
     }
 
-    if (/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(cleanValue)) {
+    if (
+      /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(
+        cleanValue
+      )
+    ) {
       return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
         cleanValue
       )}`;
@@ -108,117 +186,198 @@ function normalizeMapUrl(value?: string | null) {
   }
 }
 
-function readMapUrlFromText(value?: string | null) {
+function readMapUrlFromText(
+  value?: string | null
+) {
   const cleanValue = value?.trim();
 
-  if (!cleanValue) return null;
+  if (!cleanValue) {
+    return null;
+  }
 
-  const directUrl = normalizeMapUrl(cleanValue);
+  const directUrl =
+    normalizeMapUrl(cleanValue);
 
-  if (directUrl) return directUrl;
+  if (directUrl) {
+    return directUrl;
+  }
 
   const match = cleanValue.match(
     /(https?:\/\/(?:www\.)?google\.com\/maps[^\s،]+|https?:\/\/maps\.google\.com[^\s،]+|https?:\/\/maps\.app\.goo\.gl[^\s،]+|https?:\/\/goo\.gl\/maps[^\s،]+|https?:\/\/maps\.apple\.com[^\s،]+)/i
   );
 
-  if (!match?.[0]) return null;
+  if (!match?.[0]) {
+    return null;
+  }
 
   return normalizeMapUrl(match[0]);
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(
+  request: NextRequest
+) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(
+      request.url
+    );
+
     const baseUrl = getBaseUrl(request);
-    const type = readProviderType(searchParams.get("type"));
+
+    const type = readProviderType(
+      searchParams.get("type")
+    );
 
     if (!type) {
       return NextResponse.json(
         {
           ok: false,
-          message: "type لازم يكون DOCTOR أو DENTIST"
+          message:
+            "type لازم يكون DOCTOR أو DENTIST أو COSMETIC_DOCTOR"
         },
-        { status: 400 }
+        {
+          status: 400
+        }
       );
     }
 
-    const providers = await searchProviders(
-      type,
-      {
-        q: searchParams.get("q") ?? undefined,
-        governorateId:
-          searchParams.get("governorateId") ??
-          searchParams.get("governorate") ??
-          undefined,
-        areaId:
-          searchParams.get("areaId") ?? searchParams.get("area") ?? undefined,
-        specialtyId:
-          searchParams.get("specialtyId") ??
-          searchParams.get("specialty") ??
-          undefined
-      },
-      clampTake(searchParams.get("take"))
-    );
+    const providers =
+      await searchProviders(
+        type,
+        {
+          q:
+            searchParams.get("q") ??
+            undefined,
+
+          governorateId:
+            searchParams.get(
+              "governorateId"
+            ) ??
+            searchParams.get(
+              "governorate"
+            ) ??
+            undefined,
+
+          areaId:
+            searchParams.get(
+              "areaId"
+            ) ??
+            searchParams.get("area") ??
+            undefined,
+
+          specialtyId:
+            searchParams.get(
+              "specialtyId"
+            ) ??
+            searchParams.get(
+              "specialty"
+            ) ??
+            undefined
+        },
+        clampTake(
+          searchParams.get("take")
+        )
+      );
 
     return NextResponse.json({
       ok: true,
       count: providers.length,
-      items: providers.map((provider: (typeof providers)[number]) => {
-        const displayName = [provider.titlePrefix, provider.name]
-          .filter(Boolean)
-          .join(" ");
+      items: providers.map(
+        (
+          provider: (typeof providers)[number]
+        ) => {
+          const displayName = [
+            provider.titlePrefix,
+            provider.name
+          ]
+            .filter(Boolean)
+            .join(" ");
 
-        const mapUrl =
-          normalizeMapUrl(provider.mapurl) ??
-          readMapUrlFromText(provider.address);
+          const mapUrl =
+            normalizeMapUrl(
+              provider.mapurl
+            ) ??
+            readMapUrlFromText(
+              provider.address
+            );
 
-        return {
-          id: provider.id,
-          type: provider.type,
-          name: provider.name,
-          titlePrefix: provider.titlePrefix,
-          slug: provider.slug,
+          return {
+            id: provider.id,
+            type: provider.type,
+            name: provider.name,
+            titlePrefix:
+              provider.titlePrefix,
+            slug: provider.slug,
 
-          specialtyId: provider.specialtyId,
-          specialty: provider.specialty?.name ?? null,
+            specialtyId:
+              provider.specialtyId,
+            specialty:
+              provider.specialty
+                ?.name ?? null,
 
-          governorateId: provider.governorateId,
-          governorate: provider.governorate?.name ?? null,
+            governorateId:
+              provider.governorateId,
+            governorate:
+              provider.governorate
+                ?.name ?? null,
 
-          areaId: provider.areaId,
-          area: provider.area?.name ?? null,
+            areaId: provider.areaId,
+            area:
+              provider.area?.name ??
+              null,
 
-          imageUrl: normalizeAssetUrl(provider.imageUrl, baseUrl),
+            imageUrl:
+              normalizeAssetUrl(
+                provider.imageUrl,
+                baseUrl
+              ),
 
-          phone: provider.phone,
-          phoneUrl: buildTelUrl(provider.phone),
+            phone: provider.phone,
+            phoneUrl: buildTelUrl(
+              provider.phone
+            ),
 
-          whatsapp: provider.whatsapp,
-          instagramUrl: provider.instagramUrl,
+            whatsapp:
+              provider.whatsapp,
 
-          whatsappUrl: buildWhatsappUrl(
-            provider.whatsapp || provider.phone,
-            `مرحبا، وصلت لكم من تطبيق طب نت وأرغب بالاستفسار من ${displayName}.`
-          ),
+            instagramUrl:
+              provider.instagramUrl,
 
-          address: provider.address,
-          mapUrl,
+            whatsappUrl:
+              buildWhatsappUrl(
+                provider.whatsapp ||
+                  provider.phone,
+                `مرحبا، وصلت لكم من تطبيق طب نت وأرغب بالاستفسار من ${displayName}.`
+              ),
 
-          workingHours: provider.workingHours,
-          bookingPoints: provider.bookingPoints,
-          isFeatured: provider.isFeatured
-        };
-      })
+            address:
+              provider.address,
+            mapUrl,
+
+            workingHours:
+              provider.workingHours,
+            bookingPoints:
+              provider.bookingPoints,
+            isFeatured:
+              provider.isFeatured
+          };
+        }
+      )
     });
   } catch (error) {
-    console.error("Mobile providers API error", error);
+    console.error(
+      "Mobile providers API error",
+      error
+    );
 
     return NextResponse.json(
       {
         ok: false,
-        message: "صار خطأ أثناء جلب مقدمي الخدمة"
+        message:
+          "صار خطأ أثناء جلب مقدمي الخدمة"
       },
-      { status: 500 }
+      {
+        status: 500
+      }
     );
   }
 }
