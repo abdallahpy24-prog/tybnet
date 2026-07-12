@@ -18,10 +18,7 @@ function readSpecialtyFor(
   }
 
   if (value === "DENTIST") {
-    return [
-      "DENTIST",
-      "BOTH"
-    ] as const;
+    return [] as const;
   }
 
   if (
@@ -32,7 +29,11 @@ function readSpecialtyFor(
     ] as const;
   }
 
-  return undefined;
+  return [
+    "DOCTOR",
+    "BOTH",
+    "COSMETIC_DOCTOR"
+  ] as const;
 }
 
 export async function GET(
@@ -52,11 +53,9 @@ export async function GET(
       await prisma.specialty.findMany({
         where: {
           isActive: true,
-          forType: forType
-            ? {
-                in: [...forType]
-              }
-            : undefined
+          forType: {
+            in: [...forType]
+          }
         },
         orderBy: [
           {

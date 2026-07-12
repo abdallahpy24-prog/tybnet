@@ -235,6 +235,9 @@ export async function GET(
         provider.address
       );
 
+    const hasSpecialty =
+      provider.type !== "DENTIST";
+
     return NextResponse.json({
       ok: true,
       item: {
@@ -245,11 +248,13 @@ export async function GET(
           provider.titlePrefix,
         slug: provider.slug,
 
-        specialtyId:
-          provider.specialtyId,
-        specialty:
-          provider.specialty?.name ??
-          null,
+        specialtyId: hasSpecialty
+          ? provider.specialtyId
+          : null,
+        specialty: hasSpecialty
+          ? provider.specialty?.name ??
+            null
+          : null,
 
         governorateId:
           provider.governorateId,

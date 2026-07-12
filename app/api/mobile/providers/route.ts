@@ -265,13 +265,15 @@ export async function GET(
             undefined,
 
           specialtyId:
-            searchParams.get(
-              "specialtyId"
-            ) ??
-            searchParams.get(
-              "specialty"
-            ) ??
-            undefined
+            type === "DENTIST"
+              ? undefined
+              : searchParams.get(
+                    "specialtyId"
+                  ) ??
+                  searchParams.get(
+                    "specialty"
+                  ) ??
+                  undefined
         },
         clampTake(
           searchParams.get("take")
@@ -300,6 +302,9 @@ export async function GET(
               provider.address
             );
 
+          const hasSpecialty =
+            provider.type !== "DENTIST";
+
           return {
             id: provider.id,
             type: provider.type,
@@ -308,11 +313,13 @@ export async function GET(
               provider.titlePrefix,
             slug: provider.slug,
 
-            specialtyId:
-              provider.specialtyId,
-            specialty:
-              provider.specialty
-                ?.name ?? null,
+            specialtyId: hasSpecialty
+              ? provider.specialtyId
+              : null,
+            specialty: hasSpecialty
+              ? provider.specialty
+                  ?.name ?? null
+              : null,
 
             governorateId:
               provider.governorateId,
