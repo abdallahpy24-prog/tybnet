@@ -4,14 +4,12 @@ import {
   Eye,
   Instagram,
   MapPin,
-  MessageCircle,
   Star
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 type ProviderCardData = {
   name: string;
@@ -52,11 +50,6 @@ export function ProviderCard({
 
   const bookingPoints =
     provider.bookingPoints ?? 0;
-
-  const whatsappUrl = buildWhatsappUrl(
-    provider.whatsapp,
-    `مرحباً، وصلت إلى ${displayName} عبر منصة طب نت، وأرغب بالاستفسار عن الحجز أو المواعيد المتاحة.`
-  );
 
   const detailsHref = `${detailBasePath.replace(
     /\/$/,
@@ -141,39 +134,22 @@ export function ProviderCard({
         </div>
       </div>
 
-      <div className="mt-5 grid gap-2 sm:grid-cols-2">
-        <Link href={detailsHref}>
+      <div className="mt-5">
+        <Link
+          href={detailsHref}
+          className="block w-full"
+        >
           <Button
             type="button"
-            variant="secondary"
             className="w-full"
           >
             <Eye
               className="h-4 w-4"
               aria-hidden="true"
             />
-            عرض الملف
+            عرض التفاصيل
           </Button>
         </Link>
-
-        {whatsappUrl ? (
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            <Button
-              type="button"
-              className="w-full"
-            >
-              <MessageCircle
-                className="h-4 w-4"
-                aria-hidden="true"
-              />
-              تواصل واتساب
-            </Button>
-          </a>
-        ) : null}
       </div>
     </Card>
   );
