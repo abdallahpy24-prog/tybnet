@@ -25,7 +25,7 @@ function specialtyTypesForProvider(
   }
 
   if (type === "DENTIST") {
-    return ["DENTIST", "BOTH"];
+    return [];
   }
 
   return ["COSMETIC_DOCTOR"];
@@ -34,7 +34,7 @@ function specialtyTypesForProvider(
 function publicProviderWhere(
   type: ProviderType
 ): Prisma.ProviderWhereInput {
-  return {
+  const where: Prisma.ProviderWhereInput = {
     type,
     status: "ACTIVE",
     governorate: {
@@ -42,7 +42,15 @@ function publicProviderWhere(
     },
     area: {
       isActive: true
-    },
+    }
+  };
+
+  if (type === "DENTIST") {
+    return where;
+  }
+
+  return {
+    ...where,
     specialty: {
       isActive: true,
       forType: {
@@ -72,13 +80,7 @@ function publicAnyProviderWhere(): Prisma.ProviderWhereInput {
         }
       },
       {
-        type: "DENTIST",
-        specialty: {
-          isActive: true,
-          forType: {
-            in: ["DENTIST", "BOTH"]
-          }
-        }
+        type: "DENTIST"
       },
       {
         type: "COSMETIC_DOCTOR",
@@ -360,12 +362,12 @@ export async function searchProviders(
     where.areaId = filters.areaId;
   }
 
-  if (filters.specialtyId) {
+  if (type !== "DENTIST" && filters.specialtyId) {
     where.specialtyId = filters.specialtyId;
   }
 
   if (filters.q) {
-    where.OR = [
+    const textSearch: Prisma.ProviderWhereInput[] = [
       {
         name: {
           contains: filters.q,
@@ -399,16 +401,21 @@ export async function searchProviders(
             mode: "insensitive"
           }
         }
-      },
-      {
+      }
+    ];
+
+    if (type !== "DENTIST") {
+      textSearch.push({
         specialty: {
           name: {
             contains: filters.q,
             mode: "insensitive"
           }
         }
-      }
-    ];
+      });
+    }
+
+    where.OR = textSearch;
   }
 
   return prisma.provider.findMany({
@@ -506,13 +513,7 @@ export async function getHomeData() {
               }
             },
             {
-              type: "DENTIST",
-              specialty: {
-                isActive: true,
-                forType: {
-                  in: ["DENTIST", "BOTH"]
-                }
-              }
+              type: "DENTIST"
             },
             {
               type: "COSMETIC_DOCTOR",
@@ -575,13 +576,7 @@ export async function getProviderBySlug(
           }
         },
         {
-          type: "DENTIST",
-          specialty: {
-            isActive: true,
-            forType: {
-              in: ["DENTIST", "BOTH"]
-            }
-          }
+          type: "DENTIST"
         }
       ]
     },

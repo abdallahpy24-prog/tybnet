@@ -110,11 +110,15 @@ function isSpecialtyAllowed(
   specialty: SpecialtyOption,
   type: ProviderType
 ) {
+  if (type === "DENTIST") {
+    return false;
+  }
+
   if (type === "COSMETIC_DOCTOR") {
     return specialty.forType === "COSMETIC_DOCTOR";
   }
 
-  return specialty.forType === "BOTH" || specialty.forType === type;
+  return specialty.forType === "DOCTOR" || specialty.forType === "BOTH";
 }
 
 function providerTypeLabel(type: ProviderType) {
@@ -383,6 +387,14 @@ export function ProviderForm({
   }, [filteredAreas, areaId]);
 
   useEffect(() => {
+    if (providerType === "DENTIST") {
+      if (specialtyId) {
+        setSpecialtyId("");
+      }
+
+      return;
+    }
+
     const currentSpecialtyIsValid = filteredSpecialties.some(
       (specialty) => specialty.id === specialtyId
     );
@@ -390,12 +402,12 @@ export function ProviderForm({
     if (!currentSpecialtyIsValid) {
       setSpecialtyId(filteredSpecialties[0]?.id ?? "");
     }
-  }, [filteredSpecialties, specialtyId]);
+  }, [filteredSpecialties, specialtyId, providerType]);
 
   const canSubmit = Boolean(
     governorateId &&
       areaId &&
-      specialtyId &&
+      (providerType === "DENTIST" || specialtyId) &&
       !isImageUploading
   );
 
@@ -469,24 +481,28 @@ export function ProviderForm({
           />
         </Field>
 
-        <Field label="الاختصاص">
-          <Select
-            name="specialtyId"
-            value={specialtyId}
-            onChange={(event) =>
-              setSpecialtyId(event.target.value)
-            }
-            required
-            disabled={!filteredSpecialties.length}
-          >
-            {filteredSpecialties.map((specialty) => (
-              <option key={specialty.id} value={specialty.id}>
-                {specialty.name}
-                {specialty.forType === "BOTH" ? " - عام" : ""}
-              </option>
-            ))}
-          </Select>
-        </Field>
+        {providerType === "DENTIST" ? (
+          <input type="hidden" name="specialtyId" value="" />
+        ) : (
+          <Field label="الاختصاص">
+            <Select
+              name="specialtyId"
+              value={specialtyId}
+              onChange={(event) =>
+                setSpecialtyId(event.target.value)
+              }
+              required
+              disabled={!filteredSpecialties.length}
+            >
+              {filteredSpecialties.map((specialty) => (
+                <option key={specialty.id} value={specialty.id}>
+                  {specialty.name}
+                  {specialty.forType === "BOTH" ? " - عام" : ""}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
 
         <Field label="Slug">
           <Input
@@ -595,11 +611,11 @@ export function ProviderForm({
             </p>
           )}
 
-          {!filteredSpecialties.length ? (
+          {providerType !== "DENTIST" && !filteredSpecialties.length ? (
             <p className="mt-1 text-red-700">
               {isCosmetic
                 ? "لا توجد اختصاصات لأطباء التجميل. أضف اختصاصاً خاصاً بأطباء التجميل أولاً."
-                : "لا توجد اختصاصات مناسبة لهذا النوع. أضف اختصاصاً مناسباً للطبيب أو طبيب الأسنان أولاً."}
+                : "لا توجد اختصاصات للأطباء. أضف اختصاصاً مناسباً للطبيب أولاً."}
             </p>
           ) : null}
         </div>

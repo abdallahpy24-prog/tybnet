@@ -13,15 +13,22 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, Input, Select } from "@/components/ui/input";
 
-const typeLabels: Record<SpecialtyFor, string> = {
-  DOCTOR: "أطباء",
-  DENTIST: "أطباء أسنان",
-  COSMETIC_DOCTOR: "أطباء تجميل",
-  BOTH: "أطباء وأطباء أسنان"
-};
+function typeLabel(type: SpecialtyFor) {
+  return type === "COSMETIC_DOCTOR"
+    ? "أطباء تجميل"
+    : "أطباء";
+}
 
 export default async function SpecialtiesPage() {
   const rows = await prisma.specialty.findMany({
+    where: {
+      forType: {
+        in: [
+          "DOCTOR",
+          "COSMETIC_DOCTOR"
+        ]
+      }
+    },
     include: {
       _count: {
         select: {
@@ -39,7 +46,7 @@ export default async function SpecialtiesPage() {
     <>
       <PageHeader
         title="الاختصاصات"
-        description="إدارة اختصاصات الأطباء وأطباء الأسنان وأطباء التجميل، ويظهر كل اختصاص داخل فلاتر فئته فقط."
+        description="إدارة اختصاصات الأطباء وأطباء التجميل، ويظهر كل اختصاص داخل فلاتر فئته فقط."
       />
 
       <FormShell title="إضافة اختصاص">
@@ -56,14 +63,16 @@ export default async function SpecialtiesPage() {
           </Field>
 
           <Field label="الفئة">
-            <Select name="forType" defaultValue="DOCTOR">
-              <option value="DOCTOR">أطباء</option>
-              <option value="DENTIST">أطباء أسنان</option>
+            <Select
+              name="forType"
+              defaultValue="DOCTOR"
+            >
+              <option value="DOCTOR">
+                أطباء
+              </option>
+
               <option value="COSMETIC_DOCTOR">
                 أطباء تجميل
-              </option>
-              <option value="BOTH">
-                أطباء وأطباء أسنان
               </option>
             </Select>
           </Field>
@@ -76,7 +85,10 @@ export default async function SpecialtiesPage() {
           </Field>
 
           <Field label="Slug">
-            <Input name="slug" className="ltr" />
+            <Input
+              name="slug"
+              className="ltr"
+            />
           </Field>
 
           <label className="flex h-11 items-center gap-2 text-sm font-bold">
@@ -88,7 +100,10 @@ export default async function SpecialtiesPage() {
             نشط
           </label>
 
-          <Button type="submit" className="md:col-span-5">
+          <Button
+            type="submit"
+            className="md:col-span-5"
+          >
             إضافة اختصاص
           </Button>
         </form>
@@ -121,15 +136,12 @@ export default async function SpecialtiesPage() {
                     name="forType"
                     defaultValue={row.forType}
                   >
-                    <option value="DOCTOR">أطباء</option>
-                    <option value="DENTIST">
-                      أطباء أسنان
+                    <option value="DOCTOR">
+                      أطباء
                     </option>
+
                     <option value="COSMETIC_DOCTOR">
                       أطباء تجميل
-                    </option>
-                    <option value="BOTH">
-                      أطباء وأطباء أسنان
                     </option>
                   </Select>
                 </Field>
@@ -158,21 +170,27 @@ export default async function SpecialtiesPage() {
                   نشط
                 </label>
 
-                <Button type="submit" variant="secondary">
+                <Button
+                  type="submit"
+                  variant="secondary"
+                >
                   حفظ
                 </Button>
               </form>
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-borderSoft pt-4 text-sm text-slate-600">
                 <div className="flex flex-wrap items-center gap-2">
-                  <StatusPill value={row.isActive} />
+                  <StatusPill
+                    value={row.isActive}
+                  />
 
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
-                    {typeLabels[row.forType]}
+                    {typeLabel(row.forType)}
                   </span>
 
                   <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-extrabold text-primary-dark">
-                    مستخدم مع: {row._count.providers}
+                    مستخدم مع:{" "}
+                    {row._count.providers}
                   </span>
                 </div>
 
@@ -183,7 +201,10 @@ export default async function SpecialtiesPage() {
                     value={row.id}
                   />
 
-                  <Button type="submit" variant="danger">
+                  <Button
+                    type="submit"
+                    variant="danger"
+                  >
                     حذف/تعطيل آمن
                   </Button>
                 </form>

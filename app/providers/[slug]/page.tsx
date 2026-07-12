@@ -114,7 +114,9 @@ export async function generateMetadata({
     title: `${displayName} | طب نت`,
     description:
       provider.bio ??
-      provider.specialty?.name ??
+      (provider.type !== "DENTIST"
+        ? provider.specialty?.name
+        : null) ??
       "ملف مقدم خدمة طبية على منصة طب نت",
     openGraph: {
       images: provider.imageUrl ? [provider.imageUrl] : ["/assets/logo.png"]
@@ -187,10 +189,15 @@ export default async function ProviderDetailsPage({
                   {displayName}
                 </h1>
 
-                <p className="mt-3 flex items-center gap-2 text-lg font-bold text-primary-dark">
-                  <Stethoscope className="h-5 w-5" aria-hidden="true" />
-                  {provider.specialty?.name ?? "الاختصاص غير محدد"}
-                </p>
+                {provider.type !== "DENTIST" ? (
+                  <p className="mt-3 flex items-center gap-2 text-lg font-bold text-primary-dark">
+                    <Stethoscope
+                      className="h-5 w-5"
+                      aria-hidden="true"
+                    />
+                    {provider.specialty?.name ?? "الاختصاص غير محدد"}
+                  </p>
+                ) : null}
 
                 <p className="mt-3 flex items-start gap-2 text-slate-600">
                   <MapPin

@@ -35,12 +35,14 @@ type ProviderCardProps = {
   provider: ProviderCardData;
   compact?: boolean;
   detailBasePath?: string;
+  showSpecialty?: boolean;
 };
 
 export function ProviderCard({
   provider,
   compact = false,
-  detailBasePath = "/providers"
+  detailBasePath = "/providers",
+  showSpecialty = true
 }: ProviderCardProps) {
   const displayName = `${
     provider.titlePrefix
@@ -99,12 +101,19 @@ export function ProviderCard({
             {displayName}
           </h3>
 
-          <p className="mt-2 line-clamp-1 text-sm font-bold text-primary-dark">
-            {provider.specialty?.name ??
-              "الاختصاص غير محدد"}
-          </p>
+          {showSpecialty ? (
+            <p className="mt-2 line-clamp-1 text-sm font-bold text-primary-dark">
+              {provider.specialty?.name ??
+                "الاختصاص غير محدد"}
+            </p>
+          ) : null}
 
-          <p className="mt-2 flex items-center gap-2 text-sm leading-6 text-slate-600">
+          <p
+            className={[
+              "flex items-center gap-2 text-sm leading-6 text-slate-600",
+              showSpecialty ? "mt-2" : "mt-3"
+            ].join(" ")}
+          >
             <MapPin
               className="h-4 w-4 shrink-0 text-accent"
               aria-hidden="true"

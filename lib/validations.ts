@@ -163,9 +163,7 @@ export const specialtySchema = z.object({
   slug: optionalSlug,
   forType: z.enum([
     "DOCTOR",
-    "DENTIST",
-    "COSMETIC_DOCTOR",
-    "BOTH"
+    "COSMETIC_DOCTOR"
   ]),
   icon: optionalText,
   isActive: z.coerce.boolean().default(true)
@@ -175,7 +173,7 @@ const providerBaseSchema = z.object({
   name: z.string().trim().min(2, "اسم مقدم الخدمة مطلوب"),
   slug: optionalSlug,
   titlePrefix: z.string().trim().default("د."),
-  specialtyId: idSchema,
+  specialtyId: optionalText,
   governorateId: idSchema,
   areaId: idSchema,
   bio: optionalText,
@@ -196,13 +194,36 @@ const providerBaseSchema = z.object({
     .default(0)
 });
 
-export const providerSchema = providerBaseSchema.extend({
-  type: z.enum(["DOCTOR", "DENTIST"])
-});
+export const providerSchema = providerBaseSchema
+  .extend({
+    type: z.enum(["DOCTOR", "DENTIST"])
+  })
+  .superRefine((value, ctx) => {
+    if (
+      value.type === "DOCTOR" &&
+      !value.specialtyId
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["specialtyId"],
+        message: "اختصاص الطبيب مطلوب"
+      });
+    }
+  });
 
-export const cosmeticDoctorSchema = providerBaseSchema.extend({
-  type: z.literal("COSMETIC_DOCTOR")
-});
+export const cosmeticDoctorSchema = providerBaseSchema
+  .extend({
+    type: z.literal("COSMETIC_DOCTOR")
+  })
+  .superRefine((value, ctx) => {
+    if (!value.specialtyId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["specialtyId"],
+        message: "اختصاص طبيب التجميل مطلوب"
+      });
+    }
+  });
 
 export const offerSchema = z.object({
   title: z.string().trim().min(2, "عنوان العرض مطلوب"),

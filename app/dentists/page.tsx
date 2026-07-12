@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import { SiteShell } from "@/components/layout/site-shell";
 import { FilterForm } from "@/components/public/filter-form";
 import { ProviderCard } from "@/components/public/provider-card";
@@ -14,7 +15,7 @@ import {
 export const metadata: Metadata = {
   title: "ابحث عن أطباء أسنان في العراق | طب نت",
   description:
-    "ابحث عن أطباء أسنان وعيادات أسنان في العراق حسب المحافظة والمنطقة والاختصاص عبر منصة طب نت."
+    "ابحث عن أطباء أسنان وعيادات أسنان في العراق حسب المحافظة والمنطقة عبر منصة طب نت."
 };
 
 export default async function DentistsPage({
@@ -26,7 +27,7 @@ export default async function DentistsPage({
   const filters = readFilters(params);
 
   const [options, dentists] = await Promise.all([
-    getFilterOptions("DENTIST"),
+    getFilterOptions(),
     searchProviders("DENTIST", params)
   ]);
 
@@ -36,7 +37,7 @@ export default async function DentistsPage({
         <SectionTitle
           eyebrow="أطباء الأسنان"
           title="ابحث عن طبيب أسنان قريب منك"
-          description="استعرض أطباء الأسنان المتاحين على طب نت، وصفّي النتائج حسب المحافظة والمنطقة والاختصاص للوصول إلى العيادة الأنسب لك."
+          description="استعرض أطباء الأسنان المتاحين على طب نت، وصفّي النتائج حسب المحافظة والمنطقة للوصول إلى العيادة الأنسب لك."
         />
 
         <FilterForm
@@ -44,19 +45,24 @@ export default async function DentistsPage({
           q={filters.q}
           governorates={options.governorates}
           areas={options.areas}
-          specialties={options.specialties}
+          showSpecialties={false}
         />
 
         {dentists.length ? (
           <div className="card-grid">
             {dentists.map((provider) => (
-              <ProviderCard key={provider.id} provider={provider} compact />
+              <ProviderCard
+                key={provider.id}
+                provider={provider}
+                compact
+                showSpecialty={false}
+              />
             ))}
           </div>
         ) : (
           <EmptyState
             title="لم نجد أطباء أسنان مطابقين لبحثك"
-            description="جرّب تغيير المحافظة أو المنطقة أو الاختصاص، أو ابحث بكلمة أبسط مثل اسم الطبيب أو نوع خدمة الأسنان."
+            description="جرّب تغيير المحافظة أو المنطقة، أو ابحث بكلمة أبسط مثل اسم الطبيب أو نوع خدمة الأسنان."
           />
         )}
       </section>

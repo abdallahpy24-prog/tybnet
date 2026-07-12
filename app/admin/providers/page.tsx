@@ -26,75 +26,92 @@ function providerTypeLabel(
 }
 
 export default async function ProvidersPage() {
-  const [governorates, areas, specialties, rows] = await Promise.all([
-    prisma.governorate.findMany({
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
-    }),
+  const [governorates, areas, specialties, rows] =
+    await Promise.all([
+      prisma.governorate.findMany({
+        orderBy: [
+          { sortOrder: "asc" },
+          { name: "asc" }
+        ]
+      }),
 
-    prisma.area.findMany({
-      include: {
-        governorate: true
-      },
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
-    }),
+      prisma.area.findMany({
+        include: {
+          governorate: true
+        },
+        orderBy: [
+          { sortOrder: "asc" },
+          { name: "asc" }
+        ]
+      }),
 
-    prisma.specialty.findMany({
-      where: {
-        forType: {
-          in: ["DOCTOR", "DENTIST", "BOTH"]
-        }
-      },
-      orderBy: [{ name: "asc" }]
-    }),
+      prisma.specialty.findMany({
+        where: {
+          forType: {
+            in: [
+              "DOCTOR",
+              "BOTH"
+            ]
+          }
+        },
+        orderBy: [
+          { name: "asc" }
+        ]
+      }),
 
-    prisma.provider.findMany({
-      where: {
-        type: {
-          in: ["DOCTOR", "DENTIST"]
-        }
-      },
-      include: {
-        governorate: true,
-        area: true,
-        specialty: true
-      },
-      orderBy: [
-        { isFeatured: "desc" },
-        { bookingPoints: "desc" },
-        { sortOrder: "asc" },
-        { updatedAt: "desc" }
-      ]
-    })
-  ]);
+      prisma.provider.findMany({
+        where: {
+          type: {
+            in: [
+              "DOCTOR",
+              "DENTIST"
+            ]
+          }
+        },
+        include: {
+          governorate: true,
+          area: true,
+          specialty: true
+        },
+        orderBy: [
+          { isFeatured: "desc" },
+          { bookingPoints: "desc" },
+          { sortOrder: "asc" },
+          { updatedAt: "desc" }
+        ]
+      })
+    ]);
 
-  const governorateOptions = governorates.map((governorate) => ({
-    id: governorate.id,
-    name: governorate.name
-  }));
+  const governorateOptions =
+    governorates.map((governorate) => ({
+      id: governorate.id,
+      name: governorate.name
+    }));
 
   const areaOptions = areas.map((area) => ({
     id: area.id,
     name: area.name,
     governorateId: area.governorateId,
-    governorateName: area.governorate.name
+    governorateName:
+      area.governorate.name
   }));
 
-  const specialtyOptions = specialties.map((specialty) => ({
-    id: specialty.id,
-    name: specialty.name,
-    forType: specialty.forType
-  }));
+  const specialtyOptions =
+    specialties.map((specialty) => ({
+      id: specialty.id,
+      name: specialty.name,
+      forType: specialty.forType
+    }));
 
   const canCreate =
     governorateOptions.length > 0 &&
-    areaOptions.length > 0 &&
-    specialtyOptions.length > 0;
+    areaOptions.length > 0;
 
   return (
     <>
       <PageHeader
         title="الأطباء وأطباء الأسنان"
-        description="إدارة الأطباء وأطباء الأسنان من مكان واحد: البيانات، الاختصاص، الموقع، التواصل، الصورة، النقاط، والترتيب."
+        description="إدارة الأطباء وأطباء الأسنان من مكان واحد. الاختصاص خاص بالأطباء فقط، أما أطباء الأسنان فلا يحتاجون إلى اختيار اختصاص."
       />
 
       <FormShell title="إضافة مقدم خدمة">
@@ -102,14 +119,19 @@ export default async function ProvidersPage() {
           <ProviderForm
             mode="create"
             action={createProvider}
-            governorates={governorateOptions}
+            governorates={
+              governorateOptions
+            }
             areas={areaOptions}
-            specialties={specialtyOptions}
+            specialties={
+              specialtyOptions
+            }
           />
         ) : (
           <p className="text-sm font-bold text-red-700">
-            أكمل بيانات المحافظات والمناطق والاختصاصات أولاً قبل إضافة الأطباء
-            وأطباء الأسنان.
+            أكمل بيانات المحافظات
+            والمناطق أولاً قبل إضافة
+            الأطباء وأطباء الأسنان.
           </p>
         )}
       </FormShell>
@@ -121,51 +143,79 @@ export default async function ProvidersPage() {
               <ProviderForm
                 mode="edit"
                 action={updateProvider}
-                governorates={governorateOptions}
+                governorates={
+                  governorateOptions
+                }
                 areas={areaOptions}
-                specialties={specialtyOptions}
+                specialties={
+                  specialtyOptions
+                }
                 row={{
                   id: row.id,
                   type: row.type,
                   name: row.name,
-                  titlePrefix: row.titlePrefix,
-                  specialtyId: row.specialtyId,
-                  governorateId: row.governorateId,
+                  titlePrefix:
+                    row.titlePrefix,
+                  specialtyId:
+                    row.type === "DENTIST"
+                      ? null
+                      : row.specialtyId,
+                  governorateId:
+                    row.governorateId,
                   areaId: row.areaId,
                   slug: row.slug,
                   whatsapp: row.whatsapp,
                   phone: row.phone,
-                  instagramUrl: row.instagramUrl,
+                  instagramUrl:
+                    row.instagramUrl,
                   mapurl: row.mapurl,
                   imageUrl: row.imageUrl,
                   status: row.status,
-                  sortOrder: row.sortOrder,
-                  bookingPoints: row.bookingPoints,
-                  isFeatured: row.isFeatured,
+                  sortOrder:
+                    row.sortOrder,
+                  bookingPoints:
+                    row.bookingPoints,
+                  isFeatured:
+                    row.isFeatured,
                   address: row.address,
-                  workingHours: row.workingHours,
+                  workingHours:
+                    row.workingHours,
                   bio: row.bio
                 }}
               />
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-borderSoft pt-4 text-sm text-slate-600">
                 <div className="flex flex-wrap items-center gap-2">
-                  <StatusPill value={row.status} />
+                  <StatusPill
+                    value={row.status}
+                  />
 
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
-                    {providerTypeLabel(row.type)}
+                    {providerTypeLabel(
+                      row.type
+                    )}
                   </span>
 
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
-                    {row.specialty?.name ?? "بدون اختصاص"}
-                  </span>
+                  {row.type !==
+                  "DENTIST" ? (
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
+                      {row.specialty
+                        ?.name ??
+                        "بدون اختصاص"}
+                    </span>
+                  ) : null}
 
                   <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-extrabold text-primary-dark">
-                    النقاط: {row.bookingPoints}
+                    النقاط:{" "}
+                    {row.bookingPoints}
                   </span>
 
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
-                    {row.governorate.name} - {row.area.name}
+                    {
+                      row.governorate
+                        .name
+                    }{" "}
+                    - {row.area.name}
                   </span>
 
                   {row.isFeatured ? (
@@ -193,9 +243,19 @@ export default async function ProvidersPage() {
                   ) : null}
                 </div>
 
-                <form action={deleteProvider}>
-                  <input type="hidden" name="id" value={row.id} />
-                  <Button type="submit" variant="danger">
+                <form
+                  action={deleteProvider}
+                >
+                  <input
+                    type="hidden"
+                    name="id"
+                    value={row.id}
+                  />
+
+                  <Button
+                    type="submit"
+                    variant="danger"
+                  >
                     حذف/تعطيل آمن
                   </Button>
                 </form>
@@ -204,7 +264,8 @@ export default async function ProvidersPage() {
           ))
         ) : (
           <Card className="text-center text-sm font-bold text-slate-500">
-            لا توجد بيانات أطباء بعد.
+            لا توجد بيانات أطباء
+            بعد.
           </Card>
         )}
       </div>

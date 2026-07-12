@@ -73,8 +73,12 @@ async function ensureSpecialtyMatchesProviderType(
   specialtyId: string | null | undefined,
   type: "DOCTOR" | "DENTIST"
 ) {
+  if (type === "DENTIST") {
+    return;
+  }
+
   if (!specialtyId) {
-    throw new Error("الاختصاص مطلوب");
+    throw new Error("اختصاص الطبيب مطلوب");
   }
 
   const specialty = await prisma.specialty.findUnique({
@@ -87,7 +91,8 @@ async function ensureSpecialtyMatchesProviderType(
     throw new Error("الاختصاص غير موجود أو غير مفعل");
   }
 
-  const isValid = specialty.forType === "BOTH" || specialty.forType === type;
+  const isValid =
+    specialty.forType === "DOCTOR" || specialty.forType === "BOTH";
 
   if (!isValid) {
     throw new Error("الاختصاص المختار لا يناسب نوع مقدم الخدمة");
@@ -653,7 +658,8 @@ export async function createProvider(formData: FormData) {
     data: {
       ...parsed,
       slug: await uniqueProviderSlug(parsed.name, parsed.slug),
-      specialtyId: parsed.specialtyId || null,
+      specialtyId:
+        parsed.type === "DENTIST" ? null : parsed.specialtyId || null,
       bio: parsed.bio || null,
       address: parsed.address || null,
       mapurl: parsed.mapurl || null,
@@ -710,7 +716,8 @@ export async function updateProvider(formData: FormData) {
     data: {
       ...parsed,
       slug: parsed.slug?.trim() || before.slug,
-      specialtyId: parsed.specialtyId || null,
+      specialtyId:
+        parsed.type === "DENTIST" ? null : parsed.specialtyId || null,
       bio: parsed.bio || null,
       address: parsed.address || null,
       mapurl: parsed.mapurl || null,
