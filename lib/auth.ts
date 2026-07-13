@@ -59,8 +59,10 @@ async function authorizeAdmin(
         .sort();
 
       for (const lockKey of lockKeys) {
-        await tx.$queryRaw`
-          SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))
+        await tx.$queryRaw<Array<{ lock: string }>>`
+          SELECT pg_advisory_xact_lock(
+            hashtextextended(${lockKey}, 0)
+          )::text AS "lock"
         `;
       }
 
