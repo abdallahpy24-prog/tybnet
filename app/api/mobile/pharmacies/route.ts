@@ -142,7 +142,7 @@ function buildPharmacyWhatsappMessage(input: {
     input.services ? `الخدمات: ${input.services}` : null,
     input.workingHours ? `أوقات العمل: ${input.workingHours}` : null,
     "",
-    `رابط الصفحة: ${input.profileUrl}`,
+    `رابط الصفحة: ${input.profileUrl}`
   ].filter(Boolean);
 
   return lines.join("\n");
@@ -161,7 +161,7 @@ export async function GET(request: NextRequest) {
         searchParams.get("governorate") ??
         undefined,
       areaId:
-        searchParams.get("areaId") ?? searchParams.get("area") ?? undefined,
+        searchParams.get("areaId") ?? searchParams.get("area") ?? undefined
     });
 
     return NextResponse.json({
@@ -186,7 +186,7 @@ export async function GET(request: NextRequest) {
           address: pharmacy.address,
           services: pharmacy.services,
           workingHours: pharmacy.workingHours,
-          profileUrl,
+          profileUrl
         });
 
         return {
@@ -219,8 +219,6 @@ export async function GET(request: NextRequest) {
 
           workingHours: pharmacy.workingHours,
           isFeatured: pharmacy.isFeatured,
-
-          sortOrder: pharmacy.sortOrder,
           inquiryCount: pharmacy.inquiryCount,
 
           profileUrl,
@@ -231,9 +229,9 @@ export async function GET(request: NextRequest) {
           primaryActionLabel: "استفسار",
           detailsActionLabel: "التفاصيل",
           secondaryActionLabel: "اتصال سريع",
-          mapActionLabel: "الموقع",
+          mapActionLabel: "الموقع"
         };
-      }),
+      })
     });
   } catch (error) {
     console.error("Mobile pharmacies API error", error);
@@ -241,7 +239,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         ok: false,
-        message: "صار خطأ أثناء جلب الصيدليات",
+        message: "صار خطأ أثناء جلب الصيدليات"
       },
       { status: 500 }
     );

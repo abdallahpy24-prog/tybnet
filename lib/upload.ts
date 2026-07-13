@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
 
 const MAX_BYTES = 3 * 1024 * 1024; // 3MB
+const MAX_INPUT_PIXELS = 25_000_000;
 
 const ALLOWED_TYPES = new Set([
   "image/jpeg",
@@ -14,6 +15,7 @@ const ALLOWED_TYPES = new Set([
   "image/gif"
 ]);
 
+const ALLOWED_FORMATS = new Set(["jpeg", "png", "webp", "gif"]);
 const IMAGE_WIDTH = 1200;
 const IMAGE_QUALITY = 82;
 const DEFAULT_BUCKET = "tibnet-uploads";
@@ -27,7 +29,7 @@ function getUploadProvider(): UploadProvider {
     return provider;
   }
 
-  throw new Error("UPLOAD_PROVIDER غير مدعوم. استخدم local أو supabase");
+  throw new Error("إعداد خدمة رفع الصور غير صحيح");
 }
 
 function getSafeFileName() {
@@ -65,9 +67,26 @@ async function optimizeImage(file: File) {
   const bytes = Buffer.from(await file.arrayBuffer());
 
   try {
-    return await sharp(bytes, {
-      animated: false
-    })
+    const image = sharp(bytes, {
+      animated: false,
+      failOn: "error",
+      limitInputPixels: MAX_INPUT_PIXELS,
+      sequentialRead: true
+    });
+
+    const metadata = await image.metadata();
+
+    if (
+      !metadata.format ||
+      !ALLOWED_FORMATS.has(metadata.format) ||
+      !metadata.width ||
+      !metadata.height ||
+      metadata.width * metadata.height > MAX_INPUT_PIXELS
+    ) {
+      throw new Error("invalid-image");
+    }
+
+    return await image
       .rotate()
       .resize({
         width: IMAGE_WIDTH,
@@ -79,19 +98,39 @@ async function optimizeImage(file: File) {
       })
       .toBuffer();
   } catch {
-    throw new Error("تعذر معالجة الصورة. جرّب صورة أخرى بصيغة JPG أو PNG أو WebP");
+    throw new Error(
+      "تعذر معالجة الصورة. تأكد من الصيغة والأبعاد ثم جرّب صورة أخرى"
+    );
   }
 }
 
 async function saveLocalImage(output: Buffer, storagePath: string) {
-  const absolutePath = path.join(process.cwd(), "public", storagePath);
+  const publicDir = path.resolve(process.cwd(), "public");
+  const absolutePath = path.resolve(publicDir, storagePath);
+
+  if (!absolutePath.startsWith(`${publicDir}${path.sep}`)) {
+    throw new Error("مسار حفظ الصورة غير صحيح");
+  }
+
   const uploadDir = path.dirname(absolutePath);
+  const temporaryPath = `${absolutePath}.${randomUUID()}.tmp`;
 
   await mkdir(uploadDir, {
     recursive: true
   });
 
-  await writeFile(absolutePath, output);
+  try {
+    await writeFile(temporaryPath, output, {
+      flag: "wx"
+    });
+    await rename(temporaryPath, absolutePath);
+  } catch (error) {
+    await rm(temporaryPath, {
+      force: true
+    }).catch(() => undefined);
+
+    throw error;
+  }
 
   return getPublicLocalUrl(storagePath);
 }
@@ -101,12 +140,9 @@ async function saveSupabaseImage(output: Buffer, storagePath: string) {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const bucket = process.env.SUPABASE_STORAGE_BUCKET || DEFAULT_BUCKET;
 
-  if (!supabaseUrl) {
-    throw new Error("SUPABASE_URL غير موجود");
-  }
-
-  if (!serviceRoleKey) {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY غير موجود");
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error("Supabase upload configuration is incomplete");
+    throw new Error("خدمة رفع الصور غير مهيأة حالياً");
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
@@ -123,7 +159,11 @@ async function saveSupabaseImage(output: Buffer, storagePath: string) {
   });
 
   if (error) {
-    throw new Error(`فشل رفع الصورة إلى Supabase: ${error.message}`);
+    console.error("Supabase image upload error", {
+      message: error.message,
+      statusCode: error.statusCode
+    });
+    throw new Error("فشل رفع الصورة إلى خدمة التخزين");
   }
 
   const { data } = supabase.storage.from(bucket).getPublicUrl(storagePath);

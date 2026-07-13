@@ -1,20 +1,65 @@
+const securityHeaders = [
+  {
+    key: "Content-Security-Policy",
+    value:
+      "base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'"
+  },
+  {
+    key: "X-Content-Type-Options",
+    value: "nosniff"
+  },
+  {
+    key: "X-Frame-Options",
+    value: "DENY"
+  },
+  {
+    key: "Referrer-Policy",
+    value: "strict-origin-when-cross-origin"
+  },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), payment=(), usb=()"
+  },
+  {
+    key: "Cross-Origin-Opener-Policy",
+    value: "same-origin-allow-popups"
+  },
+  {
+    key: "X-DNS-Prefetch-Control",
+    value: "off"
+  }
+];
+
+if (process.env.NODE_ENV === "production") {
+  securityHeaders.push({
+    key: "Strict-Transport-Security",
+    value: "max-age=31536000"
+  });
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
     remotePatterns: [
-      // Supabase Storage images
       {
         protocol: "https",
         hostname: "*.supabase.co",
         pathname: "/storage/v1/object/public/**"
       },
-
-      // Vercel Blob images - optional if used later
       {
         protocol: "https",
         hostname: "*.public.blob.vercel-storage.com"
       }
     ]
+  },
+
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: securityHeaders
+      }
+    ];
   }
 };
 

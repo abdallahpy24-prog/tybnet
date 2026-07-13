@@ -390,7 +390,7 @@ export async function createCosmeticCenter(
       workingHours: parsed.workingHours || null,
       status: parsed.status,
       isFeatured: parsed.isFeatured,
-      sortOrder: parsed.sortOrder
+      inquiryCount: parsed.inquiryCount
     }
   });
 
@@ -418,8 +418,14 @@ export async function updateCosmeticCenter(
       }
     });
 
+  const raw = formObject(formData);
+
+  if (!("inquiryCount" in raw)) {
+    raw.inquiryCount = String(before.inquiryCount);
+  }
+
   const parsed = cosmeticCenterSchema.parse({
-    ...formObject(formData),
+    ...raw,
     isFeatured: boolFromForm(formData, "isFeatured")
   });
 
@@ -456,7 +462,7 @@ export async function updateCosmeticCenter(
       workingHours: parsed.workingHours || null,
       status: parsed.status,
       isFeatured: parsed.isFeatured,
-      sortOrder: parsed.sortOrder
+      inquiryCount: parsed.inquiryCount
     }
   });
 

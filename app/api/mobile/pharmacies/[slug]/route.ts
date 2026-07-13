@@ -142,7 +142,7 @@ function buildPharmacySummary(input: {
     input.services ? `الخدمات: ${input.services}` : null,
     input.address ? `العنوان: ${input.address}` : null,
     input.workingHours ? `أوقات العمل: ${input.workingHours}` : null,
-    "يمكنك الاستفسار عن توفر الأدوية والخدمات عبر واتساب أو الاتصال السريع عند توفر بيانات التواصل.",
+    "يمكنك الاستفسار عن توفر الأدوية والخدمات عبر واتساب أو الاتصال السريع عند توفر بيانات التواصل."
   ].filter(Boolean);
 
   return lines.join("\n");
@@ -171,7 +171,7 @@ function buildPharmacyWhatsappMessage(input: {
     input.services ? `الخدمات: ${input.services}` : null,
     input.workingHours ? `أوقات العمل: ${input.workingHours}` : null,
     "",
-    `رابط الصفحة: ${input.profileUrl}`,
+    `رابط الصفحة: ${input.profileUrl}`
   ].filter(Boolean);
 
   return lines.join("\n");
@@ -194,7 +194,7 @@ export async function GET(
       return NextResponse.json(
         {
           ok: false,
-          message: "الصيدلية غير موجودة",
+          message: "الصيدلية غير موجودة"
         },
         { status: 404 }
       );
@@ -217,7 +217,7 @@ export async function GET(
       address: pharmacy.address,
       services: pharmacy.services,
       workingHours: pharmacy.workingHours,
-      profileUrl,
+      profileUrl
     });
 
     return NextResponse.json({
@@ -252,8 +252,6 @@ export async function GET(
 
         workingHours: pharmacy.workingHours,
         isFeatured: pharmacy.isFeatured,
-
-        sortOrder: pharmacy.sortOrder,
         inquiryCount: pharmacy.inquiryCount,
 
         profileUrl,
@@ -268,14 +266,14 @@ export async function GET(
           governorate: governorateName,
           area: areaName,
           address: pharmacy.address,
-          workingHours: pharmacy.workingHours,
+          workingHours: pharmacy.workingHours
         }),
 
         primaryActionLabel: "استفسار",
         detailsActionLabel: "التفاصيل",
         secondaryActionLabel: "اتصال سريع",
-        mapActionLabel: "الموقع",
-      },
+        mapActionLabel: "الموقع"
+      }
     });
   } catch (error) {
     console.error("Mobile pharmacy details API error", error);
@@ -283,7 +281,7 @@ export async function GET(
     return NextResponse.json(
       {
         ok: false,
-        message: "صار خطأ أثناء جلب بيانات الصيدلية",
+        message: "صار خطأ أثناء جلب بيانات الصيدلية"
       },
       { status: 500 }
     );

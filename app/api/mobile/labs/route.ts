@@ -142,7 +142,7 @@ function buildLabWhatsappMessage(input: {
     input.address ? `العنوان: ${input.address}` : null,
     input.workingHours ? `أوقات العمل: ${input.workingHours}` : null,
     "",
-    `رابط الصفحة: ${input.profileUrl}`,
+    `رابط الصفحة: ${input.profileUrl}`
   ].filter(Boolean);
 
   return lines.join("\n");
@@ -161,7 +161,7 @@ export async function GET(request: NextRequest) {
         searchParams.get("governorate") ??
         undefined,
       areaId:
-        searchParams.get("areaId") ?? searchParams.get("area") ?? undefined,
+        searchParams.get("areaId") ?? searchParams.get("area") ?? undefined
     });
 
     return NextResponse.json({
@@ -185,7 +185,7 @@ export async function GET(request: NextRequest) {
           address: lab.address,
           workingHours: lab.workingHours,
           services: lab.services,
-          profileUrl,
+          profileUrl
         });
 
         return {
@@ -218,8 +218,6 @@ export async function GET(request: NextRequest) {
 
           workingHours: lab.workingHours,
           isFeatured: lab.isFeatured,
-
-          sortOrder: lab.sortOrder,
           inquiryCount: lab.inquiryCount,
 
           profileUrl,
@@ -230,9 +228,9 @@ export async function GET(request: NextRequest) {
           primaryActionLabel: "استفسار",
           detailsActionLabel: "التفاصيل",
           secondaryActionLabel: "اتصال سريع",
-          mapActionLabel: "الموقع",
+          mapActionLabel: "الموقع"
         };
-      }),
+      })
     });
   } catch (error) {
     console.error("Mobile labs API error", error);
@@ -240,7 +238,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         ok: false,
-        message: "صار خطأ أثناء جلب المختبرات",
+        message: "صار خطأ أثناء جلب المختبرات"
       },
       { status: 500 }
     );

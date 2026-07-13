@@ -1,274 +1,127 @@
-﻿import {
-  createProvider,
-  deleteProvider,
-  updateProvider
-} from "@/lib/actions/admin";
-import { prisma } from "@/lib/prisma";
+﻿import Link from "next/link";
+import { Plus } from "lucide-react";
+
+import { AdminSearch } from "@/components/admin/admin-search";
+import { LocationRequirement } from "@/components/admin/location-requirement";
 import { PageHeader } from "@/components/admin/page-header";
-import { FormShell } from "@/components/admin/form-shell";
-import { ProviderForm } from "@/components/admin/provider-form";
-import { StatusPill } from "@/components/admin/status-pill";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { ProviderAdminList } from "@/components/admin/provider-admin-list";
+import { SpecialtyManager } from "@/components/admin/specialty-manager";
+import { prisma } from "@/lib/prisma";
 
-function providerTypeLabel(
-  type: "DOCTOR" | "DENTIST" | "COSMETIC_DOCTOR"
-) {
-  if (type === "DENTIST") {
-    return "طبيب أسنان";
-  }
+type ProvidersPageProps = {
+  searchParams: Promise<{
+    q?: string;
+  }>;
+};
 
-  if (type === "COSMETIC_DOCTOR") {
-    return "طبيب تجميل";
-  }
+export default async function ProvidersPage({
+  searchParams
+}: ProvidersPageProps) {
+  const q = (await searchParams).q?.trim() ?? "";
 
-  return "طبيب";
-}
-
-export default async function ProvidersPage() {
-  const [governorates, areas, specialties, rows] =
+  const [governorateCount, areaCount, specialties, rows] =
     await Promise.all([
-      prisma.governorate.findMany({
-        orderBy: [
-          { sortOrder: "asc" },
-          { name: "asc" }
-        ]
-      }),
-
-      prisma.area.findMany({
-        include: {
-          governorate: true
-        },
-        orderBy: [
-          { sortOrder: "asc" },
-          { name: "asc" }
-        ]
-      }),
-
+      prisma.governorate.count(),
+      prisma.area.count(),
       prisma.specialty.findMany({
         where: {
-          forType: {
-            in: [
-              "DOCTOR",
-              "BOTH"
-            ]
-          }
+          forType: "DOCTOR"
         },
         orderBy: [
+          { isActive: "desc" },
           { name: "asc" }
         ]
       }),
-
       prisma.provider.findMany({
         where: {
-          type: {
-            in: [
-              "DOCTOR",
-              "DENTIST"
-            ]
-          }
+          type: "DOCTOR",
+          ...(q
+            ? {
+                OR: [
+                  {
+                    name: {
+                      contains: q,
+                      mode: "insensitive" as const
+                    }
+                  },
+                  {
+                    specialty: {
+                      name: {
+                        contains: q,
+                        mode: "insensitive" as const
+                      }
+                    }
+                  },
+                  {
+                    governorate: {
+                      name: {
+                        contains: q,
+                        mode: "insensitive" as const
+                      }
+                    }
+                  },
+                  {
+                    area: {
+                      name: {
+                        contains: q,
+                        mode: "insensitive" as const
+                      }
+                    }
+                  }
+                ]
+              }
+            : {})
         },
         include: {
+          specialty: true,
           governorate: true,
-          area: true,
-          specialty: true
+          area: true
         },
         orderBy: [
-          { isFeatured: "desc" },
           { bookingPoints: "desc" },
-          { sortOrder: "asc" },
           { updatedAt: "desc" }
         ]
       })
     ]);
 
-  const governorateOptions =
-    governorates.map((governorate) => ({
-      id: governorate.id,
-      name: governorate.name
-    }));
-
-  const areaOptions = areas.map((area) => ({
-    id: area.id,
-    name: area.name,
-    governorateId: area.governorateId,
-    governorateName:
-      area.governorate.name
-  }));
-
-  const specialtyOptions =
-    specialties.map((specialty) => ({
-      id: specialty.id,
-      name: specialty.name,
-      forType: specialty.forType
-    }));
-
-  const canCreate =
-    governorateOptions.length > 0 &&
-    areaOptions.length > 0;
-
   return (
-    <>
-      <PageHeader
-        title="الأطباء وأطباء الأسنان"
-        description="إدارة الأطباء وأطباء الأسنان من مكان واحد. الاختصاص خاص بالأطباء فقط، أما أطباء الأسنان فلا يحتاجون إلى اختيار اختصاص."
+    <div className="space-y-5">
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+        <PageHeader
+          title="الأطباء"
+          description="قائمة مرتبة تلقائياً حسب النقاط. اختصاصات الأطباء موجودة داخل هذا القسم فقط."
+        />
+
+        <Link
+          href="/admin/providers/new"
+          className="focus-ring mb-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-primary to-primary-dark px-4 text-sm font-bold text-white"
+        >
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          إضافة طبيب
+        </Link>
+      </div>
+
+      <LocationRequirement
+        hasGovernorates={governorateCount > 0}
+        hasAreas={areaCount > 0}
       />
 
-      <FormShell title="إضافة مقدم خدمة">
-        {canCreate ? (
-          <ProviderForm
-            mode="create"
-            action={createProvider}
-            governorates={
-              governorateOptions
-            }
-            areas={areaOptions}
-            specialties={
-              specialtyOptions
-            }
-          />
-        ) : (
-          <p className="text-sm font-bold text-red-700">
-            أكمل بيانات المحافظات
-            والمناطق أولاً قبل إضافة
-            الأطباء وأطباء الأسنان.
-          </p>
-        )}
-      </FormShell>
+      <SpecialtyManager forType="DOCTOR" rows={specialties} />
 
-      <div className="grid gap-4">
-        {rows.length ? (
-          rows.map((row) => (
-            <Card key={row.id}>
-              <ProviderForm
-                mode="edit"
-                action={updateProvider}
-                governorates={
-                  governorateOptions
-                }
-                areas={areaOptions}
-                specialties={
-                  specialtyOptions
-                }
-                row={{
-                  id: row.id,
-                  type: row.type,
-                  name: row.name,
-                  titlePrefix:
-                    row.titlePrefix,
-                  specialtyId:
-                    row.type === "DENTIST"
-                      ? null
-                      : row.specialtyId,
-                  governorateId:
-                    row.governorateId,
-                  areaId: row.areaId,
-                  slug: row.slug,
-                  whatsapp: row.whatsapp,
-                  phone: row.phone,
-                  instagramUrl:
-                    row.instagramUrl,
-                  mapurl: row.mapurl,
-                  imageUrl: row.imageUrl,
-                  status: row.status,
-                  sortOrder:
-                    row.sortOrder,
-                  bookingPoints:
-                    row.bookingPoints,
-                  isFeatured:
-                    row.isFeatured,
-                  address: row.address,
-                  workingHours:
-                    row.workingHours,
-                  bio: row.bio
-                }}
-              />
+      <AdminSearch
+        defaultValue={q}
+        placeholder="ابحث عن طبيب، اختصاص، محافظة أو منطقة..."
+      />
 
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-borderSoft pt-4 text-sm text-slate-600">
-                <div className="flex flex-wrap items-center gap-2">
-                  <StatusPill
-                    value={row.status}
-                  />
-
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
-                    {providerTypeLabel(
-                      row.type
-                    )}
-                  </span>
-
-                  {row.type !==
-                  "DENTIST" ? (
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
-                      {row.specialty
-                        ?.name ??
-                        "بدون اختصاص"}
-                    </span>
-                  ) : null}
-
-                  <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-extrabold text-primary-dark">
-                    النقاط:{" "}
-                    {row.bookingPoints}
-                  </span>
-
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
-                    {
-                      row.governorate
-                        .name
-                    }{" "}
-                    - {row.area.name}
-                  </span>
-
-                  {row.isFeatured ? (
-                    <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-extrabold text-amber-700">
-                      مميز
-                    </span>
-                  ) : null}
-
-                  {row.imageUrl ? (
-                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-700">
-                      صورة
-                    </span>
-                  ) : null}
-
-                  {row.mapurl ? (
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
-                      لوكيشن
-                    </span>
-                  ) : null}
-
-                  {row.whatsapp ? (
-                    <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-extrabold text-green-700">
-                      واتساب
-                    </span>
-                  ) : null}
-                </div>
-
-                <form
-                  action={deleteProvider}
-                >
-                  <input
-                    type="hidden"
-                    name="id"
-                    value={row.id}
-                  />
-
-                  <Button
-                    type="submit"
-                    variant="danger"
-                  >
-                    حذف/تعطيل آمن
-                  </Button>
-                </form>
-              </div>
-            </Card>
-          ))
-        ) : (
-          <Card className="text-center text-sm font-bold text-slate-500">
-            لا توجد بيانات أطباء
-            بعد.
-          </Card>
-        )}
-      </div>
-    </>
+      <ProviderAdminList
+        rows={rows}
+        editBasePath="/admin/providers"
+        emptyText={
+          q
+            ? "لا توجد نتائج مطابقة."
+            : "لا يوجد أطباء بعد."
+        }
+      />
+    </div>
   );
 }

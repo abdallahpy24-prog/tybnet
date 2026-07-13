@@ -1,20 +1,44 @@
 import type { Metadata } from "next";
+
 import "./globals.css";
+
+export const dynamic = "force-dynamic";
+
+function getMetadataBase() {
+  const siteUrl =
+    process.env.PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.AUTH_URL ||
+    "https://tybnet.com";
+
+  try {
+    return new URL(siteUrl);
+  } catch {
+    return new URL("https://tybnet.com");
+  }
+}
+
 export const metadata: Metadata = {
   title: {
     default: "طب نت - TybNet",
     template: "%s | طب نت"
   },
-  description: "منصة خدمات طبية عراقية للبحث عن الأطباء وأطباء الأسنان والصيدليات والمختبرات والعروض.",
-  metadataBase: new URL(process.env.PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  description:
+    "منصة خدمات طبية عراقية للبحث عن الأطباء وأطباء الأسنان والصيدليات والمختبرات والعروض.",
+  metadataBase: getMetadataBase(),
   openGraph: {
-    title: "طب نت - TibNet",
-    description: "ابحث عن الخدمات الطبية في العراق حسب المحافظة والمنطقة والاختصاص.",
+    title: "طب نت - TybNet",
+    description:
+      "ابحث عن الخدمات الطبية في العراق حسب المحافظة والمنطقة والاختصاص.",
     images: ["/assets/logo.png"]
   }
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="ar" dir="rtl">
       <body>{children}</body>

@@ -1,185 +1,102 @@
-import {
-  createPharmacy,
-  deletePharmacy,
-  updatePharmacy,
-} from "@/lib/actions/admin";
-import { prisma } from "@/lib/prisma";
+import Link from "next/link";
+import { Plus } from "lucide-react";
+
+import { AdminSearch } from "@/components/admin/admin-search";
+import { LocationRequirement } from "@/components/admin/location-requirement";
 import { PageHeader } from "@/components/admin/page-header";
-import { FormShell } from "@/components/admin/form-shell";
-import { ServicePlaceForm } from "@/components/admin/service-place-form";
-import { StatusPill } from "@/components/admin/status-pill";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { ServicePlaceAdminList } from "@/components/admin/service-place-admin-list";
+import { prisma } from "@/lib/prisma";
 
-export default async function PharmaciesAdminPage() {
-  const [governorates, areas, rows] = await Promise.all([
-    prisma.governorate.findMany({
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-    }),
+type PharmaciesAdminPageProps = {
+  searchParams: Promise<{
+    q?: string;
+  }>;
+};
 
-    prisma.area.findMany({
-      include: {
-        governorate: true,
-      },
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-    }),
+export default async function PharmaciesAdminPage({
+  searchParams
+}: PharmaciesAdminPageProps) {
+  const q = (await searchParams).q?.trim() ?? "";
 
+  const [governorateCount, areaCount, rows] = await Promise.all([
+    prisma.governorate.count(),
+    prisma.area.count(),
     prisma.pharmacy.findMany({
+      where: q
+        ? {
+            OR: [
+              {
+                name: {
+                  contains: q,
+                  mode: "insensitive" as const
+                }
+              },
+              {
+                governorate: {
+                  name: {
+                    contains: q,
+                    mode: "insensitive" as const
+                  }
+                }
+              },
+              {
+                area: {
+                  name: {
+                    contains: q,
+                    mode: "insensitive" as const
+                  }
+                }
+              }
+            ]
+          }
+        : undefined,
       include: {
         governorate: true,
-        area: true,
+        area: true
       },
       orderBy: [
-        { isFeatured: "desc" },
         { inquiryCount: "desc" },
-        { sortOrder: "asc" },
-        { updatedAt: "desc" },
-      ],
-    }),
+        { updatedAt: "desc" }
+      ]
+    })
   ]);
 
-  const governorateOptions = governorates.map((governorate) => ({
-    id: governorate.id,
-    name: governorate.name,
-  }));
-
-  const areaOptions = areas.map((area) => ({
-    id: area.id,
-    name: area.name,
-    governorateId: area.governorateId,
-    governorateName: area.governorate.name,
-  }));
-
-  const canCreate = governorateOptions.length > 0 && areaOptions.length > 0;
-
   return (
-    <>
-      <PageHeader
-        title="الصيدليات"
-        description="إدارة بروفايلات الصيدليات: النبذة، الخدمات، الصورة، الموقع، التواصل، أوقات الدوام، وعدد النقاط."
+    <div className="space-y-5">
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+        <PageHeader
+          title="الصيدليات"
+          description="قائمة صغيرة مرتبة تلقائياً حسب نقاط الاستفسار."
+        />
+
+        <Link
+          href="/admin/pharmacies/new"
+          className="focus-ring mb-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-primary to-primary-dark px-4 text-sm font-bold text-white"
+        >
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          إضافة صيدلية
+        </Link>
+      </div>
+
+      <LocationRequirement
+        hasGovernorates={governorateCount > 0}
+        hasAreas={areaCount > 0}
       />
 
-      <FormShell title="إضافة صيدلية">
-        {canCreate ? (
-          <ServicePlaceForm
-            kind="pharmacy"
-            action={createPharmacy}
-            governorates={governorateOptions}
-            areas={areaOptions}
-            submit="إضافة صيدلية"
-          />
-        ) : (
-          <p className="text-sm font-bold text-red-700">
-            أضف محافظة ومنطقة أولاً قبل إضافة الصيدليات.
-          </p>
-        )}
-      </FormShell>
+      <AdminSearch
+        defaultValue={q}
+        placeholder="ابحث عن صيدلية، محافظة أو منطقة..."
+      />
 
-      <div className="grid gap-4">
-        {rows.length ? (
-          rows.map((row) => (
-            <Card key={row.id}>
-              <ServicePlaceForm
-                kind="pharmacy"
-                action={updatePharmacy}
-                governorates={governorateOptions}
-                areas={areaOptions}
-                submit="حفظ التعديل"
-                row={{
-                  id: row.id,
-                  name: row.name,
-                  slug: row.slug,
-                  governorateId: row.governorateId,
-                  areaId: row.areaId,
-                  whatsapp: row.whatsapp,
-                  phone: row.phone,
-                  imageUrl: row.imageUrl,
-                  status: row.status,
-                  isFeatured: row.isFeatured,
-                  address: row.address,
-                  mapurl: row.mapurl,
-                  workingHours: row.workingHours,
-                  bio: row.bio,
-                  services: row.services,
-                  sortOrder: row.sortOrder,
-                  inquiryCount: row.inquiryCount,
-                }}
-              />
-
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-borderSoft pt-4 text-sm text-slate-600">
-                <div className="flex flex-wrap items-center gap-2">
-                  <StatusPill value={row.status} />
-
-                  <span>
-                    {row.governorate.name} - {row.area.name}
-                  </span>
-
-                  <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-extrabold text-primary">
-                    {row.inquiryCount} استفسار
-                  </span>
-
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
-                    ترتيب {row.sortOrder}
-                  </span>
-
-                  {row.isFeatured ? (
-                    <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-extrabold text-amber-700">
-                      مميز
-                    </span>
-                  ) : null}
-
-                  {row.bio ? (
-                    <span className="rounded-full bg-purple-50 px-3 py-1 text-xs font-extrabold text-purple-700">
-                      نبذة
-                    </span>
-                  ) : null}
-
-                  {row.services ? (
-                    <span className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-extrabold text-cyan-700">
-                      خدمات
-                    </span>
-                  ) : null}
-
-                  {row.imageUrl ? (
-                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-700">
-                      صورة
-                    </span>
-                  ) : null}
-
-                  {row.mapurl ? (
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
-                      لوكيشن
-                    </span>
-                  ) : null}
-
-                  {row.whatsapp ? (
-                    <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-extrabold text-green-700">
-                      واتساب
-                    </span>
-                  ) : null}
-
-                  {row.phone ? (
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
-                      اتصال
-                    </span>
-                  ) : null}
-                </div>
-
-                <form action={deletePharmacy}>
-                  <input type="hidden" name="id" value={row.id} />
-                  <Button type="submit" variant="danger">
-                    حذف
-                  </Button>
-                </form>
-              </div>
-            </Card>
-          ))
-        ) : (
-          <Card className="text-center text-sm font-bold text-slate-500">
-            لا توجد صيدليات بعد.
-          </Card>
-        )}
-      </div>
-    </>
+      <ServicePlaceAdminList
+        rows={rows}
+        editBasePath="/admin/pharmacies"
+        emptyText={
+          q
+            ? "لا توجد نتائج مطابقة."
+            : "لا توجد صيدليات بعد."
+        }
+      />
+    </div>
   );
 }

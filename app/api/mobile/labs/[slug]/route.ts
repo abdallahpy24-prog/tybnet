@@ -142,7 +142,7 @@ function buildLabSummary(input: {
     input.services ? `الخدمات: ${input.services}` : null,
     input.address ? `العنوان: ${input.address}` : null,
     input.workingHours ? `أوقات العمل: ${input.workingHours}` : null,
-    "يمكنك الاستفسار عن التحاليل والخدمات والأسعار عبر واتساب أو الاتصال السريع عند توفر بيانات التواصل.",
+    "يمكنك الاستفسار عن التحاليل والخدمات والأسعار عبر واتساب أو الاتصال السريع عند توفر بيانات التواصل."
   ].filter(Boolean);
 
   return lines.join("\n");
@@ -171,7 +171,7 @@ function buildLabWhatsappMessage(input: {
     input.address ? `العنوان: ${input.address}` : null,
     input.workingHours ? `أوقات العمل: ${input.workingHours}` : null,
     "",
-    `رابط الصفحة: ${input.profileUrl}`,
+    `رابط الصفحة: ${input.profileUrl}`
   ].filter(Boolean);
 
   return lines.join("\n");
@@ -194,7 +194,7 @@ export async function GET(
       return NextResponse.json(
         {
           ok: false,
-          message: "المختبر غير موجود",
+          message: "المختبر غير موجود"
         },
         { status: 404 }
       );
@@ -216,7 +216,7 @@ export async function GET(
       address: lab.address,
       services: lab.services,
       workingHours: lab.workingHours,
-      profileUrl,
+      profileUrl
     });
 
     return NextResponse.json({
@@ -251,8 +251,6 @@ export async function GET(
 
         workingHours: lab.workingHours,
         isFeatured: lab.isFeatured,
-
-        sortOrder: lab.sortOrder,
         inquiryCount: lab.inquiryCount,
 
         profileUrl,
@@ -267,14 +265,14 @@ export async function GET(
           governorate: governorateName,
           area: areaName,
           address: lab.address,
-          workingHours: lab.workingHours,
+          workingHours: lab.workingHours
         }),
 
         primaryActionLabel: "استفسار",
         detailsActionLabel: "التفاصيل",
         secondaryActionLabel: "اتصال سريع",
-        mapActionLabel: "الموقع",
-      },
+        mapActionLabel: "الموقع"
+      }
     });
   } catch (error) {
     console.error("Mobile lab details API error", error);
@@ -282,7 +280,7 @@ export async function GET(
     return NextResponse.json(
       {
         ok: false,
-        message: "صار خطأ أثناء جلب بيانات المختبر",
+        message: "صار خطأ أثناء جلب بيانات المختبر"
       },
       { status: 500 }
     );

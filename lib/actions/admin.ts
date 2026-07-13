@@ -91,10 +91,7 @@ async function ensureSpecialtyMatchesProviderType(
     throw new Error("الاختصاص غير موجود أو غير مفعل");
   }
 
-  const isValid =
-    specialty.forType === "DOCTOR" || specialty.forType === "BOTH";
-
-  if (!isValid) {
+  if (specialty.forType !== "DOCTOR") {
     throw new Error("الاختصاص المختار لا يناسب نوع مقدم الخدمة");
   }
 }
@@ -144,7 +141,7 @@ async function uniqueAreaSlug(
 
 async function uniqueSpecialtySlug(
   name: string,
-  forType: "DOCTOR" | "DENTIST" | "COSMETIC_DOCTOR" | "BOTH",
+  forType: "DOCTOR" | "COSMETIC_DOCTOR",
   provided?: string | null
 ) {
   const base = provided?.trim() || name;
@@ -340,9 +337,14 @@ export async function deleteGovernorate(formData: FormData) {
         governorateId: id,
       },
     }),
+    prisma.cosmeticCenter.count({
+      where: {
+        governorateId: id,
+      },
+    }),
   ]);
 
-  if (linked.some(Boolean)) {
+  if (linked.some((count) => count > 0)) {
     const row = await prisma.governorate.update({
       where: {
         id,
@@ -478,9 +480,14 @@ export async function deleteArea(formData: FormData) {
         areaId: id,
       },
     }),
+    prisma.cosmeticCenter.count({
+      where: {
+        areaId: id,
+      },
+    }),
   ]);
 
-  if (linked.some(Boolean)) {
+  if (linked.some((count) => count > 0)) {
     const row = await prisma.area.update({
       where: {
         id,
@@ -659,7 +666,7 @@ export async function createProvider(formData: FormData) {
       ...parsed,
       slug: await uniqueProviderSlug(parsed.name, parsed.slug),
       specialtyId:
-        parsed.type === "DENTIST" ? null : parsed.specialtyId || null,
+        parsed.type === "DENTIST" ? null : parsed.specialtyId,
       bio: parsed.bio || null,
       address: parsed.address || null,
       mapurl: parsed.mapurl || null,
@@ -717,7 +724,7 @@ export async function updateProvider(formData: FormData) {
       ...parsed,
       slug: parsed.slug?.trim() || before.slug,
       specialtyId:
-        parsed.type === "DENTIST" ? null : parsed.specialtyId || null,
+        parsed.type === "DENTIST" ? null : parsed.specialtyId,
       bio: parsed.bio || null,
       address: parsed.address || null,
       mapurl: parsed.mapurl || null,
@@ -941,7 +948,7 @@ export async function createPharmacy(formData: FormData) {
       workingHours: parsed.workingHours || null,
       status: parsed.status,
       isFeatured: parsed.isFeatured,
-      sortOrder: parsed.sortOrder,
+      inquiryCount: parsed.inquiryCount,
     },
   });
 
@@ -968,8 +975,14 @@ export async function updatePharmacy(formData: FormData) {
     },
   });
 
+  const raw = formObject(formData);
+
+  if (!("inquiryCount" in raw)) {
+    raw.inquiryCount = String(before.inquiryCount);
+  }
+
   const parsed = servicePlaceSchema.parse({
-    ...formObject(formData),
+    ...raw,
     isFeatured: boolFromForm(formData, "isFeatured"),
   });
 
@@ -994,7 +1007,7 @@ export async function updatePharmacy(formData: FormData) {
       workingHours: parsed.workingHours || null,
       status: parsed.status,
       isFeatured: parsed.isFeatured,
-      sortOrder: parsed.sortOrder,
+      inquiryCount: parsed.inquiryCount,
     },
   });
 
@@ -1068,7 +1081,7 @@ export async function createLab(formData: FormData) {
       workingHours: parsed.workingHours || null,
       status: parsed.status,
       isFeatured: parsed.isFeatured,
-      sortOrder: parsed.sortOrder,
+      inquiryCount: parsed.inquiryCount,
     },
   });
 
@@ -1095,8 +1108,14 @@ export async function updateLab(formData: FormData) {
     },
   });
 
+  const raw = formObject(formData);
+
+  if (!("inquiryCount" in raw)) {
+    raw.inquiryCount = String(before.inquiryCount);
+  }
+
   const parsed = servicePlaceSchema.parse({
-    ...formObject(formData),
+    ...raw,
     isFeatured: boolFromForm(formData, "isFeatured"),
   });
 
@@ -1121,7 +1140,7 @@ export async function updateLab(formData: FormData) {
       workingHours: parsed.workingHours || null,
       status: parsed.status,
       isFeatured: parsed.isFeatured,
-      sortOrder: parsed.sortOrder,
+      inquiryCount: parsed.inquiryCount,
     },
   });
 
@@ -1302,11 +1321,6 @@ export async function createUser(formData: FormData) {
   const email = normalizedEmailFromForm(formData, "email");
   const username = normalizedUsernameFromForm(formData, "username");
   const password = String(formData.get("password") ?? "");
-  const role =
-    String(formData.get("role") ?? Role.EDITOR) === Role.ADMIN
-      ? Role.ADMIN
-      : Role.EDITOR;
-
   if (!name || !email || !username || password.length < 8) {
     throw new Error("الاسم والبريد واسم المستخدم وكلمة مرور 8 أحرف مطلوبة");
   }
@@ -1316,7 +1330,7 @@ export async function createUser(formData: FormData) {
       name,
       email,
       username,
-      role,
+      role: Role.ADMIN,
       passwordHash: await bcrypt.hash(password, 12),
       isActive: true,
     },
@@ -1351,10 +1365,6 @@ export async function updateUser(formData: FormData) {
   const name = textFromForm(formData, "name");
   const email = normalizedEmailFromForm(formData, "email");
   const username = normalizedUsernameFromForm(formData, "username");
-  const role =
-    String(formData.get("role") ?? Role.EDITOR) === Role.ADMIN
-      ? Role.ADMIN
-      : Role.EDITOR;
   const isActive = boolFromForm(formData, "isActive");
 
   if (!name || !email || !username) {
@@ -1371,7 +1381,7 @@ export async function updateUser(formData: FormData) {
   if (
     before.role === Role.ADMIN &&
     before.isActive &&
-    (!isActive || role !== Role.ADMIN) &&
+    !isActive &&
     activeAdmins <= 1
   ) {
     throw new Error("لا يمكن تعطيل أو تغيير آخر أدمن نشط");
@@ -1388,7 +1398,7 @@ export async function updateUser(formData: FormData) {
     name,
     email,
     username,
-    role,
+    role: Role.ADMIN,
     isActive,
   };
 

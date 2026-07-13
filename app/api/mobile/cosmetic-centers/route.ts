@@ -378,9 +378,6 @@ export async function GET(
             isFeatured:
               center.isFeatured,
 
-            sortOrder:
-              center.sortOrder,
-
             inquiryCount:
               center.inquiryCount,
 

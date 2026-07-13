@@ -1,7 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
+import { NextRequest, NextResponse } from "next/server";
 
-import { getPublicLabBySlug, incrementLabInquiryCount } from "@/lib/queries";
+import {
+  getInquiryFingerprint,
+  inquiryWasRecentlyCounted,
+  recordInquiry
+} from "@/lib/inquiry-protection";
+import { prisma } from "@/lib/prisma";
+import { getPublicLabBySlug } from "@/lib/queries";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +40,14 @@ function cleanText(value?: string | null) {
   return String(value || "").trim();
 }
 
+function readSlug(value: string) {
+  try {
+    return decodeURIComponent(value).trim();
+  } catch {
+    return "";
+  }
+}
+
 function buildLabWhatsappMessage(input: {
   name: string;
   governorate?: string | null;
@@ -57,7 +71,7 @@ function buildLabWhatsappMessage(input: {
     input.address ? `العنوان: ${input.address}` : null,
     input.workingHours ? `أوقات العمل: ${input.workingHours}` : null,
     "",
-    `رابط الصفحة: ${input.profileUrl}`,
+    `رابط الصفحة: ${input.profileUrl}`
   ].filter(Boolean);
 
   return lines.join("\n");
@@ -70,7 +84,6 @@ async function handleInquiry(
 ) {
   const baseUrl = getBaseUrl(request);
   const siteUrl = getSiteUrl(baseUrl);
-
   const lab = await getPublicLabBySlug(slug);
 
   if (!lab) {
@@ -81,7 +94,7 @@ async function handleInquiry(
     return NextResponse.json(
       {
         ok: false,
-        message: "المختبر غير موجود",
+        message: "المختبر غير موجود"
       },
       { status: 404 }
     );
@@ -98,7 +111,7 @@ async function handleInquiry(
       address: lab.address,
       services: lab.services,
       workingHours: lab.workingHours,
-      profileUrl,
+      profileUrl
     })
   );
 
@@ -110,18 +123,69 @@ async function handleInquiry(
     return NextResponse.json(
       {
         ok: false,
-        message: "واتساب غير متوفر لهذا المختبر",
+        message: "واتساب غير متوفر لهذا المختبر"
       },
       { status: 400 }
     );
   }
 
-  await incrementLabInquiryCount(slug);
+  const fingerprint = getInquiryFingerprint(request);
 
-  revalidatePath("/labs");
-  revalidatePath(`/labs/${lab.slug}`);
+  const result = await prisma.$transaction(async (tx) => {
+    const duplicate = await inquiryWasRecentlyCounted(tx, {
+      entity: "Lab",
+      entityId: lab.id,
+      fingerprint
+    });
 
-  const nextInquiryCount = (lab.inquiryCount ?? 0) + 1;
+    if (duplicate) {
+      const current = await tx.lab.findUnique({
+        where: {
+          id: lab.id
+        },
+        select: {
+          inquiryCount: true
+        }
+      });
+
+      return {
+        incremented: false,
+        inquiryCount: current?.inquiryCount ?? lab.inquiryCount
+      };
+    }
+
+    const updated = await tx.lab.update({
+      where: {
+        id: lab.id
+      },
+      data: {
+        inquiryCount: {
+          increment: 1
+        }
+      },
+      select: {
+        inquiryCount: true
+      }
+    });
+
+    await recordInquiry(tx, {
+      entity: "Lab",
+      entityId: lab.id,
+      fingerprint,
+      inquiryCount: updated.inquiryCount,
+      source: responseType === "json" ? "mobile-api" : "public-redirect"
+    });
+
+    return {
+      incremented: true,
+      inquiryCount: updated.inquiryCount
+    };
+  });
+
+  if (result.incremented) {
+    revalidatePath("/labs");
+    revalidatePath(`/labs/${lab.slug}`);
+  }
 
   if (responseType === "redirect") {
     return NextResponse.redirect(whatsappUrl);
@@ -131,25 +195,65 @@ async function handleInquiry(
     ok: true,
     type: "lab",
     slug: lab.slug,
-    inquiryCount: nextInquiryCount,
-    whatsappUrl,
+    inquiryCount: result.inquiryCount,
+    whatsappUrl
   });
+}
+
+async function respond(
+  request: NextRequest,
+  context: { params: Promise<{ slug: string }> },
+  responseType: "redirect" | "json"
+) {
+  const baseUrl = getBaseUrl(request);
+  const siteUrl = getSiteUrl(baseUrl);
+
+  try {
+    const { slug } = await context.params;
+    const cleanSlug = readSlug(slug);
+
+    if (!cleanSlug) {
+      if (responseType === "redirect") {
+        return NextResponse.redirect(`${siteUrl}/labs`);
+      }
+
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "رابط المختبر غير صحيح"
+        },
+        { status: 400 }
+      );
+    }
+
+    return await handleInquiry(request, cleanSlug, responseType);
+  } catch (error) {
+    console.error("Lab inquiry API error", error);
+
+    if (responseType === "redirect") {
+      return NextResponse.redirect(`${siteUrl}/labs`);
+    }
+
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "صار خطأ أثناء فتح استفسار المختبر"
+      },
+      { status: 500 }
+    );
+  }
 }
 
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ slug: string }> }
 ) {
-  const { slug } = await context.params;
-
-  return handleInquiry(request, decodeURIComponent(slug), "redirect");
+  return respond(request, context, "redirect");
 }
 
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ slug: string }> }
 ) {
-  const { slug } = await context.params;
-
-  return handleInquiry(request, decodeURIComponent(slug), "json");
+  return respond(request, context, "json");
 }

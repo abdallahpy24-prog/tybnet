@@ -6,94 +6,119 @@ import { saveImage } from "@/lib/upload";
 export const runtime = "nodejs";
 
 const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
+const MAX_REQUEST_SIZE = MAX_FILE_SIZE + 512 * 1024;
+const UNAUTHORIZED_MESSAGE = "غير مصرح لك بتنفيذ هذه العملية";
 
-function isUnauthorizedError(message: string) {
-  return (
-    message.includes("غير مصرح") ||
-    message.includes("Unauthorized") ||
-    message.toLowerCase().includes("admin")
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif"
+]);
+
+function errorResponse(error: string, status: number) {
+  return NextResponse.json(
+    {
+      ok: false,
+      error
+    },
+    {
+      status,
+      headers: {
+        "Cache-Control": "no-store"
+      }
+    }
   );
 }
 
-function isValidImageType(type: string) {
-  return ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(type);
+function isUploadInputError(message: string) {
+  return (
+    message === "ملف الصورة فارغ" ||
+    message.startsWith("الملف يجب أن يكون صورة") ||
+    message.startsWith("حجم الصورة يجب ألا يتجاوز") ||
+    message.startsWith("تعذر معالجة الصورة")
+  );
+}
+
+function readContentLength(request: NextRequest) {
+  const value = request.headers.get("content-length");
+
+  if (!value) {
+    return null;
+  }
+
+  const length = Number(value);
+
+  return Number.isSafeInteger(length) && length >= 0 ? length : null;
 }
 
 export async function POST(request: NextRequest) {
   try {
     await requireAdminApi();
 
-    const formData = await request.formData();
+    const contentLength = readContentLength(request);
+
+    if (contentLength !== null && contentLength > MAX_REQUEST_SIZE) {
+      return errorResponse("حجم الصورة يجب ألا يتجاوز 3MB", 413);
+    }
+
+    let formData: FormData;
+
+    try {
+      formData = await request.formData();
+    } catch {
+      return errorResponse("تعذر قراءة ملف الصورة المرسل", 400);
+    }
+
     const file = formData.get("file");
 
     if (!(file instanceof File)) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "الصورة مطلوبة"
-        },
-        {
-          status: 400
-        }
-      );
+      return errorResponse("الصورة مطلوبة", 400);
     }
 
     if (!file.size) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "ملف الصورة فارغ"
-        },
-        {
-          status: 400
-        }
-      );
+      return errorResponse("ملف الصورة فارغ", 400);
     }
 
-    if (!file.type.startsWith("image/") || !isValidImageType(file.type)) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "الملف يجب أن يكون صورة بصيغة JPG أو PNG أو WebP أو GIF"
-        },
-        {
-          status: 400
-        }
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+      return errorResponse(
+        "الملف يجب أن يكون صورة بصيغة JPG أو PNG أو WebP أو GIF",
+        400
       );
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "حجم الصورة يجب ألا يتجاوز 3MB"
-        },
-        {
-          status: 400
-        }
-      );
+      return errorResponse("حجم الصورة يجب ألا يتجاوز 3MB", 413);
     }
 
     const url = await saveImage(file);
 
-    return NextResponse.json({
-      ok: true,
-      url,
-      imageUrl: url,
-      path: url
-    });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "فشل رفع الصورة";
-
     return NextResponse.json(
       {
-        ok: false,
-        error: message
+        ok: true,
+        url,
+        imageUrl: url,
+        path: url
       },
       {
-        status: isUnauthorizedError(message) ? 401 : 400
+        headers: {
+          "Cache-Control": "no-store"
+        }
       }
     );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+
+    if (message === UNAUTHORIZED_MESSAGE) {
+      return errorResponse("غير مصرح لك بتنفيذ هذه العملية", 401);
+    }
+
+    if (isUploadInputError(message)) {
+      return errorResponse(message, 400);
+    }
+
+    console.error("Image upload API error", error);
+
+    return errorResponse("صار خطأ أثناء رفع الصورة", 500);
   }
 }

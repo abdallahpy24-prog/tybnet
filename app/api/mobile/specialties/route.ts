@@ -7,33 +7,29 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
+type SpecialtyForValue =
+  | "DOCTOR"
+  | "COSMETIC_DOCTOR";
+
 function readSpecialtyFor(
   value: string | null
-) {
+): SpecialtyForValue[] {
   if (value === "DOCTOR") {
-    return [
-      "DOCTOR",
-      "BOTH"
-    ] as const;
+    return ["DOCTOR"];
   }
 
   if (value === "DENTIST") {
-    return [] as const;
+    return [];
   }
 
-  if (
-    value === "COSMETIC_DOCTOR"
-  ) {
-    return [
-      "COSMETIC_DOCTOR"
-    ] as const;
+  if (value === "COSMETIC_DOCTOR") {
+    return ["COSMETIC_DOCTOR"];
   }
 
   return [
     "DOCTOR",
-    "BOTH",
     "COSMETIC_DOCTOR"
-  ] as const;
+  ];
 }
 
 export async function GET(
@@ -44,17 +40,24 @@ export async function GET(
       request.url
     );
 
-    const forType =
-      readSpecialtyFor(
-        searchParams.get("forType")
-      );
+    const forTypes = readSpecialtyFor(
+      searchParams.get("forType")
+    );
+
+    if (!forTypes.length) {
+      return NextResponse.json({
+        ok: true,
+        count: 0,
+        items: []
+      });
+    }
 
     const specialties =
       await prisma.specialty.findMany({
         where: {
           isActive: true,
           forType: {
-            in: [...forType]
+            in: forTypes
           }
         },
         orderBy: [

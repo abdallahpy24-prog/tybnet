@@ -1,38 +1,25 @@
-import {
-  NextRequest,
-  NextResponse
-} from "next/server";
 import { revalidatePath } from "next/cache";
+import { NextRequest, NextResponse } from "next/server";
 
 import {
-  getPublicCosmeticCenterBySlug,
-  incrementCosmeticCenterInquiryCount
-} from "@/lib/queries";
+  getInquiryFingerprint,
+  inquiryWasRecentlyCounted,
+  recordInquiry
+} from "@/lib/inquiry-protection";
+import { prisma } from "@/lib/prisma";
+import { getPublicCosmeticCenterBySlug } from "@/lib/queries";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
 
 function getBaseUrl(request: NextRequest) {
-  const forwardedHost = request.headers.get(
-    "x-forwarded-host"
-  );
-
-  const host =
-    forwardedHost ??
-    request.headers.get("host");
-
-  const forwardedProto = request.headers.get(
-    "x-forwarded-proto"
-  );
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const host = forwardedHost ?? request.headers.get("host");
+  const forwardedProto = request.headers.get("x-forwarded-proto");
 
   if (host) {
-    const protocol =
-      forwardedProto
-        ?.split(",")[0]
-        ?.trim() || "https";
-
-    const cleanHost =
-      host.split(",")[0]?.trim();
+    const protocol = forwardedProto?.split(",")[0]?.trim() || "https";
+    const cleanHost = host.split(",")[0]?.trim();
 
     return `${protocol}://${cleanHost}`;
   }
@@ -53,21 +40,24 @@ function cleanText(value?: string | null) {
   return String(value || "").trim();
 }
 
-function buildCosmeticCenterWhatsappMessage(
-  input: {
-    name: string;
-    governorate?: string | null;
-    area?: string | null;
-    address?: string | null;
-    services?: string | null;
-    workingHours?: string | null;
-    profileUrl: string;
+function readSlug(value: string) {
+  try {
+    return decodeURIComponent(value).trim();
+  } catch {
+    return "";
   }
-) {
-  const location = [
-    input.governorate,
-    input.area
-  ]
+}
+
+function buildCosmeticCenterWhatsappMessage(input: {
+  name: string;
+  governorate?: string | null;
+  area?: string | null;
+  address?: string | null;
+  services?: string | null;
+  workingHours?: string | null;
+  profileUrl: string;
+}) {
+  const location = [input.governorate, input.area]
     .map(cleanText)
     .filter(Boolean)
     .join(" - ");
@@ -76,18 +66,10 @@ function buildCosmeticCenterWhatsappMessage(
     "مرحباً، وصلت لكم عن طريق طب نت وأرغب بالاستفسار عن خدمة تجميلية أو موعد.",
     "",
     `مركز التجميل: ${input.name}`,
-    location
-      ? `المنطقة: ${location}`
-      : null,
-    input.services
-      ? `الخدمات: ${input.services}`
-      : null,
-    input.address
-      ? `العنوان: ${input.address}`
-      : null,
-    input.workingHours
-      ? `أوقات العمل: ${input.workingHours}`
-      : null,
+    location ? `المنطقة: ${location}` : null,
+    input.services ? `الخدمات: ${input.services}` : null,
+    input.address ? `العنوان: ${input.address}` : null,
+    input.workingHours ? `أوقات العمل: ${input.workingHours}` : null,
     "",
     `رابط الصفحة: ${input.profileUrl}`
   ].filter(Boolean);
@@ -102,131 +84,178 @@ async function handleInquiry(
 ) {
   const baseUrl = getBaseUrl(request);
   const siteUrl = getSiteUrl(baseUrl);
-
-  const center =
-    await getPublicCosmeticCenterBySlug(
-      slug
-    );
+  const center = await getPublicCosmeticCenterBySlug(slug);
 
   if (!center) {
     if (responseType === "redirect") {
-      return NextResponse.redirect(
-        `${siteUrl}/cosmetic-centers`
-      );
+      return NextResponse.redirect(`${siteUrl}/cosmetic-centers`);
     }
 
     return NextResponse.json(
       {
         ok: false,
-        message:
-          "مركز التجميل غير موجود"
+        message: "مركز التجميل غير موجود"
       },
-      {
-        status: 404
-      }
+      { status: 404 }
     );
   }
 
-  const profileUrl =
-    `${siteUrl}/cosmetic-centers/${center.slug}`;
+  const profileUrl = `${siteUrl}/cosmetic-centers/${center.slug}`;
 
   const whatsappUrl = buildWhatsappUrl(
     center.whatsapp,
     buildCosmeticCenterWhatsappMessage({
       name: center.name,
-      governorate:
-        center.governorate?.name,
+      governorate: center.governorate?.name,
       area: center.area?.name,
       address: center.address,
       services: center.services,
-      workingHours:
-        center.workingHours,
+      workingHours: center.workingHours,
       profileUrl
     })
   );
 
   if (!whatsappUrl) {
     if (responseType === "redirect") {
-      return NextResponse.redirect(
-        profileUrl
-      );
+      return NextResponse.redirect(profileUrl);
     }
 
     return NextResponse.json(
       {
         ok: false,
-        message:
-          "واتساب غير متوفر لهذا المركز"
+        message: "واتساب غير متوفر لهذا المركز"
       },
-      {
-        status: 400
-      }
+      { status: 400 }
     );
   }
 
-  await incrementCosmeticCenterInquiryCount(
-    slug
-  );
+  const fingerprint = getInquiryFingerprint(request);
 
-  revalidatePath("/cosmetic-centers");
-  revalidatePath(
-    `/cosmetic-centers/${center.slug}`
-  );
-  revalidatePath(
-    "/api/mobile/cosmetic-centers"
-  );
-  revalidatePath(
-    `/api/mobile/cosmetic-centers/${center.slug}`
-  );
+  const result = await prisma.$transaction(async (tx) => {
+    const duplicate = await inquiryWasRecentlyCounted(tx, {
+      entity: "CosmeticCenter",
+      entityId: center.id,
+      fingerprint
+    });
 
-  const nextInquiryCount =
-    (center.inquiryCount ?? 0) + 1;
+    if (duplicate) {
+      const current = await tx.cosmeticCenter.findUnique({
+        where: {
+          id: center.id
+        },
+        select: {
+          inquiryCount: true
+        }
+      });
+
+      return {
+        incremented: false,
+        inquiryCount: current?.inquiryCount ?? center.inquiryCount
+      };
+    }
+
+    const updated = await tx.cosmeticCenter.update({
+      where: {
+        id: center.id
+      },
+      data: {
+        inquiryCount: {
+          increment: 1
+        }
+      },
+      select: {
+        inquiryCount: true
+      }
+    });
+
+    await recordInquiry(tx, {
+      entity: "CosmeticCenter",
+      entityId: center.id,
+      fingerprint,
+      inquiryCount: updated.inquiryCount,
+      source: responseType === "json" ? "mobile-api" : "public-redirect"
+    });
+
+    return {
+      incremented: true,
+      inquiryCount: updated.inquiryCount
+    };
+  });
+
+  if (result.incremented) {
+    revalidatePath("/cosmetic-centers");
+    revalidatePath(`/cosmetic-centers/${center.slug}`);
+    revalidatePath("/api/mobile/cosmetic-centers");
+    revalidatePath(`/api/mobile/cosmetic-centers/${center.slug}`);
+  }
 
   if (responseType === "redirect") {
-    return NextResponse.redirect(
-      whatsappUrl
-    );
+    return NextResponse.redirect(whatsappUrl);
   }
 
   return NextResponse.json({
     ok: true,
     type: "cosmetic_center",
     slug: center.slug,
-    inquiryCount: nextInquiryCount,
+    inquiryCount: result.inquiryCount,
     whatsappUrl
   });
 }
 
+async function respond(
+  request: NextRequest,
+  context: { params: Promise<{ slug: string }> },
+  responseType: "redirect" | "json"
+) {
+  const baseUrl = getBaseUrl(request);
+  const siteUrl = getSiteUrl(baseUrl);
+
+  try {
+    const { slug } = await context.params;
+    const cleanSlug = readSlug(slug);
+
+    if (!cleanSlug) {
+      if (responseType === "redirect") {
+        return NextResponse.redirect(`${siteUrl}/cosmetic-centers`);
+      }
+
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "رابط مركز التجميل غير صحيح"
+        },
+        { status: 400 }
+      );
+    }
+
+    return await handleInquiry(request, cleanSlug, responseType);
+  } catch (error) {
+    console.error("Cosmetic center inquiry API error", error);
+
+    if (responseType === "redirect") {
+      return NextResponse.redirect(`${siteUrl}/cosmetic-centers`);
+    }
+
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "صار خطأ أثناء فتح استفسار مركز التجميل"
+      },
+      { status: 500 }
+    );
+  }
+}
+
 export async function GET(
   request: NextRequest,
-  context: {
-    params: Promise<{
-      slug: string;
-    }>;
-  }
+  context: { params: Promise<{ slug: string }> }
 ) {
-  const { slug } = await context.params;
-
-  return handleInquiry(
-    request,
-    decodeURIComponent(slug),
-    "redirect"
-  );
+  return respond(request, context, "redirect");
 }
 
 export async function POST(
   request: NextRequest,
-  context: {
-    params: Promise<{
-      slug: string;
-    }>;
-  }
+  context: { params: Promise<{ slug: string }> }
 ) {
-  const { slug } = await context.params;
-
-  return handleInquiry(
-    request,
-    decodeURIComponent(slug),
-    "json"
-  );
+  return respond(request, context, "json");
 }

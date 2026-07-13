@@ -16,11 +16,9 @@ type ProviderType = "DOCTOR" | "DENTIST" | "COSMETIC_DOCTOR";
 
 type SpecialtyFor =
   | "DOCTOR"
-  | "DENTIST"
-  | "COSMETIC_DOCTOR"
-  | "BOTH";
+  | "COSMETIC_DOCTOR";
 
-type ProviderStatus = "DRAFT" | "ACTIVE" | "INACTIVE";
+type ProviderStatus = "ACTIVE" | "INACTIVE";
 type ProviderCategory = "GENERAL" | "COSMETIC";
 
 type GovernorateOption = {
@@ -56,7 +54,6 @@ type ProviderRow = {
   mapurl: string | null;
   imageUrl: string | null;
   status: ProviderStatus;
-  sortOrder: number;
   bookingPoints: number;
   isFeatured: boolean;
   address: string | null;
@@ -73,6 +70,7 @@ type ProviderFormProps = {
   areas: AreaOption[];
   specialties: SpecialtyOption[];
   category?: ProviderCategory;
+  fixedType?: ProviderType;
   row?: ProviderRow;
 };
 
@@ -114,11 +112,7 @@ function isSpecialtyAllowed(
     return false;
   }
 
-  if (type === "COSMETIC_DOCTOR") {
-    return specialty.forType === "COSMETIC_DOCTOR";
-  }
-
-  return specialty.forType === "DOCTOR" || specialty.forType === "BOTH";
+  return specialty.forType === type;
 }
 
 function providerTypeLabel(type: ProviderType) {
@@ -327,13 +321,15 @@ export function ProviderForm({
   areas,
   specialties,
   category = "GENERAL",
+  fixedType,
   row
 }: ProviderFormProps) {
   const isCreate = mode === "create";
-  const isCosmetic = category === "COSMETIC";
+  const isCosmetic =
+    fixedType === "COSMETIC_DOCTOR" || category === "COSMETIC";
 
   const [providerType, setProviderType] = useState<ProviderType>(
-    row?.type ?? (isCosmetic ? "COSMETIC_DOCTOR" : "DOCTOR")
+    row?.type ?? fixedType ?? (isCosmetic ? "COSMETIC_DOCTOR" : "DOCTOR")
   );
 
   const firstGovernorateId =
@@ -429,20 +425,22 @@ export function ProviderForm({
         }
       >
         <Field label="النوع">
-          {isCosmetic ? (
+          {fixedType || isCosmetic ? (
             <>
               <input
                 type="hidden"
                 name="type"
-                value="COSMETIC_DOCTOR"
+                value={providerType}
               />
 
               <Select
-                value="COSMETIC_DOCTOR"
+                value={providerType}
                 disabled
                 aria-label="نوع مقدم الخدمة"
               >
-                <option value="COSMETIC_DOCTOR">طبيب تجميل</option>
+                <option value={providerType}>
+                  {providerTypeLabel(providerType)}
+                </option>
               </Select>
             </>
           ) : (
@@ -497,7 +495,6 @@ export function ProviderForm({
               {filteredSpecialties.map((specialty) => (
                 <option key={specialty.id} value={specialty.id}>
                   {specialty.name}
-                  {specialty.forType === "BOTH" ? " - عام" : ""}
                 </option>
               ))}
             </Select>
@@ -522,9 +519,8 @@ export function ProviderForm({
             name="status"
             defaultValue={row?.status ?? "ACTIVE"}
           >
-            <option value="DRAFT">Draft</option>
-            <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">Inactive</option>
+            <option value="ACTIVE">نشط</option>
+            <option value="INACTIVE">معطل</option>
           </Select>
         </Field>
 
@@ -669,18 +665,10 @@ export function ProviderForm({
         title="التفاصيل والظهور"
         description={
           isCosmetic
-            ? "النقاط والترتيب تساعدك تتحكم بمن يظهر أولاً، والنبذة وساعات الدوام تظهر داخل صفحة طبيب التجميل."
-            : "النقاط والترتيب تساعدك تتحكم بمن يظهر أولاً، والنبذة وساعات الدوام تظهر داخل صفحة الطبيب."
+            ? "النقاط تتحكم بمن يظهر أولاً، والنبذة وساعات الدوام تظهر داخل صفحة طبيب التجميل."
+            : "النقاط تتحكم بمن يظهر أولاً، والنبذة وساعات الدوام تظهر داخل صفحة الطبيب."
         }
       >
-        <Field label="الترتيب اليدوي">
-          <Input
-            name="sortOrder"
-            type="number"
-            defaultValue={row?.sortOrder ?? 0}
-          />
-        </Field>
-
         <Field label="النقاط">
           <Input
             name="bookingPoints"
@@ -726,7 +714,9 @@ export function ProviderForm({
           : isCreate
             ? isCosmetic
               ? "إضافة طبيب تجميل"
-              : "إضافة مقدم خدمة"
+              : providerType === "DENTIST"
+                ? "إضافة طبيب أسنان"
+                : "إضافة طبيب"
             : "حفظ التعديل"}
       </Button>
     </form>

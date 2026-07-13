@@ -20,15 +20,11 @@ function scalar(
 function specialtyTypesForProvider(
   type: ProviderType
 ): SpecialtyFor[] {
-  if (type === "DOCTOR") {
-    return ["DOCTOR", "BOTH"];
+  if (type === "COSMETIC_DOCTOR") {
+    return ["COSMETIC_DOCTOR"];
   }
 
-  if (type === "DENTIST") {
-    return [];
-  }
-
-  return ["COSMETIC_DOCTOR"];
+  return type === "DOCTOR" ? ["DOCTOR"] : [];
 }
 
 function publicProviderWhere(
@@ -53,9 +49,7 @@ function publicProviderWhere(
     ...where,
     specialty: {
       isActive: true,
-      forType: {
-        in: specialtyTypesForProvider(type)
-      }
+      forType: type
     }
   };
 }
@@ -74,9 +68,7 @@ function publicAnyProviderWhere(): Prisma.ProviderWhereInput {
         type: "DOCTOR",
         specialty: {
           isActive: true,
-          forType: {
-            in: ["DOCTOR", "BOTH"]
-          }
+          forType: "DOCTOR"
         }
       },
       {
@@ -318,6 +310,11 @@ export async function getFilterOptions(
           governorate: true
         },
         orderBy: [
+          {
+            governorate: {
+              sortOrder: "asc"
+            }
+          },
           { sortOrder: "asc" },
           { name: "asc" }
         ]
@@ -426,9 +423,7 @@ export async function searchProviders(
       area: true
     },
     orderBy: [
-      { isFeatured: "desc" },
       { bookingPoints: "desc" },
-      { sortOrder: "asc" },
       { updatedAt: "desc" }
     ],
     take
@@ -507,9 +502,7 @@ export async function getHomeData() {
               type: "DOCTOR",
               specialty: {
                 isActive: true,
-                forType: {
-                  in: ["DOCTOR", "BOTH"]
-                }
+                forType: "DOCTOR"
               }
             },
             {
@@ -532,7 +525,6 @@ export async function getHomeData() {
         },
         orderBy: [
           { bookingPoints: "desc" },
-          { sortOrder: "asc" },
           { updatedAt: "desc" }
         ],
         take: 6
@@ -570,9 +562,7 @@ export async function getProviderBySlug(
           type: "DOCTOR",
           specialty: {
             isActive: true,
-            forType: {
-              in: ["DOCTOR", "BOTH"]
-            }
+            forType: "DOCTOR"
           }
         },
         {
@@ -697,9 +687,7 @@ export async function getPublicPharmacies(
       area: true
     },
     orderBy: [
-      { isFeatured: "desc" },
       { inquiryCount: "desc" },
-      { sortOrder: "asc" },
       { updatedAt: "desc" }
     ]
   });
@@ -717,9 +705,7 @@ export async function getPublicLabs(
       area: true
     },
     orderBy: [
-      { isFeatured: "desc" },
       { inquiryCount: "desc" },
-      { sortOrder: "asc" },
       { updatedAt: "desc" }
     ]
   });
@@ -738,9 +724,7 @@ export async function getPublicCosmeticCenters(
       area: true
     },
     orderBy: [
-      { isFeatured: "desc" },
       { inquiryCount: "desc" },
-      { sortOrder: "asc" },
       { updatedAt: "desc" }
     ]
   });

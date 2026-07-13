@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
+
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 type AdminSession = {
   user: {
@@ -21,13 +23,54 @@ function isAdminSession(session: unknown): session is AdminSession {
   } | null;
 
   return Boolean(
-    maybeSession?.user?.id &&
-      maybeSession.user.role === "ADMIN"
+    maybeSession?.user?.id && maybeSession.user.role === "ADMIN"
   );
 }
 
-export async function requireAdmin(): Promise<AdminSession> {
+async function getVerifiedSession() {
   const session = await auth();
+  const userId = session?.user?.id;
+
+  if (!userId) {
+    return null;
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true
+      }
+    });
+
+    if (!user?.isActive) {
+      return null;
+    }
+
+    return {
+      ...session,
+      user: {
+        ...session.user,
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    };
+  } catch (error) {
+    console.error("Session verification error", error);
+    return null;
+  }
+}
+
+export async function requireAdmin(): Promise<AdminSession> {
+  const session = await getVerifiedSession();
 
   if (!isAdminSession(session)) {
     redirect("/login");
@@ -37,7 +80,7 @@ export async function requireAdmin(): Promise<AdminSession> {
 }
 
 export async function requireAdminApi(): Promise<AdminSession> {
-  const session = await auth();
+  const session = await getVerifiedSession();
 
   if (!isAdminSession(session)) {
     throw new Error("غير مصرح لك بتنفيذ هذه العملية");
@@ -47,5 +90,5 @@ export async function requireAdminApi(): Promise<AdminSession> {
 }
 
 export async function getCurrentSession() {
-  return auth();
+  return getVerifiedSession();
 }

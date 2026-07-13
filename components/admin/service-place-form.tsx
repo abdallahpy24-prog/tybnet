@@ -16,7 +16,7 @@ import {
   Textarea
 } from "@/components/ui/input";
 
-type Status = "DRAFT" | "ACTIVE" | "INACTIVE";
+type Status = "ACTIVE" | "INACTIVE";
 
 type ServiceKind =
   | "pharmacy"
@@ -52,7 +52,6 @@ type ServicePlaceRow = {
   workingHours: string | null;
   bio?: string | null;
   services?: string | null;
-  sortOrder?: number | null;
   inquiryCount?: number | null;
 };
 
@@ -444,22 +443,19 @@ export function ServicePlaceForm({
             name="status"
             defaultValue={row?.status ?? "ACTIVE"}
           >
-            <option value="DRAFT">Draft</option>
-            <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">
-              Inactive
-            </option>
+            <option value="ACTIVE">نشط</option>
+            <option value="INACTIVE">معطل</option>
           </Select>
         </Field>
 
-        <Field label="الترتيب اليدوي">
+        <Field label="النقاط">
           <Input
-            name="sortOrder"
+            name="inquiryCount"
             type="number"
             min={0}
             step={1}
             defaultValue={String(
-              row?.sortOrder ?? 0
+              row?.inquiryCount ?? 0
             )}
             placeholder="0"
           />
@@ -476,15 +472,6 @@ export function ServicePlaceForm({
           مميز
         </label>
 
-        {isEdit ? (
-          <div className="flex h-11 items-center justify-between rounded-2xl border border-borderSoft bg-primary-soft px-3 text-sm font-bold text-slate-700">
-            <span>النقاط</span>
-
-            <span className="font-black text-primary">
-              {row?.inquiryCount ?? 0}
-            </span>
-          </div>
-        ) : null}
       </AdminSection>
 
       <AdminSection
