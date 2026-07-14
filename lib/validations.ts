@@ -303,6 +303,8 @@ const providerBaseSchema = z.object({
   whatsapp: optionalIraqWhatsapp,
   instagramUrl: optionalInstagramUrl,
   imageUrl: optionalImageUrl,
+  imageThumbnailUrl: optionalImageUrl,
+  imageOriginalUrl: optionalImageUrl,
   workingHours: optionalText(500, "أوقات العمل طويلة جداً"),
   status: z.enum(["ACTIVE", "INACTIVE"]),
   isFeatured: z.coerce.boolean().default(false),
@@ -405,6 +407,8 @@ export const servicePlaceSchema = z.object({
   whatsapp: optionalIraqWhatsapp,
 
   imageUrl: optionalImageUrl,
+  imageThumbnailUrl: optionalImageUrl,
+  imageOriginalUrl: optionalImageUrl,
   workingHours: optionalText(500, "أوقات العمل طويلة جداً"),
 
   status: z.enum(["ACTIVE", "INACTIVE"]),

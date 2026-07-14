@@ -1,9 +1,53 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getPublicPharmacies } from "@/lib/queries";
+import { getPublicPharmaciesPage } from "@/lib/queries";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+const DEFAULT_TAKE = 5;
+const MAX_TAKE = 12;
+const MAX_CURSOR_LENGTH = 512;
+
+function clampTake(value: string | null) {
+  const parsed = Number(value ?? String(DEFAULT_TAKE));
+
+  if (!Number.isFinite(parsed)) {
+    return DEFAULT_TAKE;
+  }
+
+  return Math.min(
+    Math.max(Math.trunc(parsed), 1),
+    MAX_TAKE
+  );
+}
+
+function readCursor(value: string | null) {
+  const cursor = value?.trim();
+
+  if (!cursor) {
+    return {
+      ok: true as const,
+      value: null
+    };
+  }
+
+  if (
+    cursor.length > MAX_CURSOR_LENGTH ||
+    !/^[A-Za-z0-9_-]+$/.test(cursor)
+  ) {
+    return {
+      ok: false as const,
+      value: null
+    };
+  }
+
+  return {
+    ok: true as const,
+    value: cursor
+  };
+}
 
 function getBaseUrl(request: NextRequest) {
   const forwardedHost = request.headers.get("x-forwarded-host");
@@ -153,86 +197,133 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const baseUrl = getBaseUrl(request);
     const siteUrl = getSiteUrl(baseUrl);
+    const cursor = readCursor(searchParams.get("cursor"));
 
-    const pharmacies = await getPublicPharmacies({
-      q: searchParams.get("q") ?? undefined,
-      governorateId:
-        searchParams.get("governorateId") ??
-        searchParams.get("governorate") ??
-        undefined,
-      areaId:
-        searchParams.get("areaId") ?? searchParams.get("area") ?? undefined
-    });
+    if (!cursor.ok) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "مؤشر الصفحة غير صحيح"
+        },
+        {
+          status: 400,
+          headers: {
+            "Cache-Control": "no-store"
+          }
+        }
+      );
+    }
 
-    return NextResponse.json({
-      ok: true,
-      count: pharmacies.length,
-      items: pharmacies.map((pharmacy: (typeof pharmacies)[number]) => {
-        const governorateName = pharmacy.governorate?.name ?? "غير محددة";
-        const areaName = pharmacy.area?.name ?? "غير محددة";
+    const page = await getPublicPharmaciesPage(
+      {
+        q: searchParams.get("q") ?? undefined,
+        governorateId:
+          searchParams.get("governorateId") ??
+          searchParams.get("governorate") ??
+          undefined,
+        areaId:
+          searchParams.get("areaId") ?? searchParams.get("area") ?? undefined
+      },
+      {
+        cursor: cursor.value,
+        take: clampTake(searchParams.get("take"))
+      }
+    );
 
-        const profilePath = `/pharmacies/${pharmacy.slug}`;
-        const profileUrl = `${siteUrl}${profilePath}`;
-        const inquiryUrl = `${baseUrl}/api/mobile/pharmacies/${pharmacy.slug}/inquiry`;
+    return NextResponse.json(
+      {
+        ok: true,
+        count: page.items.length,
+        hasMore: page.hasMore,
+        nextCursor: page.nextCursor,
+        items: page.items.map((pharmacy: (typeof page.items)[number]) => {
+          const governorateName = pharmacy.governorate?.name ?? "غير محددة";
+          const areaName = pharmacy.area?.name ?? "غير محددة";
 
-        const mapUrl =
-          normalizeMapUrl(pharmacy.mapurl) ??
-          readMapUrlFromText(pharmacy.address);
+          const profilePath = `/pharmacies/${pharmacy.slug}`;
+          const profileUrl = `${siteUrl}${profilePath}`;
+          const inquiryUrl = `${baseUrl}/api/mobile/pharmacies/${pharmacy.slug}/inquiry`;
 
-        const whatsappMessage = buildPharmacyWhatsappMessage({
-          name: pharmacy.name,
-          governorate: governorateName,
-          area: areaName,
-          address: pharmacy.address,
-          services: pharmacy.services,
-          workingHours: pharmacy.workingHours,
-          profileUrl
-        });
+          const mapUrl =
+            normalizeMapUrl(pharmacy.mapurl) ??
+            readMapUrlFromText(pharmacy.address);
 
-        return {
-          id: pharmacy.id,
-          type: "pharmacy",
-          kindLabel: "صيدلية",
+          const whatsappMessage = buildPharmacyWhatsappMessage({
+            name: pharmacy.name,
+            governorate: governorateName,
+            area: areaName,
+            address: pharmacy.address,
+            services: pharmacy.services,
+            workingHours: pharmacy.workingHours,
+            profileUrl
+          });
 
-          name: pharmacy.name,
-          slug: pharmacy.slug,
+          const profileImageUrl = normalizeAssetUrl(
+            pharmacy.imageUrl,
+            baseUrl
+          );
 
-          governorateId: pharmacy.governorateId,
-          governorate: governorateName,
+          return {
+            id: pharmacy.id,
+            type: "pharmacy",
+            kindLabel: "صيدلية",
 
-          areaId: pharmacy.areaId,
-          area: areaName,
+            name: pharmacy.name,
+            slug: pharmacy.slug,
 
-          bio: pharmacy.bio,
-          services: pharmacy.services,
+            governorateId: pharmacy.governorateId,
+            governorate: governorateName,
 
-          imageUrl: normalizeAssetUrl(pharmacy.imageUrl, baseUrl),
+            areaId: pharmacy.areaId,
+            area: areaName,
 
-          phone: pharmacy.phone,
-          phoneUrl: buildTelUrl(pharmacy.phone),
+            bio: pharmacy.bio,
+            services: pharmacy.services,
 
-          whatsapp: pharmacy.whatsapp,
-          whatsappUrl: buildWhatsappUrl(pharmacy.whatsapp, whatsappMessage),
+            imageUrl: profileImageUrl,
+            imageThumbnailUrl:
+              normalizeAssetUrl(
+                pharmacy.imageThumbnailUrl,
+                baseUrl
+              ) ?? profileImageUrl,
+            imageOriginalUrl:
+              normalizeAssetUrl(
+                pharmacy.imageOriginalUrl,
+                baseUrl
+              ) ?? profileImageUrl,
 
-          address: pharmacy.address,
-          mapUrl,
+            phone: pharmacy.phone,
+            phoneUrl: buildTelUrl(pharmacy.phone),
 
-          workingHours: pharmacy.workingHours,
-          isFeatured: pharmacy.isFeatured,
-          inquiryCount: pharmacy.inquiryCount,
+            whatsapp: pharmacy.whatsapp,
+            whatsappUrl: buildWhatsappUrl(pharmacy.whatsapp, whatsappMessage),
 
-          profileUrl,
-          detailsUrl: profileUrl,
-          shareUrl: profileUrl,
-          inquiryUrl,
+            address: pharmacy.address,
+            mapUrl,
 
-          primaryActionLabel: "استفسار",
-          detailsActionLabel: "التفاصيل",
-          secondaryActionLabel: "اتصال سريع",
-          mapActionLabel: "الموقع"
-        };
-      })
-    });
+            workingHours: pharmacy.workingHours,
+            isFeatured: pharmacy.isFeatured,
+            inquiryCount: pharmacy.inquiryCount,
+
+            profileUrl,
+            detailsUrl: profileUrl,
+            shareUrl: profileUrl,
+            inquiryUrl,
+
+            primaryActionLabel: "استفسار",
+            detailsActionLabel: "التفاصيل",
+            secondaryActionLabel: "اتصال سريع",
+            mapActionLabel: "الموقع"
+          };
+        })
+      },
+      {
+        headers: {
+          "Cache-Control":
+            "public, max-age=30, s-maxage=60, stale-while-revalidate=300"
+        }
+      }
+    );
   } catch (error) {
     console.error("Mobile pharmacies API error", error);
 
@@ -241,7 +332,12 @@ export async function GET(request: NextRequest) {
         ok: false,
         message: "صار خطأ أثناء جلب الصيدليات"
       },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          "Cache-Control": "no-store"
+        }
+      }
     );
   }
 }

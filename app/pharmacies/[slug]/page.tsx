@@ -115,7 +115,11 @@ export async function generateMetadata({
       pharmacy.services ??
       "بروفايل صيدلية على منصة طب نت للاستفسار عن الأدوية والخدمات ومعلومات التواصل.",
     openGraph: {
-      images: pharmacy.imageUrl ? [pharmacy.imageUrl] : ["/assets/logo.png"],
+      images: pharmacy.imageUrl
+        ? [pharmacy.imageUrl]
+        : pharmacy.imageThumbnailUrl
+          ? [pharmacy.imageThumbnailUrl]
+          : ["/assets/logo.png"],
     },
   };
 }
@@ -146,6 +150,14 @@ export default async function PharmacyDetailsPage({
     pharmacy.bio ||
     `صيدلية ${pharmacy.name} في ${locationText}. يمكنك الاستفسار عن توفر الأدوية والخدمات عبر واتساب أو الاتصال السريع عند توفر بيانات التواصل.`;
 
+  const profileImageUrl =
+    pharmacy.imageUrl ??
+    pharmacy.imageThumbnailUrl;
+
+  const originalImageUrl =
+    pharmacy.imageOriginalUrl ??
+    profileImageUrl;
+
   return (
     <SiteShell>
       <section className="container-page py-8">
@@ -161,14 +173,33 @@ export default async function PharmacyDetailsPage({
           <Card className="overflow-hidden p-0">
             <div className="grid gap-6 p-6 md:grid-cols-[220px_1fr] md:items-center">
               <div className="relative mx-auto h-52 w-52 overflow-hidden rounded-[2rem] border-8 border-primary-soft bg-surface md:mx-0">
-                {pharmacy.imageUrl ? (
-                  <Image
-                    src={pharmacy.imageUrl}
-                    alt={pharmacy.name}
-                    fill
-                    sizes="208px"
-                    className="object-cover"
-                  />
+                {profileImageUrl ? (
+                  originalImageUrl ? (
+                    <a
+                      href={originalImageUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`تكبير صورة ${pharmacy.name}`}
+                      title="اضغط لعرض الصورة الأصلية"
+                      className="block h-full w-full"
+                    >
+                      <Image
+                        src={profileImageUrl}
+                        alt={pharmacy.name}
+                        fill
+                        sizes="208px"
+                        className="object-cover"
+                      />
+                    </a>
+                  ) : (
+                    <Image
+                      src={profileImageUrl}
+                      alt={pharmacy.name}
+                      fill
+                      sizes="208px"
+                      className="object-cover"
+                    />
+                  )
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-5xl font-black text-primary">
                     ص

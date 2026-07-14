@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireAdminApi } from "@/lib/permissions";
-import { saveImage } from "@/lib/upload";
+import { saveImageVariants } from "@/lib/upload";
 
 export const runtime = "nodejs";
 
@@ -91,14 +91,26 @@ export async function POST(request: NextRequest) {
       return errorResponse("حجم الصورة يجب ألا يتجاوز 3MB", 413);
     }
 
-    const url = await saveImage(file);
+    const { imageUrl, imageThumbnailUrl, imageOriginalUrl } =
+      await saveImageVariants(file);
 
     return NextResponse.json(
       {
         ok: true,
-        url,
-        imageUrl: url,
-        path: url
+
+        // Backward-compatible fields used by the current admin forms.
+        url: imageUrl,
+        imageUrl,
+        path: imageUrl,
+
+        // New image variants.
+        imageThumbnailUrl,
+        imageOriginalUrl,
+        variants: {
+          profile: imageUrl,
+          thumbnail: imageThumbnailUrl,
+          original: imageOriginalUrl
+        }
       },
       {
         headers: {

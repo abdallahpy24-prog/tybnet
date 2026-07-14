@@ -196,6 +196,8 @@ export async function createCosmeticDoctor(
       whatsapp: parsed.whatsapp || null,
       instagramUrl: parsed.instagramUrl || null,
       imageUrl: parsed.imageUrl || null,
+      imageThumbnailUrl: parsed.imageThumbnailUrl || null,
+      imageOriginalUrl: parsed.imageOriginalUrl || null,
       workingHours: parsed.workingHours || null
     }
   });
@@ -270,6 +272,8 @@ export async function updateCosmeticDoctor(
       whatsapp: parsed.whatsapp || null,
       instagramUrl: parsed.instagramUrl || null,
       imageUrl: parsed.imageUrl || null,
+      imageThumbnailUrl: parsed.imageThumbnailUrl || null,
+      imageOriginalUrl: parsed.imageOriginalUrl || null,
       workingHours: parsed.workingHours || null
     }
   });
@@ -387,6 +391,8 @@ export async function createCosmeticCenter(
       whatsapp: parsed.whatsapp || null,
       instagramUrl: parsed.instagramUrl || null,
       imageUrl: parsed.imageUrl || null,
+      imageThumbnailUrl: parsed.imageThumbnailUrl || null,
+      imageOriginalUrl: parsed.imageOriginalUrl || null,
       workingHours: parsed.workingHours || null,
       status: parsed.status,
       isFeatured: parsed.isFeatured,
@@ -459,6 +465,8 @@ export async function updateCosmeticCenter(
       whatsapp: parsed.whatsapp || null,
       instagramUrl: parsed.instagramUrl || null,
       imageUrl: parsed.imageUrl || null,
+      imageThumbnailUrl: parsed.imageThumbnailUrl || null,
+      imageOriginalUrl: parsed.imageOriginalUrl || null,
       workingHours: parsed.workingHours || null,
       status: parsed.status,
       isFeatured: parsed.isFeatured,

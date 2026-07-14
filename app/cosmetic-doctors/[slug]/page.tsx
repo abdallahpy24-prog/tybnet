@@ -143,7 +143,9 @@ export async function generateMetadata({
     openGraph: {
       images: provider.imageUrl
         ? [provider.imageUrl]
-        : ["/assets/logo.png"]
+        : provider.imageThumbnailUrl
+          ? [provider.imageThumbnailUrl]
+          : ["/assets/logo.png"]
     }
   };
 }
@@ -187,6 +189,14 @@ export default async function CosmeticDoctorDetailsPage({
     provider.instagramUrl
   );
 
+  const profileImageUrl =
+    provider.imageUrl ??
+    provider.imageThumbnailUrl;
+
+  const originalImageUrl =
+    provider.imageOriginalUrl ??
+    profileImageUrl;
+
   return (
     <SiteShell>
       <section className="container-page py-8">
@@ -205,14 +215,33 @@ export default async function CosmeticDoctorDetailsPage({
           <Card className="overflow-hidden p-0">
             <div className="grid gap-6 p-6 md:grid-cols-[220px_1fr] md:items-center">
               <div className="relative mx-auto h-52 w-52 overflow-hidden rounded-full border-8 border-primary-soft bg-surface md:mx-0">
-                {provider.imageUrl ? (
-                  <Image
-                    src={provider.imageUrl}
-                    alt={displayName}
-                    fill
-                    sizes="208px"
-                    className="object-cover"
-                  />
+                {profileImageUrl ? (
+                  originalImageUrl ? (
+                    <a
+                      href={originalImageUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`تكبير صورة ${displayName}`}
+                      title="اضغط لعرض الصورة الأصلية"
+                      className="block h-full w-full"
+                    >
+                      <Image
+                        src={profileImageUrl}
+                        alt={displayName}
+                        fill
+                        sizes="208px"
+                        className="object-cover"
+                      />
+                    </a>
+                  ) : (
+                    <Image
+                      src={profileImageUrl}
+                      alt={displayName}
+                      fill
+                      sizes="208px"
+                      className="object-cover"
+                    />
+                  )
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-5xl font-black text-primary">
                     طب

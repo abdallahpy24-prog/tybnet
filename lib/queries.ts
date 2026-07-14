@@ -11,10 +11,244 @@ export type SearchParams = Record<
   string | string[] | undefined
 >;
 
+export type PublicPageOptions = {
+  cursor?: string | null;
+  take?: number;
+};
+
+const DEFAULT_PUBLIC_PAGE_SIZE = 9;
+const MAX_PUBLIC_PAGE_SIZE = 24;
+
+type RankedCursor = {
+  score: number;
+  updatedAt: Date;
+  id: string;
+};
+
 function scalar(
   value: string | string[] | undefined
 ) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function normalizePageSize(take?: number) {
+  if (!Number.isSafeInteger(take)) {
+    return DEFAULT_PUBLIC_PAGE_SIZE;
+  }
+
+  return Math.min(
+    Math.max(take as number, 1),
+    MAX_PUBLIC_PAGE_SIZE
+  );
+}
+
+function cursorFromParams(params: SearchParams) {
+  const cursor = scalar(params.cursor)?.trim();
+
+  if (!cursor || cursor.length > 512) {
+    return null;
+  }
+
+  return cursor;
+}
+
+function encodeRankedCursor(
+  score: number,
+  updatedAt: Date,
+  id: string
+) {
+  return Buffer.from(
+    JSON.stringify({
+      v: 1,
+      s: score,
+      u: updatedAt.toISOString(),
+      i: id
+    })
+  ).toString("base64url");
+}
+
+function decodeRankedCursor(
+  value?: string | null
+): RankedCursor | null {
+  if (!value || value.length > 512) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(
+      Buffer.from(value, "base64url").toString("utf8")
+    ) as {
+      v?: unknown;
+      s?: unknown;
+      u?: unknown;
+      i?: unknown;
+    };
+
+    if (
+      parsed.v !== 1 ||
+      typeof parsed.s !== "number" ||
+      !Number.isSafeInteger(parsed.s) ||
+      parsed.s < 0 ||
+      typeof parsed.u !== "string" ||
+      typeof parsed.i !== "string" ||
+      !parsed.i ||
+      parsed.i.length > 191
+    ) {
+      return null;
+    }
+
+    const updatedAt = new Date(parsed.u);
+
+    if (Number.isNaN(updatedAt.getTime())) {
+      return null;
+    }
+
+    return {
+      score: parsed.s,
+      updatedAt,
+      id: parsed.i
+    };
+  } catch {
+    return null;
+  }
+}
+
+function buildRankedPage<
+  Row extends {
+    id: string;
+    updatedAt: Date;
+  }
+>(
+  rows: Row[],
+  take: number,
+  score: (row: Row) => number
+) {
+  const hasMore = rows.length > take;
+  const items = hasMore
+    ? rows.slice(0, take)
+    : rows;
+  const lastItem = items[items.length - 1];
+
+  return {
+    items,
+    hasMore,
+    nextCursor:
+      hasMore && lastItem
+        ? encodeRankedCursor(
+            score(lastItem),
+            lastItem.updatedAt,
+            lastItem.id
+          )
+        : null
+  };
+}
+
+function providerAfterCursor(
+  cursor: RankedCursor
+): Prisma.ProviderWhereInput {
+  return {
+    OR: [
+      {
+        bookingPoints: {
+          lt: cursor.score
+        }
+      },
+      {
+        bookingPoints: cursor.score,
+        updatedAt: {
+          lt: cursor.updatedAt
+        }
+      },
+      {
+        bookingPoints: cursor.score,
+        updatedAt: cursor.updatedAt,
+        id: {
+          lt: cursor.id
+        }
+      }
+    ]
+  };
+}
+
+function pharmacyAfterCursor(
+  cursor: RankedCursor
+): Prisma.PharmacyWhereInput {
+  return {
+    OR: [
+      {
+        inquiryCount: {
+          lt: cursor.score
+        }
+      },
+      {
+        inquiryCount: cursor.score,
+        updatedAt: {
+          lt: cursor.updatedAt
+        }
+      },
+      {
+        inquiryCount: cursor.score,
+        updatedAt: cursor.updatedAt,
+        id: {
+          lt: cursor.id
+        }
+      }
+    ]
+  };
+}
+
+function labAfterCursor(
+  cursor: RankedCursor
+): Prisma.LabWhereInput {
+  return {
+    OR: [
+      {
+        inquiryCount: {
+          lt: cursor.score
+        }
+      },
+      {
+        inquiryCount: cursor.score,
+        updatedAt: {
+          lt: cursor.updatedAt
+        }
+      },
+      {
+        inquiryCount: cursor.score,
+        updatedAt: cursor.updatedAt,
+        id: {
+          lt: cursor.id
+        }
+      }
+    ]
+  };
+}
+
+function cosmeticCenterAfterCursor(
+  cursor: RankedCursor
+): Prisma.CosmeticCenterWhereInput {
+  return {
+    OR: [
+      {
+        inquiryCount: {
+          lt: cursor.score
+        }
+      },
+      {
+        inquiryCount: cursor.score,
+        updatedAt: {
+          lt: cursor.updatedAt
+        }
+      },
+      {
+        inquiryCount: cursor.score,
+        updatedAt: cursor.updatedAt,
+        id: {
+          lt: cursor.id
+        }
+      }
+    ]
+  };
 }
 
 function specialtyTypesForProvider(
@@ -340,12 +574,16 @@ export async function getFilterOptions(
   };
 }
 
-export async function searchProviders(
+export async function searchProvidersPage(
   type: ProviderType,
   params: SearchParams = {},
-  take = 24
+  options: PublicPageOptions = {}
 ) {
   const filters = readFilters(params);
+  const take = normalizePageSize(options.take);
+  const cursor = decodeRankedCursor(
+    options.cursor ?? cursorFromParams(params)
+  );
 
   const where: Prisma.ProviderWhereInput =
     publicProviderWhere(type);
@@ -415,8 +653,12 @@ export async function searchProviders(
     where.OR = textSearch;
   }
 
-  return prisma.provider.findMany({
-    where,
+  const rows = await prisma.provider.findMany({
+    where: cursor
+      ? {
+          AND: [where, providerAfterCursor(cursor)]
+        }
+      : where,
     include: {
       specialty: true,
       governorate: true,
@@ -424,10 +666,33 @@ export async function searchProviders(
     },
     orderBy: [
       { bookingPoints: "desc" },
-      { updatedAt: "desc" }
+      { updatedAt: "desc" },
+      { id: "desc" }
     ],
-    take
+    take: take + 1
   });
+
+  return buildRankedPage(
+    rows,
+    take,
+    (row) => row.bookingPoints
+  );
+}
+
+export async function searchProviders(
+  type: ProviderType,
+  params: SearchParams = {},
+  take = 24
+) {
+  const page = await searchProvidersPage(
+    type,
+    params,
+    {
+      take
+    }
+  );
+
+  return page.items;
 }
 
 export async function getHomeData() {
@@ -525,7 +790,8 @@ export async function getHomeData() {
         },
         orderBy: [
           { bookingPoints: "desc" },
-          { updatedAt: "desc" }
+          { updatedAt: "desc" },
+          { id: "desc" }
         ],
         take: 6
       })
@@ -675,59 +941,158 @@ export async function getOffers() {
   });
 }
 
-export async function getPublicPharmacies(
-  params: SearchParams = {}
+export async function getPublicPharmaciesPage(
+  params: SearchParams = {},
+  options: PublicPageOptions = {}
 ) {
   const filters = readFilters(params);
+  const take = normalizePageSize(options.take);
+  const cursor = decodeRankedCursor(
+    options.cursor ?? cursorFromParams(params)
+  );
 
-  return prisma.pharmacy.findMany({
-    where: publicPharmacyWhere(filters),
+  const baseWhere = publicPharmacyWhere(filters);
+  const rows = await prisma.pharmacy.findMany({
+    where: cursor
+      ? {
+          AND: [baseWhere, pharmacyAfterCursor(cursor)]
+        }
+      : baseWhere,
     include: {
       governorate: true,
       area: true
     },
     orderBy: [
       { inquiryCount: "desc" },
-      { updatedAt: "desc" }
-    ]
+      { updatedAt: "desc" },
+      { id: "desc" }
+    ],
+    take: take + 1
   });
+
+  return buildRankedPage(
+    rows,
+    take,
+    (row) => row.inquiryCount
+  );
+}
+
+export async function getPublicPharmacies(
+  params: SearchParams = {},
+  take = 24
+) {
+  const page = await getPublicPharmaciesPage(
+    params,
+    {
+      take
+    }
+  );
+
+  return page.items;
+}
+
+export async function getPublicLabsPage(
+  params: SearchParams = {},
+  options: PublicPageOptions = {}
+) {
+  const filters = readFilters(params);
+  const take = normalizePageSize(options.take);
+  const cursor = decodeRankedCursor(
+    options.cursor ?? cursorFromParams(params)
+  );
+
+  const baseWhere = publicLabWhere(filters);
+  const rows = await prisma.lab.findMany({
+    where: cursor
+      ? {
+          AND: [baseWhere, labAfterCursor(cursor)]
+        }
+      : baseWhere,
+    include: {
+      governorate: true,
+      area: true
+    },
+    orderBy: [
+      { inquiryCount: "desc" },
+      { updatedAt: "desc" },
+      { id: "desc" }
+    ],
+    take: take + 1
+  });
+
+  return buildRankedPage(
+    rows,
+    take,
+    (row) => row.inquiryCount
+  );
 }
 
 export async function getPublicLabs(
-  params: SearchParams = {}
+  params: SearchParams = {},
+  take = 24
+) {
+  const page = await getPublicLabsPage(
+    params,
+    {
+      take
+    }
+  );
+
+  return page.items;
+}
+
+export async function getPublicCosmeticCentersPage(
+  params: SearchParams = {},
+  options: PublicPageOptions = {}
 ) {
   const filters = readFilters(params);
+  const take = normalizePageSize(options.take);
+  const cursor = decodeRankedCursor(
+    options.cursor ?? cursorFromParams(params)
+  );
 
-  return prisma.lab.findMany({
-    where: publicLabWhere(filters),
+  const baseWhere =
+    publicCosmeticCenterWhere(filters);
+  const rows = await prisma.cosmeticCenter.findMany({
+    where: cursor
+      ? {
+          AND: [
+            baseWhere,
+            cosmeticCenterAfterCursor(cursor)
+          ]
+        }
+      : baseWhere,
     include: {
       governorate: true,
       area: true
     },
     orderBy: [
       { inquiryCount: "desc" },
-      { updatedAt: "desc" }
-    ]
+      { updatedAt: "desc" },
+      { id: "desc" }
+    ],
+    take: take + 1
   });
+
+  return buildRankedPage(
+    rows,
+    take,
+    (row) => row.inquiryCount
+  );
 }
 
 export async function getPublicCosmeticCenters(
-  params: SearchParams = {}
+  params: SearchParams = {},
+  take = 24
 ) {
-  const filters = readFilters(params);
+  const page = await getPublicCosmeticCentersPage(
+    params,
+    {
+      take
+    }
+  );
 
-  return prisma.cosmeticCenter.findMany({
-    where:
-      publicCosmeticCenterWhere(filters),
-    include: {
-      governorate: true,
-      area: true
-    },
-    orderBy: [
-      { inquiryCount: "desc" },
-      { updatedAt: "desc" }
-    ]
-  });
+  return page.items;
 }
 
 export async function getPublicPharmacyBySlug(

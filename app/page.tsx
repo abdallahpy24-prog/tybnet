@@ -20,6 +20,8 @@ import { Card } from "@/components/ui/card";
 import { getHomeData } from "@/lib/queries";
 import { getSettingsMap } from "@/lib/settings";
 
+export const revalidate = 300;
+
 export default async function HomePage() {
   const [settings, homeData] =
     await Promise.all([

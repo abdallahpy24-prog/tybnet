@@ -45,6 +45,8 @@ type ServicePlaceRow = {
   phone: string | null;
   instagramUrl?: string | null;
   imageUrl: string | null;
+  imageThumbnailUrl?: string | null;
+  imageOriginalUrl?: string | null;
   status: Status;
   isFeatured: boolean;
   address: string | null;
@@ -100,11 +102,17 @@ function AdminSection({
   );
 }
 
+type ImageUploadValue = {
+  imageUrl: string;
+  imageThumbnailUrl: string;
+  imageOriginalUrl: string;
+};
+
 type ImageUploadFieldProps = {
-  value: string;
+  value: ImageUploadValue;
   label: string;
   placeholder: string;
-  onChange: (value: string) => void;
+  onChange: (value: ImageUploadValue) => void;
   onUploadingChange: (value: boolean) => void;
 };
 
@@ -161,7 +169,14 @@ function ImageUploadField({
             ok?: boolean;
             url?: string;
             imageUrl?: string;
+            imageThumbnailUrl?: string;
+            imageOriginalUrl?: string;
             path?: string;
+            variants?: {
+              profile?: string;
+              thumbnail?: string;
+              original?: string;
+            };
             message?: string;
             error?: string;
           }
@@ -176,8 +191,9 @@ function ImageUploadField({
       }
 
       const uploadedUrl =
-        data?.url ||
         data?.imageUrl ||
+        data?.variants?.profile ||
+        data?.url ||
         data?.path;
 
       if (!uploadedUrl) {
@@ -186,7 +202,17 @@ function ImageUploadField({
         );
       }
 
-      onChange(uploadedUrl);
+      onChange({
+        imageUrl: uploadedUrl,
+        imageThumbnailUrl:
+          data?.imageThumbnailUrl ||
+          data?.variants?.thumbnail ||
+          uploadedUrl,
+        imageOriginalUrl:
+          data?.imageOriginalUrl ||
+          data?.variants?.original ||
+          ""
+      });
     } catch (uploadError) {
       setError(
         uploadError instanceof Error
@@ -205,12 +231,30 @@ function ImageUploadField({
       <Field label={label}>
         <Input
           name="imageUrl"
-          value={value}
-          onChange={(event) =>
-            onChange(event.target.value)
-          }
+          value={value.imageUrl}
+          onChange={(event) => {
+            const nextUrl = event.target.value;
+
+            onChange({
+              imageUrl: nextUrl,
+              imageThumbnailUrl: nextUrl,
+              imageOriginalUrl: ""
+            });
+          }}
           placeholder={placeholder}
           className="ltr"
+        />
+
+        <input
+          type="hidden"
+          name="imageThumbnailUrl"
+          value={value.imageThumbnailUrl}
+        />
+
+        <input
+          type="hidden"
+          name="imageOriginalUrl"
+          value={value.imageOriginalUrl}
         />
       </Field>
 
@@ -248,12 +292,15 @@ function ImageUploadField({
           </p>
         ) : null}
 
-        {value ? (
+        {value.imageThumbnailUrl || value.imageUrl ? (
           <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
             <div className="h-28 w-full overflow-hidden rounded-2xl border border-borderSoft bg-white md:w-44">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={value}
+                src={
+                  value.imageThumbnailUrl ||
+                  value.imageUrl
+                }
                 alt="معاينة الصورة"
                 className="h-full w-full object-cover"
               />
@@ -261,14 +308,20 @@ function ImageUploadField({
 
             <div className="min-w-0 flex-1">
               <p className="break-all text-xs font-semibold leading-6 text-slate-500">
-                {value}
+                {value.imageUrl}
               </p>
 
               <Button
                 type="button"
                 variant="secondary"
                 className="mt-2"
-                onClick={() => onChange("")}
+                onClick={() =>
+                  onChange({
+                    imageUrl: "",
+                    imageThumbnailUrl: "",
+                    imageOriginalUrl: ""
+                  })
+                }
                 disabled={isUploading}
               >
                 حذف الصورة
@@ -320,9 +373,16 @@ export function ServicePlaceForm({
   const [areaId, setAreaId] =
     useState(firstAreaId);
 
-  const [imageUrl, setImageUrl] = useState(
-    row?.imageUrl ?? ""
-  );
+  const [imageValue, setImageValue] =
+    useState<ImageUploadValue>({
+      imageUrl: row?.imageUrl ?? "",
+      imageThumbnailUrl:
+        row?.imageThumbnailUrl ??
+        row?.imageUrl ??
+        "",
+      imageOriginalUrl:
+        row?.imageOriginalUrl ?? ""
+    });
 
   const [
     isImageUploading,
@@ -615,9 +675,9 @@ export function ServicePlaceForm({
       >
         <ImageUploadField
           label={imageLabel}
-          value={imageUrl}
+          value={imageValue}
           placeholder={imagePlaceholder}
-          onChange={setImageUrl}
+          onChange={setImageValue}
           onUploadingChange={
             setIsImageUploading
           }

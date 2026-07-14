@@ -116,7 +116,11 @@ export async function generateMetadata({
       lab.services ??
       "بروفايل مختبر طبي على منصة طب نت للاستفسار عن التحاليل والخدمات ومعلومات التواصل.",
     openGraph: {
-      images: lab.imageUrl ? [lab.imageUrl] : ["/assets/logo.png"],
+      images: lab.imageUrl
+        ? [lab.imageUrl]
+        : lab.imageThumbnailUrl
+          ? [lab.imageThumbnailUrl]
+          : ["/assets/logo.png"],
     },
   };
 }
@@ -147,6 +151,14 @@ export default async function LabDetailsPage({
     lab.bio ||
     `مختبر ${lab.name} في ${locationText}. يمكنك الاستفسار عن التحاليل والخدمات والأسعار عبر واتساب أو الاتصال السريع عند توفر بيانات التواصل.`;
 
+  const profileImageUrl =
+    lab.imageUrl ??
+    lab.imageThumbnailUrl;
+
+  const originalImageUrl =
+    lab.imageOriginalUrl ??
+    profileImageUrl;
+
   return (
     <SiteShell>
       <section className="container-page py-8">
@@ -162,14 +174,33 @@ export default async function LabDetailsPage({
           <Card className="overflow-hidden p-0">
             <div className="grid gap-6 p-6 md:grid-cols-[220px_1fr] md:items-center">
               <div className="relative mx-auto h-52 w-52 overflow-hidden rounded-[2rem] border-8 border-primary-soft bg-surface md:mx-0">
-                {lab.imageUrl ? (
-                  <Image
-                    src={lab.imageUrl}
-                    alt={lab.name}
-                    fill
-                    sizes="208px"
-                    className="object-cover"
-                  />
+                {profileImageUrl ? (
+                  originalImageUrl ? (
+                    <a
+                      href={originalImageUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`تكبير صورة ${lab.name}`}
+                      title="اضغط لعرض الصورة الأصلية"
+                      className="block h-full w-full"
+                    >
+                      <Image
+                        src={profileImageUrl}
+                        alt={lab.name}
+                        fill
+                        sizes="208px"
+                        className="object-cover"
+                      />
+                    </a>
+                  ) : (
+                    <Image
+                      src={profileImageUrl}
+                      alt={lab.name}
+                      fill
+                      sizes="208px"
+                      className="object-cover"
+                    />
+                  )
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-5xl font-black text-primary">
                     م

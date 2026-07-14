@@ -3,13 +3,18 @@ import {
   NextResponse
 } from "next/server";
 
-import { searchProviders } from "@/lib/queries";
+import { searchProvidersPage } from "@/lib/queries";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 type MobileProviderType =
-  Parameters<typeof searchProviders>[0];
+  Parameters<typeof searchProvidersPage>[0];
+
+const DEFAULT_TAKE = 5;
+const MAX_TAKE = 12;
+const MAX_CURSOR_LENGTH = 512;
 
 function readProviderType(
   value: string | null
@@ -26,16 +31,42 @@ function readProviderType(
 }
 
 function clampTake(value: string | null) {
-  const parsed = Number(value ?? "24");
+  const parsed = Number(value ?? String(DEFAULT_TAKE));
 
   if (!Number.isFinite(parsed)) {
-    return 24;
+    return DEFAULT_TAKE;
   }
 
   return Math.min(
     Math.max(Math.trunc(parsed), 1),
-    50
+    MAX_TAKE
   );
+}
+
+function readCursor(value: string | null) {
+  const cursor = value?.trim();
+
+  if (!cursor) {
+    return {
+      ok: true as const,
+      value: null
+    };
+  }
+
+  if (
+    cursor.length > MAX_CURSOR_LENGTH ||
+    !/^[A-Za-z0-9_-]+$/.test(cursor)
+  ) {
+    return {
+      ok: false as const,
+      value: null
+    };
+  }
+
+  return {
+    ok: true as const,
+    value: cursor
+  };
 }
 
 function getBaseUrl(request: NextRequest) {
@@ -235,141 +266,187 @@ export async function GET(
             "type لازم يكون DOCTOR أو DENTIST أو COSMETIC_DOCTOR"
         },
         {
-          status: 400
+          status: 400,
+          headers: {
+            "Cache-Control": "no-store"
+          }
         }
       );
     }
 
-    const providers =
-      await searchProviders(
-        type,
+    const cursor = readCursor(
+      searchParams.get("cursor")
+    );
+
+    if (!cursor.ok) {
+      return NextResponse.json(
         {
-          q:
-            searchParams.get("q") ??
-            undefined,
-
-          governorateId:
-            searchParams.get(
-              "governorateId"
-            ) ??
-            searchParams.get(
-              "governorate"
-            ) ??
-            undefined,
-
-          areaId:
-            searchParams.get(
-              "areaId"
-            ) ??
-            searchParams.get("area") ??
-            undefined,
-
-          specialtyId:
-            type === "DENTIST"
-              ? undefined
-              : searchParams.get(
-                    "specialtyId"
-                  ) ??
-                  searchParams.get(
-                    "specialty"
-                  ) ??
-                  undefined
+          ok: false,
+          message: "مؤشر الصفحة غير صحيح"
         },
-        clampTake(
+        {
+          status: 400,
+          headers: {
+            "Cache-Control": "no-store"
+          }
+        }
+      );
+    }
+
+    const page = await searchProvidersPage(
+      type,
+      {
+        q:
+          searchParams.get("q") ??
+          undefined,
+
+        governorateId:
+          searchParams.get(
+            "governorateId"
+          ) ??
+          searchParams.get(
+            "governorate"
+          ) ??
+          undefined,
+
+        areaId:
+          searchParams.get(
+            "areaId"
+          ) ??
+          searchParams.get("area") ??
+          undefined,
+
+        specialtyId:
+          type === "DENTIST"
+            ? undefined
+            : searchParams.get(
+                  "specialtyId"
+                ) ??
+                searchParams.get(
+                  "specialty"
+                ) ??
+                undefined
+      },
+      {
+        cursor: cursor.value,
+        take: clampTake(
           searchParams.get("take")
         )
-      );
+      }
+    );
 
-    return NextResponse.json({
-      ok: true,
-      count: providers.length,
-      items: providers.map(
-        (
-          provider: (typeof providers)[number]
-        ) => {
-          const displayName = [
-            provider.titlePrefix,
-            provider.name
-          ]
-            .filter(Boolean)
-            .join(" ");
-
-          const mapUrl =
-            normalizeMapUrl(
-              provider.mapurl
-            ) ??
-            readMapUrlFromText(
-              provider.address
-            );
-
-          const hasSpecialty =
-            provider.type !== "DENTIST";
-
-          return {
-            id: provider.id,
-            type: provider.type,
-            name: provider.name,
-            titlePrefix:
+    return NextResponse.json(
+      {
+        ok: true,
+        count: page.items.length,
+        hasMore: page.hasMore,
+        nextCursor: page.nextCursor,
+        items: page.items.map(
+          (
+            provider: (typeof page.items)[number]
+          ) => {
+            const displayName = [
               provider.titlePrefix,
-            slug: provider.slug,
+              provider.name
+            ]
+              .filter(Boolean)
+              .join(" ");
 
-            specialtyId: hasSpecialty
-              ? provider.specialtyId
-              : null,
-            specialty: hasSpecialty
-              ? provider.specialty
-                  ?.name ?? null
-              : null,
+            const mapUrl =
+              normalizeMapUrl(
+                provider.mapurl
+              ) ??
+              readMapUrlFromText(
+                provider.address
+              );
 
-            governorateId:
-              provider.governorateId,
-            governorate:
-              provider.governorate
-                ?.name ?? null,
+            const hasSpecialty =
+              provider.type !== "DENTIST";
 
-            areaId: provider.areaId,
-            area:
-              provider.area?.name ??
-              null,
-
-            imageUrl:
+            const profileImageUrl =
               normalizeAssetUrl(
                 provider.imageUrl,
                 baseUrl
+              );
+
+            return {
+              id: provider.id,
+              type: provider.type,
+              name: provider.name,
+              titlePrefix:
+                provider.titlePrefix,
+              slug: provider.slug,
+
+              specialtyId: hasSpecialty
+                ? provider.specialtyId
+                : null,
+              specialty: hasSpecialty
+                ? provider.specialty
+                    ?.name ?? null
+                : null,
+
+              governorateId:
+                provider.governorateId,
+              governorate:
+                provider.governorate
+                  ?.name ?? null,
+
+              areaId: provider.areaId,
+              area:
+                provider.area?.name ??
+                null,
+
+              imageUrl: profileImageUrl,
+              imageThumbnailUrl:
+                normalizeAssetUrl(
+                  provider.imageThumbnailUrl,
+                  baseUrl
+                ) ?? profileImageUrl,
+              imageOriginalUrl:
+                normalizeAssetUrl(
+                  provider.imageOriginalUrl,
+                  baseUrl
+                ) ?? profileImageUrl,
+
+              phone: provider.phone,
+              phoneUrl: buildTelUrl(
+                provider.phone
               ),
 
-            phone: provider.phone,
-            phoneUrl: buildTelUrl(
-              provider.phone
-            ),
+              whatsapp:
+                provider.whatsapp,
 
-            whatsapp:
-              provider.whatsapp,
+              instagramUrl:
+                provider.instagramUrl,
 
-            instagramUrl:
-              provider.instagramUrl,
+              whatsappUrl:
+                buildWhatsappUrl(
+                  provider.whatsapp ||
+                    provider.phone,
+                  `مرحبا، وصلت لكم من تطبيق طب نت وأرغب بالاستفسار من ${displayName}.`
+                ),
 
-            whatsappUrl:
-              buildWhatsappUrl(
-                provider.whatsapp ||
-                  provider.phone,
-                `مرحبا، وصلت لكم من تطبيق طب نت وأرغب بالاستفسار من ${displayName}.`
-              ),
+              address:
+                provider.address,
+              mapUrl,
 
-            address:
-              provider.address,
-            mapUrl,
-
-            workingHours:
-              provider.workingHours,
-            bookingPoints:
-              provider.bookingPoints,
-            isFeatured:
-              provider.isFeatured
-          };
+              workingHours:
+                provider.workingHours,
+              bookingPoints:
+                provider.bookingPoints,
+              isFeatured:
+                provider.isFeatured
+            };
+          }
+        )
+      },
+      {
+        headers: {
+          "Cache-Control":
+            "public, max-age=30, s-maxage=60, stale-while-revalidate=300"
         }
-      )
-    });
+      }
+    );
   } catch (error) {
     console.error(
       "Mobile providers API error",
@@ -383,7 +460,10 @@ export async function GET(
           "صار خطأ أثناء جلب مقدمي الخدمة"
       },
       {
-        status: 500
+        status: 500,
+        headers: {
+          "Cache-Control": "no-store"
+        }
       }
     );
   }

@@ -5,6 +5,11 @@ import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
 
+const SUCCESS_CACHE_HEADERS = {
+  "Cache-Control":
+    "public, s-maxage=300, stale-while-revalidate=3600"
+};
+
 function getBaseUrl(request: NextRequest) {
   const forwardedHost = request.headers.get("x-forwarded-host");
   const host = forwardedHost ?? request.headers.get("host");
@@ -196,7 +201,12 @@ export async function GET(
           ok: false,
           message: "المختبر غير موجود"
         },
-        { status: 404 }
+        {
+          status: 404,
+          headers: {
+            "Cache-Control": "no-store"
+          }
+        }
       );
     }
 
@@ -219,61 +229,83 @@ export async function GET(
       profileUrl
     });
 
-    return NextResponse.json({
-      ok: true,
-      item: {
-        id: lab.id,
-        type: "lab",
-        kindLabel: "مختبر طبي",
+    const profileImageUrl = normalizeAssetUrl(
+      lab.imageUrl ?? lab.imageThumbnailUrl,
+      baseUrl
+    );
 
-        name: lab.name,
-        slug: lab.slug,
+    const thumbnailImageUrl = normalizeAssetUrl(
+      lab.imageThumbnailUrl ?? lab.imageUrl,
+      baseUrl
+    );
 
-        governorateId: lab.governorateId,
-        governorate: governorateName,
+    const originalImageUrl = normalizeAssetUrl(
+      lab.imageOriginalUrl ?? lab.imageUrl,
+      baseUrl
+    );
 
-        areaId: lab.areaId,
-        area: areaName,
+    return NextResponse.json(
+      {
+        ok: true,
+        item: {
+          id: lab.id,
+          type: "lab",
+          kindLabel: "مختبر طبي",
 
-        bio: lab.bio,
-        services: lab.services,
-
-        imageUrl: normalizeAssetUrl(lab.imageUrl, baseUrl),
-
-        phone: lab.phone,
-        phoneUrl: buildTelUrl(lab.phone),
-
-        whatsapp: lab.whatsapp,
-        whatsappUrl: buildWhatsappUrl(lab.whatsapp, whatsappMessage),
-
-        address: lab.address,
-        mapUrl,
-
-        workingHours: lab.workingHours,
-        isFeatured: lab.isFeatured,
-        inquiryCount: lab.inquiryCount,
-
-        profileUrl,
-        detailsUrl: profileUrl,
-        shareUrl: profileUrl,
-        inquiryUrl,
-
-        summary: buildLabSummary({
           name: lab.name,
+          slug: lab.slug,
+
+          governorateId: lab.governorateId,
+          governorate: governorateName,
+
+          areaId: lab.areaId,
+          area: areaName,
+
           bio: lab.bio,
           services: lab.services,
-          governorate: governorateName,
-          area: areaName,
-          address: lab.address,
-          workingHours: lab.workingHours
-        }),
 
-        primaryActionLabel: "استفسار",
-        detailsActionLabel: "التفاصيل",
-        secondaryActionLabel: "اتصال سريع",
-        mapActionLabel: "الموقع"
+          imageThumbnailUrl: thumbnailImageUrl,
+          imageUrl: profileImageUrl,
+          imageOriginalUrl: originalImageUrl,
+
+          phone: lab.phone,
+          phoneUrl: buildTelUrl(lab.phone),
+
+          whatsapp: lab.whatsapp,
+          whatsappUrl: buildWhatsappUrl(lab.whatsapp, whatsappMessage),
+
+          address: lab.address,
+          mapUrl,
+
+          workingHours: lab.workingHours,
+          isFeatured: lab.isFeatured,
+          inquiryCount: lab.inquiryCount,
+
+          profileUrl,
+          detailsUrl: profileUrl,
+          shareUrl: profileUrl,
+          inquiryUrl,
+
+          summary: buildLabSummary({
+            name: lab.name,
+            bio: lab.bio,
+            services: lab.services,
+            governorate: governorateName,
+            area: areaName,
+            address: lab.address,
+            workingHours: lab.workingHours
+          }),
+
+          primaryActionLabel: "استفسار",
+          detailsActionLabel: "التفاصيل",
+          secondaryActionLabel: "اتصال سريع",
+          mapActionLabel: "الموقع"
+        }
+      },
+      {
+        headers: SUCCESS_CACHE_HEADERS
       }
-    });
+    );
   } catch (error) {
     console.error("Mobile lab details API error", error);
 
@@ -282,7 +314,12 @@ export async function GET(
         ok: false,
         message: "صار خطأ أثناء جلب بيانات المختبر"
       },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          "Cache-Control": "no-store"
+        }
+      }
     );
   }
 }

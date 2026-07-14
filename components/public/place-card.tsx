@@ -17,6 +17,7 @@ type PlaceData = {
   name: string;
   slug?: string | null;
   imageUrl?: string | null;
+  imageThumbnailUrl?: string | null;
   whatsapp?: string | null;
   instagramUrl?: string | null;
   workingHours?: string | null;
@@ -128,13 +129,16 @@ export function PlaceCard({
   const inquiryCount =
     item.inquiryCount ?? 0;
 
+  const cardImageUrl =
+    item.imageThumbnailUrl || item.imageUrl;
+
   return (
     <Card className="flex h-full flex-col overflow-hidden p-5">
       <div className="flex flex-1 gap-4">
         <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full border-4 border-primary-soft bg-surface shadow-sm">
-          {item.imageUrl ? (
+          {cardImageUrl ? (
             <Image
-              src={item.imageUrl}
+              src={cardImageUrl}
               alt={item.name}
               fill
               sizes="96px"

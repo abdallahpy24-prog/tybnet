@@ -8,6 +8,11 @@ import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
 
+const SUCCESS_CACHE_HEADERS = {
+  "Cache-Control":
+    "public, s-maxage=300, stale-while-revalidate=3600"
+};
+
 function getBaseUrl(request: Request) {
   const forwardedHost = request.headers.get(
     "x-forwarded-host"
@@ -211,7 +216,10 @@ export async function GET(
             "مقدم الخدمة غير موجود"
         },
         {
-          status: 404
+          status: 404,
+          headers: {
+            "Cache-Control": "no-store"
+          }
         }
       );
     }
@@ -238,93 +246,120 @@ export async function GET(
     const hasSpecialty =
       provider.type !== "DENTIST";
 
-    return NextResponse.json({
-      ok: true,
-      item: {
-        id: provider.id,
-        type: provider.type,
-        name: provider.name,
-        titlePrefix:
-          provider.titlePrefix,
-        slug: provider.slug,
+    const profileImageUrl =
+      normalizeAssetUrl(
+        provider.imageUrl ??
+          provider.imageThumbnailUrl,
+        baseUrl
+      );
 
-        specialtyId: hasSpecialty
-          ? provider.specialtyId
-          : null,
-        specialty: hasSpecialty
-          ? provider.specialty?.name ??
-            null
-          : null,
-
-        governorateId:
-          provider.governorateId,
-        governorate:
-          provider.governorate?.name ??
-          null,
-
-        areaId: provider.areaId,
-        area:
-          provider.area?.name ?? null,
-
-        bio: provider.bio,
-
-        imageUrl: normalizeAssetUrl(
+    const thumbnailImageUrl =
+      normalizeAssetUrl(
+        provider.imageThumbnailUrl ??
           provider.imageUrl,
-          baseUrl
-        ),
+        baseUrl
+      );
 
-        phone: provider.phone,
-        phoneUrl: buildTelUrl(
-          provider.phone
-        ),
+    const originalImageUrl =
+      normalizeAssetUrl(
+        provider.imageOriginalUrl ??
+          provider.imageUrl,
+        baseUrl
+      );
 
-        whatsapp:
-          provider.whatsapp,
+    return NextResponse.json(
+      {
+        ok: true,
+        item: {
+          id: provider.id,
+          type: provider.type,
+          name: provider.name,
+          titlePrefix:
+            provider.titlePrefix,
+          slug: provider.slug,
 
-        instagramUrl:
-          provider.instagramUrl,
+          specialtyId: hasSpecialty
+            ? provider.specialtyId
+            : null,
+          specialty: hasSpecialty
+            ? provider.specialty?.name ??
+              null
+            : null,
 
-        whatsappUrl:
-          buildWhatsappUrl(
-            whatsappNumber,
-            `مرحبا، وصلت لكم من تطبيق طب نت وأرغب بالاستفسار من ${displayName}.`
+          governorateId:
+            provider.governorateId,
+          governorate:
+            provider.governorate?.name ??
+            null,
+
+          areaId: provider.areaId,
+          area:
+            provider.area?.name ?? null,
+
+          bio: provider.bio,
+
+          imageThumbnailUrl:
+            thumbnailImageUrl,
+          imageUrl: profileImageUrl,
+          imageOriginalUrl:
+            originalImageUrl,
+
+          phone: provider.phone,
+          phoneUrl: buildTelUrl(
+            provider.phone
           ),
 
-        address: provider.address,
-        mapUrl,
+          whatsapp:
+            provider.whatsapp,
 
-        workingHours:
-          provider.workingHours,
+          instagramUrl:
+            provider.instagramUrl,
 
-        bookingPoints:
-          provider.bookingPoints,
-
-        isFeatured:
-          provider.isFeatured,
-
-        offers: (
-          provider.offers ?? []
-        ).map((offer) => ({
-          id: offer.id,
-          title: offer.title,
-          slug: offer.slug,
-          description:
-            offer.description,
-
-          imageUrl:
-            normalizeAssetUrl(
-              offer.imageUrl,
-              baseUrl
+          whatsappUrl:
+            buildWhatsappUrl(
+              whatsappNumber,
+              `مرحبا، وصلت لكم من تطبيق طب نت وأرغب بالاستفسار من ${displayName}.`
             ),
 
-          discountText:
-            offer.discountText,
+          address: provider.address,
+          mapUrl,
 
-          startsAt: offer.startsAt,
-          endsAt: offer.endsAt
-        }))
+          workingHours:
+            provider.workingHours,
+
+          bookingPoints:
+            provider.bookingPoints,
+
+          isFeatured:
+            provider.isFeatured,
+
+          offers: (
+            provider.offers ?? []
+          ).map((offer) => ({
+            id: offer.id,
+            title: offer.title,
+            slug: offer.slug,
+            description:
+              offer.description,
+
+            imageUrl:
+              normalizeAssetUrl(
+                offer.imageUrl,
+                baseUrl
+              ),
+
+            discountText:
+              offer.discountText,
+
+            startsAt: offer.startsAt,
+            endsAt: offer.endsAt
+          }))
+        }
+      },
+      {
+        headers: SUCCESS_CACHE_HEADERS
       }
-    });
+    );
   } catch (error) {
     console.error(
       "Mobile provider details API error",
@@ -338,7 +373,10 @@ export async function GET(
           "صار خطأ أثناء جلب تفاصيل مقدم الخدمة"
       },
       {
-        status: 500
+        status: 500,
+        headers: {
+          "Cache-Control": "no-store"
+        }
       }
     );
   }

@@ -164,7 +164,9 @@ export async function generateMetadata({
     openGraph: {
       images: center.imageUrl
         ? [center.imageUrl]
-        : ["/assets/logo.png"]
+        : center.imageThumbnailUrl
+          ? [center.imageThumbnailUrl]
+          : ["/assets/logo.png"]
     }
   };
 }
@@ -214,6 +216,14 @@ export default async function CosmeticCenterDetailsPage({
     center.bio ||
     `مركز ${center.name} للتجميل في ${locationText}. يمكنك الاستفسار عن الخدمات والأسعار والمواعيد عبر واتساب أو الاتصال السريع عند توفر بيانات التواصل.`;
 
+  const profileImageUrl =
+    center.imageUrl ??
+    center.imageThumbnailUrl;
+
+  const originalImageUrl =
+    center.imageOriginalUrl ??
+    profileImageUrl;
+
   const instaLabel = instagramLabel(
     center.instagramUrl
   );
@@ -236,14 +246,33 @@ export default async function CosmeticCenterDetailsPage({
           <Card className="overflow-hidden p-0">
             <div className="grid gap-6 p-6 md:grid-cols-[220px_1fr] md:items-center">
               <div className="relative mx-auto h-52 w-52 overflow-hidden rounded-[2rem] border-8 border-primary-soft bg-surface md:mx-0">
-                {center.imageUrl ? (
-                  <Image
-                    src={center.imageUrl}
-                    alt={center.name}
-                    fill
-                    sizes="208px"
-                    className="object-cover"
-                  />
+                {profileImageUrl ? (
+                  originalImageUrl ? (
+                    <a
+                      href={originalImageUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`تكبير صورة ${center.name}`}
+                      title="اضغط لعرض الصورة الأصلية"
+                      className="block h-full w-full"
+                    >
+                      <Image
+                        src={profileImageUrl}
+                        alt={center.name}
+                        fill
+                        sizes="208px"
+                        className="object-cover"
+                      />
+                    </a>
+                  ) : (
+                    <Image
+                      src={profileImageUrl}
+                      alt={center.name}
+                      fill
+                      sizes="208px"
+                      className="object-cover"
+                    />
+                  )
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-3xl font-black text-primary">
                     تجميل

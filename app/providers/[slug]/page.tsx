@@ -151,6 +151,10 @@ export default async function ProviderDetailsPage({
 
   const addressIsOnlyMapUrl = isOnlyUrl(provider.address) && Boolean(clinicMapUrl);
   const instaLabel = instagramLabel(provider.instagramUrl);
+  const profileImageUrl =
+    provider.imageUrl || provider.imageOriginalUrl;
+  const originalImageUrl =
+    provider.imageOriginalUrl || profileImageUrl;
 
   return (
     <SiteShell>
@@ -167,14 +171,23 @@ export default async function ProviderDetailsPage({
           <Card className="overflow-hidden p-0">
             <div className="grid gap-6 p-6 md:grid-cols-[220px_1fr] md:items-center">
               <div className="relative mx-auto h-52 w-52 overflow-hidden rounded-full border-8 border-primary-soft bg-surface md:mx-0">
-                {provider.imageUrl ? (
-                  <Image
-                    src={provider.imageUrl}
-                    alt={displayName}
-                    fill
-                    sizes="208px"
-                    className="object-cover"
-                  />
+                {profileImageUrl ? (
+                  <a
+                    href={originalImageUrl || profileImageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`فتح صورة ${displayName} بالحجم الأصلي`}
+                    title="اضغط لفتح الصورة بالحجم الأصلي"
+                    className="block h-full w-full cursor-zoom-in"
+                  >
+                    <Image
+                      src={profileImageUrl}
+                      alt={displayName}
+                      fill
+                      sizes="208px"
+                      className="object-cover"
+                    />
+                  </a>
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-5xl font-black text-primary">
                     طب

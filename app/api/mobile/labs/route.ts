@@ -1,9 +1,53 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getPublicLabs } from "@/lib/queries";
+import { getPublicLabsPage } from "@/lib/queries";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+const DEFAULT_TAKE = 5;
+const MAX_TAKE = 12;
+const MAX_CURSOR_LENGTH = 512;
+
+function clampTake(value: string | null) {
+  const parsed = Number(value ?? String(DEFAULT_TAKE));
+
+  if (!Number.isFinite(parsed)) {
+    return DEFAULT_TAKE;
+  }
+
+  return Math.min(
+    Math.max(Math.trunc(parsed), 1),
+    MAX_TAKE
+  );
+}
+
+function readCursor(value: string | null) {
+  const cursor = value?.trim();
+
+  if (!cursor) {
+    return {
+      ok: true as const,
+      value: null
+    };
+  }
+
+  if (
+    cursor.length > MAX_CURSOR_LENGTH ||
+    !/^[A-Za-z0-9_-]+$/.test(cursor)
+  ) {
+    return {
+      ok: false as const,
+      value: null
+    };
+  }
+
+  return {
+    ok: true as const,
+    value: cursor
+  };
+}
 
 function getBaseUrl(request: NextRequest) {
   const forwardedHost = request.headers.get("x-forwarded-host");
@@ -153,85 +197,132 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const baseUrl = getBaseUrl(request);
     const siteUrl = getSiteUrl(baseUrl);
+    const cursor = readCursor(searchParams.get("cursor"));
 
-    const labs = await getPublicLabs({
-      q: searchParams.get("q") ?? undefined,
-      governorateId:
-        searchParams.get("governorateId") ??
-        searchParams.get("governorate") ??
-        undefined,
-      areaId:
-        searchParams.get("areaId") ?? searchParams.get("area") ?? undefined
-    });
+    if (!cursor.ok) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "مؤشر الصفحة غير صحيح"
+        },
+        {
+          status: 400,
+          headers: {
+            "Cache-Control": "no-store"
+          }
+        }
+      );
+    }
 
-    return NextResponse.json({
-      ok: true,
-      count: labs.length,
-      items: labs.map((lab: (typeof labs)[number]) => {
-        const governorateName = lab.governorate?.name ?? "غير محددة";
-        const areaName = lab.area?.name ?? "غير محددة";
+    const page = await getPublicLabsPage(
+      {
+        q: searchParams.get("q") ?? undefined,
+        governorateId:
+          searchParams.get("governorateId") ??
+          searchParams.get("governorate") ??
+          undefined,
+        areaId:
+          searchParams.get("areaId") ?? searchParams.get("area") ?? undefined
+      },
+      {
+        cursor: cursor.value,
+        take: clampTake(searchParams.get("take"))
+      }
+    );
 
-        const profilePath = `/labs/${lab.slug}`;
-        const profileUrl = `${siteUrl}${profilePath}`;
-        const inquiryUrl = `${baseUrl}/api/mobile/labs/${lab.slug}/inquiry`;
+    return NextResponse.json(
+      {
+        ok: true,
+        count: page.items.length,
+        hasMore: page.hasMore,
+        nextCursor: page.nextCursor,
+        items: page.items.map((lab: (typeof page.items)[number]) => {
+          const governorateName = lab.governorate?.name ?? "غير محددة";
+          const areaName = lab.area?.name ?? "غير محددة";
 
-        const mapUrl =
-          normalizeMapUrl(lab.mapurl) ?? readMapUrlFromText(lab.address);
+          const profilePath = `/labs/${lab.slug}`;
+          const profileUrl = `${siteUrl}${profilePath}`;
+          const inquiryUrl = `${baseUrl}/api/mobile/labs/${lab.slug}/inquiry`;
 
-        const whatsappMessage = buildLabWhatsappMessage({
-          name: lab.name,
-          governorate: governorateName,
-          area: areaName,
-          address: lab.address,
-          workingHours: lab.workingHours,
-          services: lab.services,
-          profileUrl
-        });
+          const mapUrl =
+            normalizeMapUrl(lab.mapurl) ?? readMapUrlFromText(lab.address);
 
-        return {
-          id: lab.id,
-          type: "lab",
-          kindLabel: "مختبر طبي",
+          const whatsappMessage = buildLabWhatsappMessage({
+            name: lab.name,
+            governorate: governorateName,
+            area: areaName,
+            address: lab.address,
+            workingHours: lab.workingHours,
+            services: lab.services,
+            profileUrl
+          });
 
-          name: lab.name,
-          slug: lab.slug,
+          const profileImageUrl = normalizeAssetUrl(
+            lab.imageUrl,
+            baseUrl
+          );
 
-          governorateId: lab.governorateId,
-          governorate: governorateName,
+          return {
+            id: lab.id,
+            type: "lab",
+            kindLabel: "مختبر طبي",
 
-          areaId: lab.areaId,
-          area: areaName,
+            name: lab.name,
+            slug: lab.slug,
 
-          bio: lab.bio,
-          services: lab.services,
+            governorateId: lab.governorateId,
+            governorate: governorateName,
 
-          imageUrl: normalizeAssetUrl(lab.imageUrl, baseUrl),
+            areaId: lab.areaId,
+            area: areaName,
 
-          phone: lab.phone,
-          phoneUrl: buildTelUrl(lab.phone),
+            bio: lab.bio,
+            services: lab.services,
 
-          whatsapp: lab.whatsapp,
-          whatsappUrl: buildWhatsappUrl(lab.whatsapp, whatsappMessage),
+            imageUrl: profileImageUrl,
+            imageThumbnailUrl:
+              normalizeAssetUrl(
+                lab.imageThumbnailUrl,
+                baseUrl
+              ) ?? profileImageUrl,
+            imageOriginalUrl:
+              normalizeAssetUrl(
+                lab.imageOriginalUrl,
+                baseUrl
+              ) ?? profileImageUrl,
 
-          address: lab.address,
-          mapUrl,
+            phone: lab.phone,
+            phoneUrl: buildTelUrl(lab.phone),
 
-          workingHours: lab.workingHours,
-          isFeatured: lab.isFeatured,
-          inquiryCount: lab.inquiryCount,
+            whatsapp: lab.whatsapp,
+            whatsappUrl: buildWhatsappUrl(lab.whatsapp, whatsappMessage),
 
-          profileUrl,
-          detailsUrl: profileUrl,
-          shareUrl: profileUrl,
-          inquiryUrl,
+            address: lab.address,
+            mapUrl,
 
-          primaryActionLabel: "استفسار",
-          detailsActionLabel: "التفاصيل",
-          secondaryActionLabel: "اتصال سريع",
-          mapActionLabel: "الموقع"
-        };
-      })
-    });
+            workingHours: lab.workingHours,
+            isFeatured: lab.isFeatured,
+            inquiryCount: lab.inquiryCount,
+
+            profileUrl,
+            detailsUrl: profileUrl,
+            shareUrl: profileUrl,
+            inquiryUrl,
+
+            primaryActionLabel: "استفسار",
+            detailsActionLabel: "التفاصيل",
+            secondaryActionLabel: "اتصال سريع",
+            mapActionLabel: "الموقع"
+          };
+        })
+      },
+      {
+        headers: {
+          "Cache-Control":
+            "public, max-age=30, s-maxage=60, stale-while-revalidate=300"
+        }
+      }
+    );
   } catch (error) {
     console.error("Mobile labs API error", error);
 
@@ -240,7 +331,12 @@ export async function GET(request: NextRequest) {
         ok: false,
         message: "صار خطأ أثناء جلب المختبرات"
       },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          "Cache-Control": "no-store"
+        }
+      }
     );
   }
 }

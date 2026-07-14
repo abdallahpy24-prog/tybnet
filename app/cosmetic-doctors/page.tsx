@@ -2,13 +2,16 @@ import type { Metadata } from "next";
 
 import { SiteShell } from "@/components/layout/site-shell";
 import { FilterForm } from "@/components/public/filter-form";
-import { ProviderCard } from "@/components/public/provider-card";
+import {
+  ProviderResults,
+  type PublicProviderListItem
+} from "@/components/public/provider-results";
 import { SectionTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   getFilterOptions,
   readFilters,
-  searchProviders,
+  searchProvidersPage,
   type SearchParams
 } from "@/lib/queries";
 
@@ -18,6 +21,38 @@ export const metadata: Metadata = {
     "ابحث عن أطباء التجميل في العراق حسب المحافظة والمنطقة والاختصاص، واطّلع على بيانات التواصل وطلب المواعيد عبر منصة طب نت."
 };
 
+type ProviderPageItem = Awaited<
+  ReturnType<typeof searchProvidersPage>
+>["items"][number];
+
+function toPublicListItem(
+  provider: ProviderPageItem
+): PublicProviderListItem {
+  return {
+    id: provider.id,
+    name: provider.name,
+    titlePrefix: provider.titlePrefix,
+    slug: provider.slug,
+    imageUrl: provider.imageUrl,
+    imageThumbnailUrl: provider.imageThumbnailUrl,
+    whatsapp: provider.whatsapp,
+    instagramUrl: provider.instagramUrl,
+    specialty: provider.specialty
+      ? {
+          name: provider.specialty.name
+        }
+      : null,
+    governorate: {
+      name: provider.governorate.name
+    },
+    area: {
+      name: provider.area.name
+    },
+    isFeatured: provider.isFeatured,
+    bookingPoints: provider.bookingPoints
+  };
+}
+
 export default async function CosmeticDoctorsPage({
   searchParams
 }: {
@@ -26,14 +61,23 @@ export default async function CosmeticDoctorsPage({
   const params = (await searchParams) ?? {};
   const filters = readFilters(params);
 
-  const [options, cosmeticDoctors] =
+  const [options, cosmeticDoctorsPage] =
     await Promise.all([
       getFilterOptions("COSMETIC_DOCTOR"),
-      searchProviders(
+      searchProvidersPage(
         "COSMETIC_DOCTOR",
-        params
+        params,
+        {
+          take: 5
+        }
       )
     ]);
+
+  const initialItems = cosmeticDoctorsPage.items.map(
+    toPublicListItem
+  );
+
+  const resultsKey = JSON.stringify(filters);
 
   return (
     <SiteShell>
@@ -47,25 +91,21 @@ export default async function CosmeticDoctorsPage({
         <FilterForm
           action="/cosmetic-doctors"
           q={filters.q}
-          governorates={
-            options.governorates
-          }
+          governorates={options.governorates}
           areas={options.areas}
           specialties={options.specialties}
         />
 
-        {cosmeticDoctors.length ? (
-          <div className="grid gap-4">
-            {cosmeticDoctors.map(
-              (provider) => (
-                <ProviderCard
-                  key={provider.id}
-                  provider={provider}
-                  detailBasePath="/cosmetic-doctors"
-                />
-              )
-            )}
-          </div>
+        {initialItems.length ? (
+          <ProviderResults
+            key={resultsKey}
+            type="COSMETIC_DOCTOR"
+            initialItems={initialItems}
+            initialCursor={cosmeticDoctorsPage.nextCursor}
+            initialHasMore={cosmeticDoctorsPage.hasMore}
+            filters={filters}
+            detailBasePath="/cosmetic-doctors"
+          />
         ) : (
           <EmptyState
             title="لم نجد أطباء تجميل مطابقين لبحثك"

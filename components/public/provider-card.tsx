@@ -16,6 +16,7 @@ type ProviderCardData = {
   titlePrefix: string;
   slug: string;
   imageUrl?: string | null;
+  imageThumbnailUrl?: string | null;
   whatsapp?: string | null;
   instagramUrl?: string | null;
   specialty?: {
@@ -53,6 +54,9 @@ export function ProviderCard({
   const bookingPoints =
     provider.bookingPoints ?? 0;
 
+  const cardImageUrl =
+    provider.imageThumbnailUrl || provider.imageUrl;
+
   const detailsHref = `${detailBasePath.replace(
     /\/$/,
     ""
@@ -67,9 +71,9 @@ export function ProviderCard({
     >
       <div className="flex flex-1 gap-4">
         <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full border-4 border-primary-soft bg-surface shadow-sm">
-          {provider.imageUrl ? (
+          {cardImageUrl ? (
             <Image
-              src={provider.imageUrl}
+              src={cardImageUrl}
               alt={displayName}
               fill
               sizes="96px"

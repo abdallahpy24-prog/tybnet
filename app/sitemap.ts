@@ -1,8 +1,9 @@
+import type { Prisma } from "@prisma/client";
 import type { MetadataRoute } from "next";
 
 import { prisma } from "@/lib/prisma";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 function getSiteUrl() {
   const value =
@@ -40,6 +41,35 @@ function publicPlaceWhere() {
   };
 }
 
+function publicProviderWhere(): Prisma.ProviderWhereInput {
+  return {
+    ...publicPlaceWhere(),
+    OR: [
+      {
+        type: "DOCTOR",
+        specialty: {
+          is: {
+            isActive: true,
+            forType: "DOCTOR"
+          }
+        }
+      },
+      {
+        type: "DENTIST"
+      },
+      {
+        type: "COSMETIC_DOCTOR",
+        specialty: {
+          is: {
+            isActive: true,
+            forType: "COSMETIC_DOCTOR"
+          }
+        }
+      }
+    ]
+  };
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = getSiteUrl();
   const generatedAt = new Date();
@@ -73,16 +103,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticPages: MetadataRoute.Sitemap = staticPageDefinitions.map(
     ({ path, ...entry }) => ({
-    ...entry,
-    url: pageUrl(baseUrl, path),
-    lastModified: generatedAt
+      ...entry,
+      url: pageUrl(baseUrl, path),
+      lastModified: generatedAt
     })
   );
 
   try {
     const [providers, pharmacies, labs, cosmeticCenters] = await Promise.all([
       prisma.provider.findMany({
-        where: publicPlaceWhere(),
+        where: publicProviderWhere(),
         select: {
           slug: true,
           type: true,

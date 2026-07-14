@@ -5,6 +5,11 @@ import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
 
+const SUCCESS_CACHE_HEADERS = {
+  "Cache-Control":
+    "public, s-maxage=300, stale-while-revalidate=3600"
+};
+
 function getBaseUrl(request: NextRequest) {
   const forwardedHost = request.headers.get("x-forwarded-host");
   const host = forwardedHost ?? request.headers.get("host");
@@ -196,7 +201,12 @@ export async function GET(
           ok: false,
           message: "الصيدلية غير موجودة"
         },
-        { status: 404 }
+        {
+          status: 404,
+          headers: {
+            "Cache-Control": "no-store"
+          }
+        }
       );
     }
 
@@ -220,61 +230,83 @@ export async function GET(
       profileUrl
     });
 
-    return NextResponse.json({
-      ok: true,
-      item: {
-        id: pharmacy.id,
-        type: "pharmacy",
-        kindLabel: "صيدلية",
+    const profileImageUrl = normalizeAssetUrl(
+      pharmacy.imageUrl ?? pharmacy.imageThumbnailUrl,
+      baseUrl
+    );
 
-        name: pharmacy.name,
-        slug: pharmacy.slug,
+    const thumbnailImageUrl = normalizeAssetUrl(
+      pharmacy.imageThumbnailUrl ?? pharmacy.imageUrl,
+      baseUrl
+    );
 
-        governorateId: pharmacy.governorateId,
-        governorate: governorateName,
+    const originalImageUrl = normalizeAssetUrl(
+      pharmacy.imageOriginalUrl ?? pharmacy.imageUrl,
+      baseUrl
+    );
 
-        areaId: pharmacy.areaId,
-        area: areaName,
+    return NextResponse.json(
+      {
+        ok: true,
+        item: {
+          id: pharmacy.id,
+          type: "pharmacy",
+          kindLabel: "صيدلية",
 
-        bio: pharmacy.bio,
-        services: pharmacy.services,
-
-        imageUrl: normalizeAssetUrl(pharmacy.imageUrl, baseUrl),
-
-        phone: pharmacy.phone,
-        phoneUrl: buildTelUrl(pharmacy.phone),
-
-        whatsapp: pharmacy.whatsapp,
-        whatsappUrl: buildWhatsappUrl(pharmacy.whatsapp, whatsappMessage),
-
-        address: pharmacy.address,
-        mapUrl,
-
-        workingHours: pharmacy.workingHours,
-        isFeatured: pharmacy.isFeatured,
-        inquiryCount: pharmacy.inquiryCount,
-
-        profileUrl,
-        detailsUrl: profileUrl,
-        shareUrl: profileUrl,
-        inquiryUrl,
-
-        summary: buildPharmacySummary({
           name: pharmacy.name,
+          slug: pharmacy.slug,
+
+          governorateId: pharmacy.governorateId,
+          governorate: governorateName,
+
+          areaId: pharmacy.areaId,
+          area: areaName,
+
           bio: pharmacy.bio,
           services: pharmacy.services,
-          governorate: governorateName,
-          area: areaName,
-          address: pharmacy.address,
-          workingHours: pharmacy.workingHours
-        }),
 
-        primaryActionLabel: "استفسار",
-        detailsActionLabel: "التفاصيل",
-        secondaryActionLabel: "اتصال سريع",
-        mapActionLabel: "الموقع"
+          imageThumbnailUrl: thumbnailImageUrl,
+          imageUrl: profileImageUrl,
+          imageOriginalUrl: originalImageUrl,
+
+          phone: pharmacy.phone,
+          phoneUrl: buildTelUrl(pharmacy.phone),
+
+          whatsapp: pharmacy.whatsapp,
+          whatsappUrl: buildWhatsappUrl(pharmacy.whatsapp, whatsappMessage),
+
+          address: pharmacy.address,
+          mapUrl,
+
+          workingHours: pharmacy.workingHours,
+          isFeatured: pharmacy.isFeatured,
+          inquiryCount: pharmacy.inquiryCount,
+
+          profileUrl,
+          detailsUrl: profileUrl,
+          shareUrl: profileUrl,
+          inquiryUrl,
+
+          summary: buildPharmacySummary({
+            name: pharmacy.name,
+            bio: pharmacy.bio,
+            services: pharmacy.services,
+            governorate: governorateName,
+            area: areaName,
+            address: pharmacy.address,
+            workingHours: pharmacy.workingHours
+          }),
+
+          primaryActionLabel: "استفسار",
+          detailsActionLabel: "التفاصيل",
+          secondaryActionLabel: "اتصال سريع",
+          mapActionLabel: "الموقع"
+        }
+      },
+      {
+        headers: SUCCESS_CACHE_HEADERS
       }
-    });
+    );
   } catch (error) {
     console.error("Mobile pharmacy details API error", error);
 
@@ -283,7 +315,12 @@ export async function GET(
         ok: false,
         message: "صار خطأ أثناء جلب بيانات الصيدلية"
       },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          "Cache-Control": "no-store"
+        }
+      }
     );
   }
 }

@@ -53,6 +53,8 @@ type ProviderRow = {
   instagramUrl: string | null;
   mapurl: string | null;
   imageUrl: string | null;
+  imageThumbnailUrl?: string | null;
+  imageOriginalUrl?: string | null;
   status: ProviderStatus;
   bookingPoints: number;
   isFeatured: boolean;
@@ -127,10 +129,16 @@ function providerTypeLabel(type: ProviderType) {
   return "طبيب";
 }
 
+type ImageUploadValue = {
+  imageUrl: string;
+  imageThumbnailUrl: string;
+  imageOriginalUrl: string;
+};
+
 type ImageUploadFieldProps = {
-  value: string;
+  value: ImageUploadValue;
   providerType: ProviderType;
-  onChange: (value: string) => void;
+  onChange: (value: ImageUploadValue) => void;
   onUploadingChange: (value: boolean) => void;
 };
 
@@ -186,7 +194,14 @@ function ImageUploadField({
             ok?: boolean;
             url?: string;
             imageUrl?: string;
+            imageThumbnailUrl?: string;
+            imageOriginalUrl?: string;
             path?: string;
+            variants?: {
+              profile?: string;
+              thumbnail?: string;
+              original?: string;
+            };
             error?: string;
             message?: string;
           }
@@ -199,14 +214,25 @@ function ImageUploadField({
       }
 
       const uploadedUrl =
-        result?.url || result?.imageUrl || result?.path;
+        result?.imageUrl ||
+        result?.variants?.profile ||
+        result?.url ||
+        result?.path;
 
       if (!uploadedUrl) {
         throw new Error("تم الرفع لكن الخادم لم يرجع رابط الصورة.");
       }
 
-      onChange(uploadedUrl);
-      setMessage("تم رفع الصورة بنجاح.");
+      onChange({
+        imageUrl: uploadedUrl,
+        imageThumbnailUrl:
+          result?.imageThumbnailUrl ||
+          result?.variants?.thumbnail ||
+          uploadedUrl,
+        imageOriginalUrl:
+          result?.imageOriginalUrl || result?.variants?.original || ""
+      });
+      setMessage("تم رفع الصورة وتجهيز نسخ العرض بنجاح.");
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "فشل رفع الصورة."
@@ -223,21 +249,39 @@ function ImageUploadField({
       <Field label={label}>
         <Input
           name="imageUrl"
-          value={value}
+          value={value.imageUrl}
           onChange={(event) => {
-            onChange(event.target.value);
+            const nextUrl = event.target.value;
+
+            onChange({
+              imageUrl: nextUrl,
+              imageThumbnailUrl: nextUrl,
+              imageOriginalUrl: ""
+            });
             setMessage(null);
           }}
           placeholder="/uploads/provider.webp"
           className="ltr"
         />
+
+        <input
+          type="hidden"
+          name="imageThumbnailUrl"
+          value={value.imageThumbnailUrl}
+        />
+
+        <input
+          type="hidden"
+          name="imageOriginalUrl"
+          value={value.imageOriginalUrl}
+        />
       </Field>
 
       <div className="grid gap-3 rounded-2xl border border-dashed border-borderSoft bg-slate-50 p-4 md:grid-cols-[132px_1fr]">
         <div className="flex h-32 w-32 items-center justify-center overflow-hidden rounded-2xl border border-borderSoft bg-white">
-          {value ? (
+          {value.imageThumbnailUrl || value.imageUrl ? (
             <Image
-              src={value}
+              src={value.imageThumbnailUrl || value.imageUrl}
               alt={label}
               width={128}
               height={128}
@@ -276,12 +320,16 @@ function ImageUploadField({
               />
             </label>
 
-            {value ? (
+            {value.imageUrl ? (
               <button
                 type="button"
                 className="h-10 rounded-xl border border-borderSoft bg-white px-4 text-sm font-bold text-navy"
                 onClick={() => {
-                  onChange("");
+                  onChange({
+                    imageUrl: "",
+                    imageThumbnailUrl: "",
+                    imageOriginalUrl: ""
+                  });
                   setMessage(null);
                 }}
                 disabled={uploading}
@@ -291,9 +339,9 @@ function ImageUploadField({
             ) : null}
           </div>
 
-          {value ? (
+          {value.imageUrl ? (
             <p className="break-all text-xs font-semibold leading-5 text-slate-500">
-              {value}
+              {value.imageUrl}
             </p>
           ) : null}
 
@@ -363,7 +411,11 @@ export function ProviderForm({
     row?.specialtyId ?? ""
   );
 
-  const [imageUrl, setImageUrl] = useState(row?.imageUrl ?? "");
+  const [imageValue, setImageValue] = useState<ImageUploadValue>({
+    imageUrl: row?.imageUrl ?? "",
+    imageThumbnailUrl: row?.imageThumbnailUrl ?? row?.imageUrl ?? "",
+    imageOriginalUrl: row?.imageOriginalUrl ?? ""
+  });
   const [isImageUploading, setIsImageUploading] = useState(false);
 
   useEffect(() => {
@@ -654,9 +706,9 @@ export function ProviderForm({
         description={`ارفع صورة ${providerTypeLabel(providerType)} من الجهاز أو ضع رابط صورة جاهز.`}
       >
         <ImageUploadField
-          value={imageUrl}
+          value={imageValue}
           providerType={providerType}
-          onChange={setImageUrl}
+          onChange={setImageValue}
           onUploadingChange={setIsImageUploading}
         />
       </AdminSection>

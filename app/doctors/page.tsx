@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
+
 import { SiteShell } from "@/components/layout/site-shell";
 import { FilterForm } from "@/components/public/filter-form";
-import { ProviderCard } from "@/components/public/provider-card";
+import {
+  ProviderResults,
+  type PublicProviderListItem
+} from "@/components/public/provider-results";
 import { SectionTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   getFilterOptions,
   readFilters,
-  searchProviders,
+  searchProvidersPage,
   type SearchParams
 } from "@/lib/queries";
 
@@ -17,6 +21,38 @@ export const metadata: Metadata = {
     "ابحث عن أطباء في العراق حسب المحافظة والمنطقة والاختصاص، واطّلع على بيانات التواصل وطلب المواعيد عبر منصة طب نت."
 };
 
+type ProviderPageItem = Awaited<
+  ReturnType<typeof searchProvidersPage>
+>["items"][number];
+
+function toPublicListItem(
+  provider: ProviderPageItem
+): PublicProviderListItem {
+  return {
+    id: provider.id,
+    name: provider.name,
+    titlePrefix: provider.titlePrefix,
+    slug: provider.slug,
+    imageUrl: provider.imageUrl,
+    imageThumbnailUrl: provider.imageThumbnailUrl,
+    whatsapp: provider.whatsapp,
+    instagramUrl: provider.instagramUrl,
+    specialty: provider.specialty
+      ? {
+          name: provider.specialty.name
+        }
+      : null,
+    governorate: {
+      name: provider.governorate.name
+    },
+    area: {
+      name: provider.area.name
+    },
+    isFeatured: provider.isFeatured,
+    bookingPoints: provider.bookingPoints
+  };
+}
+
 export default async function DoctorsPage({
   searchParams
 }: {
@@ -25,10 +61,18 @@ export default async function DoctorsPage({
   const params = (await searchParams) ?? {};
   const filters = readFilters(params);
 
-  const [options, doctors] = await Promise.all([
+  const [options, doctorsPage] = await Promise.all([
     getFilterOptions("DOCTOR"),
-    searchProviders("DOCTOR", params)
+    searchProvidersPage("DOCTOR", params, {
+      take: 5
+    })
   ]);
+
+  const initialItems = doctorsPage.items.map(
+    toPublicListItem
+  );
+
+  const resultsKey = JSON.stringify(filters);
 
   return (
     <SiteShell>
@@ -47,12 +91,15 @@ export default async function DoctorsPage({
           specialties={options.specialties}
         />
 
-        {doctors.length ? (
-          <div className="grid gap-4">
-            {doctors.map((provider) => (
-              <ProviderCard key={provider.id} provider={provider} />
-            ))}
-          </div>
+        {initialItems.length ? (
+          <ProviderResults
+            key={resultsKey}
+            type="DOCTOR"
+            initialItems={initialItems}
+            initialCursor={doctorsPage.nextCursor}
+            initialHasMore={doctorsPage.hasMore}
+            filters={filters}
+          />
         ) : (
           <EmptyState
             title="لم نجد أطباء مطابقين لبحثك"

@@ -2,12 +2,15 @@ import type { Metadata } from "next";
 
 import { SiteShell } from "@/components/layout/site-shell";
 import { FilterForm } from "@/components/public/filter-form";
-import { PlaceCard } from "@/components/public/place-card";
+import {
+  PlaceResults,
+  type PublicPlaceListItem
+} from "@/components/public/place-results";
 import { SectionTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   getFilterOptions,
-  getPublicCosmeticCenters,
+  getPublicCosmeticCentersPage,
   readFilters,
   type SearchParams
 } from "@/lib/queries";
@@ -18,6 +21,33 @@ export const metadata: Metadata = {
     "ابحث عن مراكز التجميل في العراق حسب المحافظة والمنطقة، واطّلع على الخدمات ومعلومات التواصل عبر منصة طب نت."
 };
 
+type CosmeticCenterPageItem = Awaited<
+  ReturnType<typeof getPublicCosmeticCentersPage>
+>["items"][number];
+
+function toPublicListItem(
+  item: CosmeticCenterPageItem
+): PublicPlaceListItem {
+  return {
+    id: item.id,
+    name: item.name,
+    slug: item.slug,
+    imageUrl: item.imageUrl,
+    imageThumbnailUrl: item.imageThumbnailUrl,
+    whatsapp: item.whatsapp,
+    instagramUrl: item.instagramUrl,
+    workingHours: item.workingHours,
+    address: item.address,
+    inquiryCount: item.inquiryCount,
+    governorate: {
+      name: item.governorate.name
+    },
+    area: {
+      name: item.area.name
+    }
+  };
+}
+
 export default async function CosmeticCentersPage({
   searchParams
 }: {
@@ -26,11 +56,23 @@ export default async function CosmeticCentersPage({
   const params = (await searchParams) ?? {};
   const filters = readFilters(params);
 
-  const [options, cosmeticCenters] =
+  const [options, cosmeticCentersPage] =
     await Promise.all([
       getFilterOptions(),
-      getPublicCosmeticCenters(params)
+      getPublicCosmeticCentersPage(params, {
+        take: 5
+      })
     ]);
+
+  const initialItems = cosmeticCentersPage.items.map(
+    toPublicListItem
+  );
+
+  const resultsKey = JSON.stringify({
+    q: filters.q,
+    governorateId: filters.governorateId,
+    areaId: filters.areaId
+  });
 
   return (
     <SiteShell>
@@ -44,24 +86,25 @@ export default async function CosmeticCentersPage({
         <FilterForm
           action="/cosmetic-centers"
           q={filters.q}
-          governorates={
-            options.governorates
-          }
+          governorates={options.governorates}
           areas={options.areas}
           showSpecialties={false}
         />
 
-        {cosmeticCenters.length ? (
-          <div className="card-grid">
-            {cosmeticCenters.map((item) => (
-              <PlaceCard
-                key={item.id}
-                item={item}
-                label="مركز تجميل"
-                kind="cosmetic-center"
-              />
-            ))}
-          </div>
+        {initialItems.length ? (
+          <PlaceResults
+            key={resultsKey}
+            kind="cosmetic-center"
+            label="مركز تجميل"
+            initialItems={initialItems}
+            initialCursor={cosmeticCentersPage.nextCursor}
+            initialHasMore={cosmeticCentersPage.hasMore}
+            filters={{
+              q: filters.q,
+              governorateId: filters.governorateId,
+              areaId: filters.areaId
+            }}
+          />
         ) : (
           <EmptyState
             title="لم نجد مراكز تجميل مطابقة لبحثك"

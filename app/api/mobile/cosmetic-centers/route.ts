@@ -4,11 +4,55 @@ import {
 } from "next/server";
 
 import {
-  getPublicCosmeticCenters
+  getPublicCosmeticCentersPage
 } from "@/lib/queries";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+const DEFAULT_TAKE = 5;
+const MAX_TAKE = 12;
+const MAX_CURSOR_LENGTH = 512;
+
+function clampTake(value: string | null) {
+  const parsed = Number(value ?? String(DEFAULT_TAKE));
+
+  if (!Number.isFinite(parsed)) {
+    return DEFAULT_TAKE;
+  }
+
+  return Math.min(
+    Math.max(Math.trunc(parsed), 1),
+    MAX_TAKE
+  );
+}
+
+function readCursor(value: string | null) {
+  const cursor = value?.trim();
+
+  if (!cursor) {
+    return {
+      ok: true as const,
+      value: null
+    };
+  }
+
+  if (
+    cursor.length > MAX_CURSOR_LENGTH ||
+    !/^[A-Za-z0-9_-]+$/.test(cursor)
+  ) {
+    return {
+      ok: false as const,
+      value: null
+    };
+  }
+
+  return {
+    ok: true as const,
+    value: cursor
+  };
+}
 
 function getBaseUrl(request: NextRequest) {
   const forwardedHost = request.headers.get(
@@ -252,154 +296,203 @@ export async function GET(
 
     const baseUrl = getBaseUrl(request);
     const siteUrl = getSiteUrl(baseUrl);
+    const cursor = readCursor(
+      searchParams.get("cursor")
+    );
 
-    const centers =
-      await getPublicCosmeticCenters({
-        q:
-          searchParams.get("q") ??
-          undefined,
+    if (!cursor.ok) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "مؤشر الصفحة غير صحيح"
+        },
+        {
+          status: 400,
+          headers: {
+            "Cache-Control": "no-store"
+          }
+        }
+      );
+    }
 
-        governorateId:
-          searchParams.get(
-            "governorateId"
-          ) ??
-          searchParams.get(
-            "governorate"
-          ) ??
-          undefined,
+    const page =
+      await getPublicCosmeticCentersPage(
+        {
+          q:
+            searchParams.get("q") ??
+            undefined,
 
-        areaId:
-          searchParams.get(
-            "areaId"
-          ) ??
-          searchParams.get("area") ??
-          undefined
-      });
-
-    return NextResponse.json({
-      ok: true,
-      count: centers.length,
-      items: centers.map(
-        (
-          center: (typeof centers)[number]
-        ) => {
-          const governorateName =
-            center.governorate?.name ??
-            "غير محددة";
-
-          const areaName =
-            center.area?.name ??
-            "غير محددة";
-
-          const profilePath =
-            `/cosmetic-centers/${center.slug}`;
-
-          const profileUrl =
-            `${siteUrl}${profilePath}`;
-
-          const inquiryUrl =
-            `${baseUrl}/api/mobile/cosmetic-centers/${center.slug}/inquiry`;
-
-          const mapUrl =
-            normalizeMapUrl(
-              center.mapurl
+          governorateId:
+            searchParams.get(
+              "governorateId"
             ) ??
-            readMapUrlFromText(
-              center.address
-            );
+            searchParams.get(
+              "governorate"
+            ) ??
+            undefined,
 
-          const whatsappMessage =
-            buildCosmeticCenterWhatsappMessage(
-              {
-                name: center.name,
-                governorate:
-                  governorateName,
-                area: areaName,
-                address:
-                  center.address,
-                workingHours:
-                  center.workingHours,
-                services:
-                  center.services,
-                profileUrl
-              }
-            );
+          areaId:
+            searchParams.get(
+              "areaId"
+            ) ??
+            searchParams.get("area") ??
+            undefined
+        },
+        {
+          cursor: cursor.value,
+          take: clampTake(
+            searchParams.get("take")
+          )
+        }
+      );
 
-          return {
-            id: center.id,
-            type: "cosmetic-center",
-            kindLabel: "مركز تجميل",
+    return NextResponse.json(
+      {
+        ok: true,
+        count: page.items.length,
+        hasMore: page.hasMore,
+        nextCursor: page.nextCursor,
+        items: page.items.map(
+          (
+            center: (typeof page.items)[number]
+          ) => {
+            const governorateName =
+              center.governorate?.name ??
+              "غير محددة";
 
-            name: center.name,
-            slug: center.slug,
+            const areaName =
+              center.area?.name ??
+              "غير محددة";
 
-            governorateId:
-              center.governorateId,
-            governorate:
-              governorateName,
+            const profilePath =
+              `/cosmetic-centers/${center.slug}`;
 
-            areaId: center.areaId,
-            area: areaName,
+            const profileUrl =
+              `${siteUrl}${profilePath}`;
 
-            bio: center.bio,
-            services:
-              center.services,
+            const inquiryUrl =
+              `${baseUrl}/api/mobile/cosmetic-centers/${center.slug}/inquiry`;
 
-            imageUrl:
+            const mapUrl =
+              normalizeMapUrl(
+                center.mapurl
+              ) ??
+              readMapUrlFromText(
+                center.address
+              );
+
+            const whatsappMessage =
+              buildCosmeticCenterWhatsappMessage(
+                {
+                  name: center.name,
+                  governorate:
+                    governorateName,
+                  area: areaName,
+                  address:
+                    center.address,
+                  workingHours:
+                    center.workingHours,
+                  services:
+                    center.services,
+                  profileUrl
+                }
+              );
+
+            const profileImageUrl =
               normalizeAssetUrl(
                 center.imageUrl,
                 baseUrl
+              );
+
+            return {
+              id: center.id,
+              type: "cosmetic-center",
+              kindLabel: "مركز تجميل",
+
+              name: center.name,
+              slug: center.slug,
+
+              governorateId:
+                center.governorateId,
+              governorate:
+                governorateName,
+
+              areaId: center.areaId,
+              area: areaName,
+
+              bio: center.bio,
+              services:
+                center.services,
+
+              imageUrl:
+                profileImageUrl,
+              imageThumbnailUrl:
+                normalizeAssetUrl(
+                  center.imageThumbnailUrl,
+                  baseUrl
+                ) ?? profileImageUrl,
+              imageOriginalUrl:
+                normalizeAssetUrl(
+                  center.imageOriginalUrl,
+                  baseUrl
+                ) ?? profileImageUrl,
+
+              phone: center.phone,
+              phoneUrl: buildTelUrl(
+                center.phone
               ),
 
-            phone: center.phone,
-            phoneUrl: buildTelUrl(
-              center.phone
-            ),
-
-            whatsapp:
-              center.whatsapp,
-
-            whatsappUrl:
-              buildWhatsappUrl(
+              whatsapp:
                 center.whatsapp,
-                whatsappMessage
-              ),
 
-            instagramUrl:
-              center.instagramUrl,
+              whatsappUrl:
+                buildWhatsappUrl(
+                  center.whatsapp,
+                  whatsappMessage
+                ),
 
-            address:
-              center.address,
-            mapUrl,
+              instagramUrl:
+                center.instagramUrl,
 
-            workingHours:
-              center.workingHours,
+              address:
+                center.address,
+              mapUrl,
 
-            isFeatured:
-              center.isFeatured,
+              workingHours:
+                center.workingHours,
 
-            inquiryCount:
-              center.inquiryCount,
+              isFeatured:
+                center.isFeatured,
 
-            profileUrl,
-            detailsUrl: profileUrl,
-            shareUrl: profileUrl,
-            inquiryUrl,
+              inquiryCount:
+                center.inquiryCount,
 
-            primaryActionLabel:
-              "استفسار",
+              profileUrl,
+              detailsUrl: profileUrl,
+              shareUrl: profileUrl,
+              inquiryUrl,
 
-            detailsActionLabel:
-              "التفاصيل",
+              primaryActionLabel:
+                "استفسار",
 
-            secondaryActionLabel:
-              "اتصال سريع",
+              detailsActionLabel:
+                "التفاصيل",
 
-            mapActionLabel: "الموقع"
-          };
+              secondaryActionLabel:
+                "اتصال سريع",
+
+              mapActionLabel: "الموقع"
+            };
+          }
+        )
+      },
+      {
+        headers: {
+          "Cache-Control":
+            "public, max-age=30, s-maxage=60, stale-while-revalidate=300"
         }
-      )
-    });
+      }
+    );
   } catch (error) {
     console.error(
       "Mobile cosmetic centers API error",
@@ -413,7 +506,10 @@ export async function GET(
           "صار خطأ أثناء جلب مراكز التجميل"
       },
       {
-        status: 500
+        status: 500,
+        headers: {
+          "Cache-Control": "no-store"
+        }
       }
     );
   }

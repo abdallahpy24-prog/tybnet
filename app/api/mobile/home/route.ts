@@ -5,6 +5,11 @@ import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
 
+const SUCCESS_CACHE_HEADERS = {
+  "Cache-Control":
+    "public, s-maxage=300, stale-while-revalidate=3600"
+};
+
 function getBaseUrl(request: Request) {
   const forwardedHost = request.headers.get("x-forwarded-host");
   const host = forwardedHost ?? request.headers.get("host");
@@ -111,89 +116,111 @@ export async function GET(request: Request) {
     const baseUrl = getBaseUrl(request);
     const [home, offers] = await Promise.all([getHomeData(), getOffers()]);
 
-    return NextResponse.json({
-      ok: true,
+    return NextResponse.json(
+      {
+        ok: true,
 
-      sections: [
-        {
-          key: "doctors",
-          title: "أطباء",
-          type: "DOCTOR",
-          count: home.counts.doctors
-        },
-        {
-          key: "dentists",
-          title: "أطباء أسنان",
-          type: "DENTIST",
-          count: home.counts.dentists
-        },
-        {
-          key: "pharmacies",
-          title: "صيدليات",
-          count: home.counts.pharmacies
-        },
-        {
-          key: "labs",
-          title: "مختبرات",
-          count: home.counts.labs
-        }
-      ],
+        sections: [
+          {
+            key: "doctors",
+            title: "أطباء",
+            type: "DOCTOR",
+            count: home.counts.doctors
+          },
+          {
+            key: "dentists",
+            title: "أطباء أسنان",
+            type: "DENTIST",
+            count: home.counts.dentists
+          },
+          {
+            key: "pharmacies",
+            title: "صيدليات",
+            count: home.counts.pharmacies
+          },
+          {
+            key: "labs",
+            title: "مختبرات",
+            count: home.counts.labs
+          }
+        ],
 
-      featuredProviders: home.featured.map((provider) => {
-        const displayName = [provider.titlePrefix, provider.name]
-          .filter(Boolean)
-          .join(" ");
+        featuredProviders: home.featured.map((provider) => {
+          const displayName = [provider.titlePrefix, provider.name]
+            .filter(Boolean)
+            .join(" ");
 
-        const mapUrl =
-          normalizeMapUrl(provider.mapurl) ??
-          readMapUrlFromText(provider.address);
+          const mapUrl =
+            normalizeMapUrl(provider.mapurl) ??
+            readMapUrlFromText(provider.address);
 
-        return {
-          id: provider.id,
-          type: provider.type,
-          name: provider.name,
-          titlePrefix: provider.titlePrefix,
-          slug: provider.slug,
+          const profileImageUrl = normalizeAssetUrl(
+            provider.imageUrl ?? provider.imageThumbnailUrl,
+            baseUrl
+          );
 
-          specialtyId: provider.specialtyId,
-          specialty: provider.specialty?.name ?? null,
+          const thumbnailImageUrl = normalizeAssetUrl(
+            provider.imageThumbnailUrl ?? provider.imageUrl,
+            baseUrl
+          );
 
-          governorateId: provider.governorateId,
-          governorate: provider.governorate?.name ?? null,
+          const originalImageUrl = normalizeAssetUrl(
+            provider.imageOriginalUrl ?? provider.imageUrl,
+            baseUrl
+          );
 
-          areaId: provider.areaId,
-          area: provider.area?.name ?? null,
+          return {
+            id: provider.id,
+            type: provider.type,
+            name: provider.name,
+            titlePrefix: provider.titlePrefix,
+            slug: provider.slug,
 
-          imageUrl: normalizeAssetUrl(provider.imageUrl, baseUrl),
+            specialtyId: provider.specialtyId,
+            specialty: provider.specialty?.name ?? null,
 
-          phone: provider.phone,
-          phoneUrl: buildTelUrl(provider.phone),
+            governorateId: provider.governorateId,
+            governorate: provider.governorate?.name ?? null,
 
-          whatsapp: provider.whatsapp,
-          whatsappUrl: buildWhatsappUrl(
-            provider.whatsapp || provider.phone,
-            `مرحبا، وصلت لكم من تطبيق طب نت وأرغب بالاستفسار من ${displayName}.`
-          ),
+            areaId: provider.areaId,
+            area: provider.area?.name ?? null,
 
-          address: provider.address,
-          mapUrl,
+            imageThumbnailUrl: thumbnailImageUrl,
+            imageUrl: profileImageUrl,
+            imageOriginalUrl: originalImageUrl,
 
-          bookingPoints: provider.bookingPoints,
-          isFeatured: provider.isFeatured
-        };
-      }),
+            phone: provider.phone,
+            phoneUrl: buildTelUrl(provider.phone),
 
-      offers: offers.slice(0, 6).map((offer) => ({
-        id: offer.id,
-        title: offer.title,
-        slug: offer.slug,
-        description: offer.description,
-        imageUrl: normalizeAssetUrl(offer.imageUrl, baseUrl),
-        discountText: offer.discountText,
-        startsAt: offer.startsAt,
-        endsAt: offer.endsAt
-      }))
-    });
+            whatsapp: provider.whatsapp,
+            whatsappUrl: buildWhatsappUrl(
+              provider.whatsapp || provider.phone,
+              `مرحبا، وصلت لكم من تطبيق طب نت وأرغب بالاستفسار من ${displayName}.`
+            ),
+
+            address: provider.address,
+            mapUrl,
+
+            bookingPoints: provider.bookingPoints,
+            isFeatured: provider.isFeatured
+          };
+        }),
+
+        offers: offers.slice(0, 6).map((offer) => ({
+          id: offer.id,
+          title: offer.title,
+          slug: offer.slug,
+          description: offer.description,
+          imageUrl: normalizeAssetUrl(offer.imageUrl, baseUrl),
+          discountText: offer.discountText,
+          startsAt: offer.startsAt,
+          endsAt: offer.endsAt
+        }))
+      },
+      {
+        headers: SUCCESS_CACHE_HEADERS
+      }
+    );
   } catch (error) {
     console.error("Mobile home API error", error);
 
@@ -202,7 +229,12 @@ export async function GET(request: Request) {
         ok: false,
         message: "صار خطأ أثناء جلب بيانات الواجهة الرئيسية"
       },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          "Cache-Control": "no-store"
+        }
+      }
     );
   }
 }

@@ -4,42 +4,73 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
+const SUCCESS_CACHE_HEADERS = {
+  "Cache-Control":
+    "public, s-maxage=3600, stale-while-revalidate=86400"
+};
+
+function errorResponse(message: string, status: number) {
+  return NextResponse.json(
+    {
+      ok: false,
+      message
+    },
+    {
+      status,
+      headers: {
+        "Cache-Control": "no-store"
+      }
+    }
+  );
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const governorateId = searchParams.get("governorateId") ?? undefined;
+    const rawGovernorateId = searchParams.get("governorateId")?.trim();
+
+    if (rawGovernorateId && rawGovernorateId.length > 191) {
+      return errorResponse("معرف المحافظة غير صحيح", 400);
+    }
+
+    const governorateId = rawGovernorateId || undefined;
 
     const areas = await prisma.area.findMany({
       where: {
         isActive: true,
         governorate: {
-          isActive: true,
+          isActive: true
         },
-        governorateId,
+        governorateId
       },
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      orderBy: [
+        { sortOrder: "asc" },
+        { name: "asc" }
+      ],
       select: {
         id: true,
         name: true,
         slug: true,
-        governorateId: true,
-      },
+        governorateId: true
+      }
     });
-
-    return NextResponse.json({
-      ok: true,
-      count: areas.length,
-      items: areas,
-    });
-  } catch (error) {
-    console.error("Mobile areas API error", error);
 
     return NextResponse.json(
       {
-        ok: false,
-        message: "صار خطأ أثناء جلب المناطق",
+        ok: true,
+        count: areas.length,
+        items: areas
       },
-      { status: 500 }
+      {
+        headers: SUCCESS_CACHE_HEADERS
+      }
+    );
+  } catch (error) {
+    console.error("Mobile areas API error", error);
+
+    return errorResponse(
+      "صار خطأ أثناء جلب المناطق",
+      500
     );
   }
 }

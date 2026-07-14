@@ -2,34 +2,75 @@ import type { Metadata } from "next";
 
 import { SiteShell } from "@/components/layout/site-shell";
 import { FilterForm } from "@/components/public/filter-form";
-import { PlaceCard } from "@/components/public/place-card";
+import {
+  PlaceResults,
+  type PublicPlaceListItem
+} from "@/components/public/place-results";
 import { SectionTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   getFilterOptions,
-  getPublicPharmacies,
+  getPublicPharmaciesPage,
   readFilters,
-  type SearchParams,
+  type SearchParams
 } from "@/lib/queries";
 
 export const metadata: Metadata = {
   title: "ابحث عن صيدليات في العراق | طب نت",
   description:
-    "ابحث عن صيدليات في العراق حسب المحافظة والمنطقة، واطّلع على معلومات التواصل عبر منصة طب نت.",
+    "ابحث عن صيدليات في العراق حسب المحافظة والمنطقة، واطّلع على معلومات التواصل عبر منصة طب نت."
 };
 
+type PharmacyPageItem = Awaited<
+  ReturnType<typeof getPublicPharmaciesPage>
+>["items"][number];
+
+function toPublicListItem(
+  item: PharmacyPageItem
+): PublicPlaceListItem {
+  return {
+    id: item.id,
+    name: item.name,
+    slug: item.slug,
+    imageUrl: item.imageUrl,
+    imageThumbnailUrl: item.imageThumbnailUrl,
+    whatsapp: item.whatsapp,
+    workingHours: item.workingHours,
+    address: item.address,
+    inquiryCount: item.inquiryCount,
+    governorate: {
+      name: item.governorate.name
+    },
+    area: {
+      name: item.area.name
+    }
+  };
+}
+
 export default async function PharmaciesPage({
-  searchParams,
+  searchParams
 }: {
   searchParams?: Promise<SearchParams>;
 }) {
   const params = (await searchParams) ?? {};
   const filters = readFilters(params);
 
-  const [options, pharmacies] = await Promise.all([
+  const [options, pharmaciesPage] = await Promise.all([
     getFilterOptions(),
-    getPublicPharmacies(params),
+    getPublicPharmaciesPage(params, {
+      take: 5
+    })
   ]);
+
+  const initialItems = pharmaciesPage.items.map(
+    toPublicListItem
+  );
+
+  const resultsKey = JSON.stringify({
+    q: filters.q,
+    governorateId: filters.governorateId,
+    areaId: filters.areaId
+  });
 
   return (
     <SiteShell>
@@ -48,12 +89,20 @@ export default async function PharmaciesPage({
           showSpecialties={false}
         />
 
-        {pharmacies.length ? (
-          <div className="card-grid">
-            {pharmacies.map((item) => (
-              <PlaceCard key={item.id} item={item} label="صيدلية" />
-            ))}
-          </div>
+        {initialItems.length ? (
+          <PlaceResults
+            key={resultsKey}
+            kind="pharmacy"
+            label="صيدلية"
+            initialItems={initialItems}
+            initialCursor={pharmaciesPage.nextCursor}
+            initialHasMore={pharmaciesPage.hasMore}
+            filters={{
+              q: filters.q,
+              governorateId: filters.governorateId,
+              areaId: filters.areaId
+            }}
+          />
         ) : (
           <EmptyState
             title="لم نجد صيدليات مطابقة لبحثك"

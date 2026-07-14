@@ -7,6 +7,11 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
+const SUCCESS_CACHE_HEADERS = {
+  "Cache-Control":
+    "public, s-maxage=3600, stale-while-revalidate=86400"
+};
+
 type SpecialtyForValue =
   | "DOCTOR"
   | "COSMETIC_DOCTOR";
@@ -45,11 +50,16 @@ export async function GET(
     );
 
     if (!forTypes.length) {
-      return NextResponse.json({
-        ok: true,
-        count: 0,
-        items: []
-      });
+      return NextResponse.json(
+        {
+          ok: true,
+          count: 0,
+          items: []
+        },
+        {
+          headers: SUCCESS_CACHE_HEADERS
+        }
+      );
     }
 
     const specialties =
@@ -73,11 +83,16 @@ export async function GET(
         }
       });
 
-    return NextResponse.json({
-      ok: true,
-      count: specialties.length,
-      items: specialties
-    });
+    return NextResponse.json(
+      {
+        ok: true,
+        count: specialties.length,
+        items: specialties
+      },
+      {
+        headers: SUCCESS_CACHE_HEADERS
+      }
+    );
   } catch (error) {
     console.error(
       "Mobile specialties API error",
@@ -91,7 +106,10 @@ export async function GET(
           "صار خطأ أثناء جلب الاختصاصات"
       },
       {
-        status: 500
+        status: 500,
+        headers: {
+          "Cache-Control": "no-store"
+        }
       }
     );
   }
