@@ -303,7 +303,7 @@ export default async function CosmeticDoctorDetailsPage({
                           className="h-4 w-4"
                           aria-hidden="true"
                         />
-                        تواصل واتساب
+                        تواصل عبر واتساب
                       </Button>
                     </a>
                   ) : null}
@@ -340,7 +340,7 @@ export default async function CosmeticDoctorDetailsPage({
                           className="h-4 w-4"
                           aria-hidden="true"
                         />
-                        اتصال مباشر
+                        اتصال
                       </Button>
                     </a>
                   ) : null}

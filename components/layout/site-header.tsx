@@ -10,7 +10,6 @@ import {
   LogIn,
   Menu,
   Search,
-  Sparkles,
   Stethoscope,
   UserPlus,
   X
@@ -106,7 +105,7 @@ const quickLinks = [
     href: "/offers",
     label: "العروض",
     description:
-      "تابع العروض الطبية المتاحة عند توفرها"
+      "اكتشف أحدث العروض المتاحة"
   },
   {
     href: "/join",
@@ -214,10 +213,6 @@ export function SiteHeader() {
               onClick={toggleBeautyMenu}
               className="inline-flex items-center gap-1 rounded-xl px-3 py-2 text-sm font-bold text-slate-600 transition hover:bg-primary-soft hover:text-primary-dark"
             >
-              <Sparkles
-                className="h-4 w-4 text-fuchsia-600"
-                aria-hidden="true"
-              />
               التجميل
               <ChevronDown
                 className={[
@@ -309,7 +304,7 @@ export function SiteHeader() {
               className="h-4 w-4"
               aria-hidden="true"
             />
-            انضم للمنصة
+            انضم إلى طب نت
           </Button>
         </Link>
 
@@ -325,7 +320,7 @@ export function SiteHeader() {
               className="h-4 w-4"
               aria-hidden="true"
             />
-            دخول الإدارة
+            لوحة الإدارة
           </Button>
         </Link>
 
@@ -334,8 +329,8 @@ export function SiteHeader() {
           className="inline-flex rounded-xl border border-borderSoft bg-white p-2 text-navy lg:hidden"
           aria-label={
             isQuickOpen
-              ? "إغلاق الخدمات السريعة"
-              : "فتح الخدمات السريعة"
+              ? "إغلاق استكشف الخدمات"
+              : "فتح استكشف الخدمات"
           }
           aria-expanded={isQuickOpen}
           onClick={toggleQuickMenu}
@@ -371,11 +366,11 @@ export function SiteHeader() {
           <div className="container-page py-4">
             <div className="mb-3">
               <p className="text-sm font-black text-primary-dark">
-                الخدمات السريعة
+                استكشف الخدمات
               </p>
 
               <h2 className="text-xl font-black text-navy">
-                اختر القسم المناسب
+                اختر الخدمة التي تبحث عنها
               </h2>
             </div>
 
@@ -451,10 +446,6 @@ export function SiteHeader() {
                   className="flex w-full items-center justify-between px-4 py-3 text-right text-sm font-black text-navy"
                 >
                   <span className="inline-flex items-center gap-2">
-                    <Sparkles
-                      className="h-4 w-4 text-fuchsia-600"
-                      aria-hidden="true"
-                    />
                     التجميل
                   </span>
 
@@ -534,7 +525,7 @@ export function SiteHeader() {
                   className="h-4 w-4"
                   aria-hidden="true"
                 />
-                دخول لوحة الإدارة
+                لوحة الإدارة
               </Button>
             </Link>
           </div>

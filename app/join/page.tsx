@@ -16,14 +16,14 @@ import { buildWhatsappUrl } from "@/lib/whatsapp";
 export const metadata: Metadata = {
   title: "انضم إلى طب نت | طب نت",
   description:
-    "أضف عيادتك أو صيدليتك أو مختبرك إلى منصة طب نت وسهّل وصول الزائرين إلى بياناتك ووسائل التواصل معك."
+    "أضف عيادتك أو مركزك أو صيدليتك أو مختبرك إلى طب نت، واعرض معلوماتك ووسائل التواصل بصورة واضحة ومنظمة."
 };
 
 const contactWhatsapp = process.env.NEXT_PUBLIC_CONTACT_WHATSAPP;
 
 const benefits = [
   "صفحة منظمة تعرض بياناتك الأساسية بشكل واضح للزائرين.",
-  "ظهور ضمن أقسام مخصصة للأطباء، أطباء الأسنان، الصيدليات، أو المختبرات.",
+  "ظهور ضمن القسم المناسب لنوع الخدمة التي تقدمها.",
   "تسهيل وصول الزائر إلى موقعك ووسائل التواصل معك.",
   "إمكانية عرض الاختصاص، المنطقة، العنوان، أوقات الدوام، والصور.",
   "استقبال طلبات المواعيد أو الاستفسارات حسب نوع الخدمة المتوفرة.",
@@ -39,7 +39,7 @@ const steps = [
   {
     title: "مراجعة وتنظيم الملف",
     description:
-      "نراجع البيانات ونعيد ترتيبها بصيغة مناسبة للعرض داخل المنصة، مع طلب أي معلومات ناقصة عند الحاجة."
+      "نراجع البيانات وننظمها بصيغة مناسبة للعرض داخل المنصة، مع طلب أي معلومات ناقصة عند الحاجة."
   },
   {
     title: "النشر والمتابعة",
@@ -51,10 +51,10 @@ const steps = [
 const categories = [
   "الأطباء",
   "أطباء الأسنان",
+  "أطباء التجميل",
+  "مراكز التجميل",
   "الصيدليات",
-  "المختبرات الطبية",
-  "المراكز والجهات الصحية المناسبة",
-  "العروض والخدمات المرتبطة"
+  "المختبرات الطبية"
 ];
 
 export default function JoinPage() {
@@ -71,18 +71,15 @@ export default function JoinPage() {
             <div className="rounded-3xl bg-primary-soft p-6 md:p-8">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-primary-dark">
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
-                للأطباء ومقدمي الخدمات الطبية
+                لمقدمي الخدمات الصحية والتجميلية
               </div>
 
               <h1 className="text-3xl font-black text-navy md:text-5xl">
-                اجعل بياناتك الطبية أوضح وأسهل وصولاً
+                اعرض بياناتك وخدماتك بصورة واضحة ومنظمة
               </h1>
 
               <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">
-                طب نت يساعد الأطباء، أطباء الأسنان، الصيدليات، المختبرات،
-                والمراكز الصحية على عرض بياناتهم بطريقة منظمة، حتى يتمكن
-                الزائر من معرفة موقع الخدمة ووسائل التواصل والتفاصيل الأساسية
-                قبل الزيارة أو طلب الموعد.
+                يساعد طب نت الأطباء وأطباء الأسنان وأطباء التجميل ومراكز التجميل والصيدليات والمختبرات على عرض معلوماتهم بصورة منظمة، لتسهيل وصول المستخدم إلى الموقع ووسائل التواصل والتفاصيل الأساسية قبل الزيارة أو طلب الموعد.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
@@ -90,7 +87,7 @@ export default function JoinPage() {
                   <a href={whatsappUrl} target="_blank" rel="noreferrer">
                     <Button type="button">
                       <MessageCircle className="h-4 w-4" aria-hidden="true" />
-                      تواصل للانضمام
+                      ابدأ طلب الانضمام
                     </Button>
                   </a>
                 ) : null}
@@ -170,7 +167,7 @@ export default function JoinPage() {
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div>
                 <h2 className="text-xl font-black text-navy">
-                  جاهز لإضافة بياناتك؟
+                  هل أنت جاهز للانضمام؟
                 </h2>
                 <p className="mt-2 text-sm leading-7 text-slate-600">
                   يتم نشر الملفات بعد مراجعة البيانات والتأكد من اكتمالها

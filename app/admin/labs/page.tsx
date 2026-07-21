@@ -66,7 +66,7 @@ export default async function LabsAdminPage({
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <PageHeader
           title="المختبرات"
-          description="قائمة صغيرة مرتبة تلقائياً حسب نقاط الاستفسار."
+          description="قائمة المختبرات مرتبة تلقائياً حسب نقاط الاستفسار."
         />
 
         <Link

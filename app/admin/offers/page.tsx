@@ -86,7 +86,7 @@ export default async function OffersAdminPage({
     <div className="space-y-6">
       <PageHeader
         title="العروض"
-        description="إضافة العروض والبحث عنها وتعديلها وحذفها من صفحة واحدة مرتبة."
+        description="إدارة العروض وإضافتها والبحث عنها وتعديلها وحذفها من صفحة واحدة."
       />
 
       <FormShell title="إضافة عرض">

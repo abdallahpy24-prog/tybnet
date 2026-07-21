@@ -311,7 +311,7 @@ export async function GET(request: NextRequest) {
 
             primaryActionLabel: "استفسار",
             detailsActionLabel: "التفاصيل",
-            secondaryActionLabel: "اتصال سريع",
+            secondaryActionLabel: "اتصال",
             mapActionLabel: "الموقع"
           };
         })

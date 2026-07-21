@@ -60,11 +60,11 @@ export default async function HomePage() {
     {
       title: "ابحث حسب المحافظة والمنطقة",
       description:
-        "صفّي النتائج حسب موقعك حتى تصل إلى مقدم خدمة مناسب وقريب منك.",
+        "ابحث حسب موقعك للوصول إلى مقدم خدمة مناسب وقريب منك.",
       icon: MapPin
     },
     {
-      title: "راجع التفاصيل قبل التواصل",
+      title: "اطّلع على التفاصيل قبل التواصل",
       description:
         "اطّلع على الاختصاص، العنوان، أوقات الدوام، ووسائل التواصل المتاحة.",
       icon: Search
@@ -79,11 +79,11 @@ export default async function HomePage() {
 
   const heroTitle =
     settings.heroTitle ||
-    "طريقك الأسرع للوصول إلى الخدمات الطبية في العراق";
+    "دليلك للخدمات الصحية والتجميلية في العراق";
 
   const heroDescription =
     settings.heroDescription ||
-    "طب نت منصة عراقية تنظّم بيانات الأطباء وأطباء الأسنان وأطباء التجميل ومراكز التجميل والصيدليات والمختبرات، وتساعدك على البحث حسب المحافظة والمنطقة والاختصاص، مع إمكانية التواصل أو طلب موعد بسهولة.";
+    "اكتشف الأطباء وأطباء الأسنان وأطباء التجميل ومراكز التجميل والصيدليات والمختبرات، وابحث حسب المحافظة والمنطقة والاختصاص بسهولة.";
 
   return (
     <SiteShell>
@@ -95,7 +95,7 @@ export default async function HomePage() {
                 className="h-4 w-4"
                 aria-hidden="true"
               />
-              منصة عراقية للخدمات الطبية
+              دليل عراقي للخدمات الصحية والنجميلية
             </div>
 
             <h1 className="max-w-4xl text-4xl font-black leading-[1.35] text-navy md:text-5xl md:leading-[1.35] lg:text-6xl lg:leading-[1.3]">
@@ -152,7 +152,7 @@ export default async function HomePage() {
               <span className="hidden sm:inline">
                 •
               </span>
-              <span>عروض طبية</span>
+              <span>العروض</span>
             </div>
           </div>
 
@@ -167,8 +167,7 @@ export default async function HomePage() {
               </h2>
 
               <p className="mt-3 text-sm leading-7 opacity-90">
-                النتائج تظهر من قاعدة بيانات طب نت بعد
-                تفعيلها من لوحة الإدارة.
+                استعرض مقدمي الخدمات المتاحين واختر الأنسب لاحتياجك.
               </p>
             </div>
 
@@ -274,11 +273,11 @@ export default async function HomePage() {
 
           <div className="rounded-3xl bg-primary-soft p-6 md:p-8">
             <p className="text-sm font-black text-primary-dark">
-              لأصحاب العيادات والمراكز
+              لمقدمي الخدمات الصحية والتجميلية
             </p>
 
             <h2 className="mt-3 text-3xl font-black text-navy">
-              تريد تظهر داخل طب نت؟
+              هل ترغب في الانضمام إلى طب نت؟
             </h2>
 
             <p className="mt-3 max-w-2xl text-sm leading-8 text-slate-600">

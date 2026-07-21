@@ -184,7 +184,7 @@ function ImageUploadField({
         throw new Error(
           result?.message ||
             result?.error ||
-            "فشل رفع الصورة."
+            "تعذر رفع الصورة."
         );
       }
 
@@ -195,7 +195,7 @@ function ImageUploadField({
 
       if (!uploadedUrl) {
         throw new Error(
-          "تم الرفع لكن الخادم لم يرجع رابط الصورة."
+          "تم رفع الصورة، لكن الخادم لم يُرجع رابطاً لها."
         );
       }
 
@@ -205,7 +205,7 @@ function ImageUploadField({
       setMessage(
         error instanceof Error
           ? error.message
-          : "فشل رفع الصورة."
+          : "تعذر رفع الصورة."
       );
     } finally {
       setUploading(false);
@@ -254,8 +254,7 @@ function ImageUploadField({
             </p>
 
             <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-              يفضل صورة أفقية واضحة للعرض، بصيغة JPG
-              أو PNG أو WebP، والحجم أقل من 3MB.
+              يُفضّل استخدام صورة أفقية واضحة بصيغة JPG أو PNG أو WebP، على ألا يتجاوز حجمها 3MB.
             </p>
           </div>
 
@@ -345,7 +344,7 @@ export function OfferForm({
 
       <AdminSection
         title="بيانات العرض"
-        description="هذه البيانات تظهر في صفحة العروض وفي تطبيق الموبايل."
+        description="تظهر هذه البيانات في صفحة العروض على الموقع وفي تطبيق طب نت."
       >
         <Field label="عنوان العرض">
           <Input
@@ -382,7 +381,7 @@ export function OfferForm({
               row?.providerId ?? ""
             }
           >
-            <option value="">بدون ربط</option>
+            <option value="">غير مرتبط</option>
 
             {providers.map((provider) => (
               <option
@@ -413,7 +412,7 @@ export function OfferForm({
 
       <AdminSection
         title="مدة العرض"
-        description="اترك التاريخ فارغاً إذا تريد العرض يبقى مفتوحاً بدون بداية أو نهاية محددة."
+        description="اترك التاريخ فارغاً إذا كنت تريد إبقاء العرض دون تاريخ بداية أو نهاية محدد."
       >
         <Field label="تاريخ البداية">
           <Input

@@ -9,7 +9,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md p-8">
         <div className="mb-6 text-center">
           <Image src="/assets/logo.png" alt="طب نت" width={92} height={88} className="mx-auto h-20 w-20 object-contain" />
-          <h1 className="mt-4 text-2xl font-black text-navy">تسجيل دخول الأدمن</h1>
+          <h1 className="mt-4 text-2xl font-black text-navy">تسجيل دخول الإدارة</h1>
           <p className="mt-2 text-sm text-slate-500">لوحة إدارة منصة طب نت</p>
         </div>
         <LoginForm />

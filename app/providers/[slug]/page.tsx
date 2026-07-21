@@ -238,7 +238,7 @@ export default async function ProviderDetailsPage({
                     <a href={whatsappUrl} target="_blank" rel="noreferrer">
                       <Button type="button">
                         <MessageCircle className="h-4 w-4" aria-hidden="true" />
-                        تواصل واتساب
+                        تواصل عبر واتساب
                       </Button>
                     </a>
                   ) : null}
@@ -256,7 +256,7 @@ export default async function ProviderDetailsPage({
                     <a href={"tel:" + provider.phone} className="inline-flex">
                       <Button type="button" variant="secondary">
                         <Phone className="h-4 w-4" aria-hidden="true" />
-                        اتصال مباشر
+                        اتصال
                       </Button>
                     </a>
                   ) : null}

@@ -35,7 +35,7 @@ export default function ContactPage() {
             </h1>
 
             <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">
-              يمكنك التواصل معنا بخصوص الاستفسارات العامة، طلب إضافة طبيب أو
+              يمكنك التواصل معنا للاستفسارات العامة، أو طلب إضافة وتحديث بيانات مقدم خدمة، أو مناقشة فرص التعاون مع طب نت.، طلب إضافة طبيب أو
               صيدلية أو مختبر، تحديث بيانات منشورة، أو مناقشة فرص التعاون داخل
               منصة طب نت.
             </p>
@@ -55,13 +55,12 @@ export default function ContactPage() {
                 <a href={whatsappUrl} target="_blank" rel="noreferrer" className="mt-5 block">
                   <Button type="button" className="w-full">
                     <MessageCircle className="h-4 w-4" aria-hidden="true" />
-                    تواصل واتساب
+                    تواصل عبر واتساب
                   </Button>
                 </a>
               ) : (
                 <p className="mt-5 rounded-xl bg-surface p-3 text-xs font-bold leading-6 text-slate-500">
-                  لم يتم تفعيل رقم واتساب المنصة حالياً. يمكنك استخدام طرق
-                  التواصل الأخرى عند توفرها.
+                  التواصل عبر واتساب غير متوفر حالياً. يمكنك استخدام وسائل التواصل الأخرى.
                 </p>
               )}
             </Card>
@@ -84,8 +83,7 @@ export default function ContactPage() {
                 </a>
               ) : (
                 <p className="mt-5 rounded-xl bg-surface p-3 text-xs font-bold leading-6 text-slate-500">
-                  سيتم اعتماد بريد رسمي للمنصة، ويمكن تحديث هذه الصفحة عند
-                  تفعيله.
+                  البريد الإلكتروني غير متوفر حالياً. يمكنك استخدام وسائل التواصل الأخرى.
                 </p>
               )}
             </Card>
@@ -95,8 +93,7 @@ export default function ContactPage() {
               <h2 className="mt-4 text-lg font-black text-navy">طلب الانضمام</h2>
 
               <p className="mt-2 text-sm leading-7 text-slate-600">
-                إذا كنت طبيباً، طبيب أسنان، صيدلية، مختبراً، أو مركزاً صحياً،
-                يمكنك الاطلاع على تفاصيل الانضمام للمنصة.
+                إذا كنت طبيباً، طبيب أسنان، طبيب تجميل، مركز تجميل، صيدلية، أو مختبراً، يمكنك الاطلاع على تفاصيل الانضمام إلى طب نت.
               </p>
 
               <Link href="/join" className="mt-5 block">
@@ -130,11 +127,11 @@ export default function ContactPage() {
 
                 <div>
                   <h2 className="text-xl font-black text-navy">
-                    ملاحظة مهمة
+                    تنبيه طبي
                   </h2>
 
                   <p className="mt-2 text-sm leading-7 text-slate-600">
-                    طب نت منصة للبحث والتواصل مع مقدمي الخدمات الطبية، ولا
+                    طب نت دليل للبحث والتواصل مع مقدمي الخدمات الصحية والتجميلية، ولا
                     تستقبل الحالات الطارئة أو تقدم تشخيصاً طبياً. في الحالات
                     الصحية العاجلة، يرجى مراجعة أقرب طوارئ أو مؤسسة صحية فوراً.
                   </p>

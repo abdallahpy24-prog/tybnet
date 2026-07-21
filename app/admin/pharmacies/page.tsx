@@ -66,7 +66,7 @@ export default async function PharmaciesAdminPage({
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <PageHeader
           title="الصيدليات"
-          description="قائمة صغيرة مرتبة تلقائياً حسب نقاط الاستفسار."
+          description="قائمة الصيدليات مرتبة تلقائياً حسب نقاط الاستفسار."
         />
 
         <Link

@@ -118,7 +118,7 @@ export default async function AppointmentsPage({
     <div className="space-y-6">
       <PageHeader
         title="المواعيد"
-        description="البحث ومتابعة طلبات الحجز وتحديث حالتها وحذفها من صفحة واحدة."
+        description="البحث في طلبات المواعيد ومتابعتها وتحديث حالتها أو حذفها من صفحة واحدة."
       />
 
       <Card>
@@ -131,7 +131,7 @@ export default async function AppointmentsPage({
             <Input
               name="q"
               defaultValue={q}
-              placeholder="اسم المريض، الهاتف، الطبيب أو الموعد..."
+              placeholder="اسم المراجع، رقم الهاتف، الطبيب أو الموعد..."
             />
           </label>
 
@@ -142,7 +142,7 @@ export default async function AppointmentsPage({
               <option value="NEW">جديد</option>
               <option value="FOLLOWING">قيد المتابعة</option>
               <option value="COMPLETED">مكتمل</option>
-              <option value="CANCELLED">ملغي</option>
+              <option value="CANCELLED">ملغى</option>
             </Select>
           </label>
 
@@ -174,12 +174,12 @@ export default async function AppointmentsPage({
           <details className="relative">
             <summary className="focus-ring inline-flex h-10 cursor-pointer list-none items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 text-sm font-black text-red-700 [&::-webkit-details-marker]:hidden">
               <Trash2 className="h-4 w-4" aria-hidden="true" />
-              حذف جميع المواعيد
+              حذف جميع الطلبات
             </summary>
 
             <div className="absolute left-0 z-20 mt-2 w-72 rounded-2xl border border-red-200 bg-white p-4 shadow-xl">
               <p className="text-sm font-bold leading-6 text-red-700">
-                هذا الإجراء يحذف جميع المواعيد نهائياً ولا يمكن التراجع عنه.
+                هذا الإجراء يحذف جميع طلبات المواعيد نهائياً ولا يمكن التراجع عنه.
               </p>
 
               <form action={deleteAllAppointments} className="mt-3">
@@ -213,7 +213,7 @@ export default async function AppointmentsPage({
                     <p className="mt-1 truncate text-xs font-semibold text-slate-500">
                       {row.provider
                         ? `${row.provider.titlePrefix} ${row.provider.name}`
-                        : "بدون طبيب محدد"}
+                        : "لا يوجد طبيب محدد"}
                     </p>
                   </div>
                 </div>
@@ -228,7 +228,7 @@ export default async function AppointmentsPage({
                     className="h-3.5 w-3.5"
                     aria-hidden="true"
                   />
-                  {row.preferredDate || "الموعد غير محدد"}
+                  {row.preferredDate || "لم يُحدد موعد مفضل"}
                 </span>
 
                 <ChevronDown
@@ -241,7 +241,7 @@ export default async function AppointmentsPage({
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="rounded-2xl border border-borderSoft bg-white p-4">
                     <p className="text-xs font-bold text-slate-500">
-                      الموعد المفضل المكتوب من المراجع
+                      اليوم والوقت المفضلان
                     </p>
                     <p className="mt-2 whitespace-pre-wrap text-sm font-black text-navy">
                       {row.preferredDate || "غير محدد"}
@@ -282,7 +282,7 @@ export default async function AppointmentsPage({
                         <option value="NEW">جديد</option>
                         <option value="FOLLOWING">قيد المتابعة</option>
                         <option value="COMPLETED">مكتمل</option>
-                        <option value="CANCELLED">ملغي</option>
+                        <option value="CANCELLED">ملغى</option>
                       </Select>
                     </label>
 

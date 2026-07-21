@@ -122,7 +122,7 @@ const optionalInstagramUrl = z
 const optionalMapUrl = z
   .string()
   .trim()
-  .max(2048, "رابط اللوكيشن طويل جداً")
+  .max(2048, "رابط الموقع على الخريطة طويل جداً")
   .optional()
   .nullable()
   .transform((value, ctx) => {
@@ -156,14 +156,14 @@ const optionalMapUrl = z
 
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "رابط اللوكيشن غير صحيح"
+        message: "رابط الموقع على الخريطة غير صحيح"
       });
 
       return z.NEVER;
     } catch {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "رابط اللوكيشن غير صحيح"
+        message: "رابط الموقع على الخريطة غير صحيح"
       });
 
       return z.NEVER;

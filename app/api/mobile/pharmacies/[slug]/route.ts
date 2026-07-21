@@ -299,7 +299,7 @@ export async function GET(
 
           primaryActionLabel: "استفسار",
           detailsActionLabel: "التفاصيل",
-          secondaryActionLabel: "اتصال سريع",
+          secondaryActionLabel: "اتصال",
           mapActionLabel: "الموقع"
         }
       },

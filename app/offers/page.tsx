@@ -6,9 +6,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { getOffers } from "@/lib/queries";
 
 export const metadata: Metadata = {
-  title: "العروض الطبية في العراق | طب نت",
+  title: "العروض المتاحة في العراق | طب نت",
   description:
-    "استعرض العروض الطبية المتاحة من الأطباء والمراكز ومقدمي الخدمات الطبية عبر منصة طب نت."
+    "استعرض العروض المتاحة من مقدمي الخدمات الصحية والتجميلية عبر طب نت."
 };
 
 export default async function OffersPage() {
@@ -19,8 +19,8 @@ export default async function OffersPage() {
       <section className="container-page py-10">
         <SectionTitle
           eyebrow="العروض"
-          title="عروض طبية متاحة عبر طب نت"
-          description="تابع العروض والخدمات المميزة من مقدمي الخدمات الطبية، وتأكد من تفاصيل العرض مباشرة قبل الحجز أو الزيارة."
+          title="العروض متاحة عبر طب نت"
+          description="اطّلع على العروض والخدمات المميزة، وتأكد من التفاصيل مباشرة مع مقدم الخدمة قبل طلب الموعد أو الزيارة."
         />
 
         {offers.length ? (
@@ -32,7 +32,7 @@ export default async function OffersPage() {
         ) : (
           <EmptyState
             title="لا توجد عروض متاحة حالياً"
-            description="تابع هذه الصفحة لاحقاً للاطلاع على أحدث العروض الطبية عند توفرها."
+            description="تابع هذه الصفحة للاطلاع على أحدث العروض عند توفرها."
           />
         )}
       </section>

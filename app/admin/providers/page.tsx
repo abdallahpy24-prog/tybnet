@@ -89,7 +89,7 @@ export default async function ProvidersPage({
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <PageHeader
           title="الأطباء"
-          description="قائمة مرتبة تلقائياً حسب النقاط. اختصاصات الأطباء موجودة داخل هذا القسم فقط."
+          description="قائمة الأطباء مرتبة تلقائياً حسب النقاط، وتُدار اختصاصاتهم بصورة مستقلة ضمن هذا القسم."
         />
 
         <Link

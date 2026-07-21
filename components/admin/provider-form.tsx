@@ -209,7 +209,7 @@ function ImageUploadField({
 
       if (!response.ok) {
         throw new Error(
-          result?.message || result?.error || "فشل رفع الصورة."
+          result?.message || result?.error || "تعذر رفع الصورة."
         );
       }
 
@@ -220,7 +220,7 @@ function ImageUploadField({
         result?.path;
 
       if (!uploadedUrl) {
-        throw new Error("تم الرفع لكن الخادم لم يرجع رابط الصورة.");
+        throw new Error("تم رفع الصورة، لكن الخادم لم يُرجع رابطاً لها.");
       }
 
       onChange({
@@ -235,7 +235,7 @@ function ImageUploadField({
       setMessage("تم رفع الصورة وتجهيز نسخ العرض بنجاح.");
     } catch (error) {
       setMessage(
-        error instanceof Error ? error.message : "فشل رفع الصورة."
+        error instanceof Error ? error.message : "تعذر رفع الصورة."
       );
     } finally {
       setUploading(false);
@@ -302,8 +302,7 @@ function ImageUploadField({
             </p>
 
             <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-              يفضل صورة واضحة بصيغة JPG أو PNG أو WebP، والحجم أقل من
-              3MB.
+              يُفضّل استخدام صورة واضحة بصيغة JPG أو PNG أو WebP، على ألا يتجاوز حجمها 3MB.
             </p>
           </div>
 
@@ -472,8 +471,8 @@ export function ProviderForm({
         title="البيانات الأساسية"
         description={
           isCosmetic
-            ? "هذه البيانات تظهر في قوائم وبطاقات أطباء التجميل."
-            : "هذه البيانات تظهر في القوائم وبطاقات الأطباء وأطباء الأسنان."
+            ? "تظهر هذه البيانات في قوائم أطباء التجميل وبطاقاتهم داخل الموقع والتطبيق."
+            : "تظهر هذه البيانات في قوائم الأطباء وأطباء الأسنان وبطاقاتهم داخل الموقع والتطبيق."
         }
       >
         <Field label="النوع">
@@ -588,7 +587,7 @@ export function ProviderForm({
 
       <AdminSection
         title="الموقع"
-        description="العنوان النصي شيء، ورابط اللوكيشن شيء ثاني. خلي رابط الخريطة داخل حقل رابط الموقع فقط."
+        description="أدخل العنوان النصي بصورة مستقلة، وأضف رابط الخريطة في حقل رابط الموقع."
       >
         <Field label="المحافظة">
           <Select
@@ -671,7 +670,7 @@ export function ProviderForm({
 
       <AdminSection
         title="التواصل"
-        description="الواتساب يستخدم للزر الأساسي، والهاتف يستخدم للاتصال المباشر، والإنستغرام يظهر كرابط خارجي."
+        description="يُستخدم واتساب للتواصل الأساسي، ورقم الهاتف للاتصال، ويظهر إنستغرام كرابط خارجي."
       >
         <Field label="واتساب">
           <Input
@@ -717,8 +716,8 @@ export function ProviderForm({
         title="التفاصيل والظهور"
         description={
           isCosmetic
-            ? "النقاط تتحكم بمن يظهر أولاً، والنبذة وساعات الدوام تظهر داخل صفحة طبيب التجميل."
-            : "النقاط تتحكم بمن يظهر أولاً، والنبذة وساعات الدوام تظهر داخل صفحة الطبيب."
+            ? "تحدد النقاط أولوية الظهور، بينما تظهر النبذة وأوقات الدوام في الملف التعريفي لطبيب التجميل."
+            : "تحدد النقاط أولوية الظهور، بينما تظهر النبذة وأوقات الدوام في الملف التعريفي للطبيب."
         }
       >
         <Field label="النقاط">

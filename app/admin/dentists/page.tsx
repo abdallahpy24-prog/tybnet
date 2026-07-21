@@ -70,7 +70,7 @@ export default async function DentistsPage({
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <PageHeader
           title="أطباء الأسنان"
-          description="قائمة مستقلة بدون اختصاصات، مرتبة تلقائياً حسب النقاط."
+          description="قائمة أطباء الأسنان مرتبة تلقائياً حسب النقاط، ولا تعتمد على تصنيف الاختصاصات."
         />
 
         <Link

@@ -139,13 +139,13 @@ function ImageUploadField({
     setError(null);
 
     if (!file.type.startsWith("image/")) {
-      setError("اختار ملف صورة فقط.");
+      setError("يرجى اختيار ملف صورة فقط.");
       event.target.value = "";
       return;
     }
 
     if (file.size > 3 * 1024 * 1024) {
-      setError("حجم الصورة لازم يكون أقل من 3MB.");
+      setError("يجب ألا يتجاوز حجم الصورة 3MB.");
       event.target.value = "";
       return;
     }
@@ -186,7 +186,7 @@ function ImageUploadField({
         throw new Error(
           data?.message ||
             data?.error ||
-            "صار خطأ أثناء رفع الصورة."
+            "حدث خطأ أثناء رفع الصورة."
         );
       }
 
@@ -198,7 +198,7 @@ function ImageUploadField({
 
       if (!uploadedUrl) {
         throw new Error(
-          "تم الرفع لكن السيرفر ما رجّع رابط الصورة."
+          "تم رفع الصورة، لكن الخادم لم يُرجع رابطاً لها."
         );
       }
 
@@ -217,7 +217,7 @@ function ImageUploadField({
       setError(
         uploadError instanceof Error
           ? uploadError.message
-          : "صار خطأ أثناء رفع الصورة."
+          : "حدث خطأ أثناء رفع الصورة."
       );
     } finally {
       setIsUploading(false);
@@ -266,8 +266,7 @@ function ImageUploadField({
             </p>
 
             <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-              يفضل صورة واضحة بصيغة JPG أو PNG أو WebP،
-              والحجم أقل من 3MB.
+              يُفضّل استخدام صورة واضحة بصيغة JPG أو PNG أو WebP، على ألا يتجاوز حجمها 3MB.
             </p>
           </div>
 
@@ -536,7 +535,7 @@ export function ServicePlaceForm({
 
       <AdminSection
         title="الموقع"
-        description="العنوان شيء، ورابط اللوكيشن شيء ثاني. لا تخلي رابط الخريطة داخل العنوان."
+        description="أدخل العنوان النصي بصورة مستقلة، وأضف رابط الخريطة في الحقل المخصص له."
       >
         <Field label="المحافظة">
           <Select
@@ -584,7 +583,7 @@ export function ServicePlaceForm({
           </Select>
         </Field>
 
-        <Field label="رابط اللوكيشن">
+        <Field label="رابط الموقع على الخريطة">
           <Input
             name="mapurl"
             className="ltr"
@@ -631,8 +630,8 @@ export function ServicePlaceForm({
         title="التواصل"
         description={
           isCosmeticCenter
-            ? "الواتساب يستخدم للاستفسارات، والهاتف للاتصال المباشر، والإنستغرام يظهر كرابط خارجي."
-            : "الواتساب يستخدم للاستفسارات، والهاتف يستخدم للاتصال المباشر."
+            ? "يُستخدم واتساب للاستفسارات، ورقم الهاتف للاتصال، ويظهر إنستغرام كرابط خارجي."
+            : "يُستخدم واتساب للاستفسارات، ورقم الهاتف للاتصال."
         }
       >
         <Field label="واتساب">
@@ -685,8 +684,8 @@ export function ServicePlaceForm({
       </AdminSection>
 
       <AdminSection
-        title="البروفايل والتفاصيل"
-        description="هذه المعلومات تظهر داخل صفحة التفاصيل وتساعد المستخدم يعرف الخدمات والدوام قبل التواصل."
+        title="الملف التعريفي والتفاصيل"
+        description="تظهر هذه المعلومات في صفحة التفاصيل، وتساعد المستخدم على معرفة الخدمات وأوقات الدوام قبل التواصل."
       >
         <div className="md:col-span-2 xl:col-span-3">
           <Field label="النبذة">
@@ -721,7 +720,7 @@ export function ServicePlaceForm({
         </div>
 
         <div className="md:col-span-2 xl:col-span-3">
-          <Field label="أيام وساعات العمل">
+          <Field label="أوقات الدوام">
             <Textarea
               name="workingHours"
               defaultValue={

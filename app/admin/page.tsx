@@ -29,7 +29,7 @@ const entityLabels: Record<string, string> = {
   Governorate: "محافظة",
   Area: "منطقة",
   Specialty: "اختصاص",
-  User: "حساب أدمن"
+  User: "حساب إداري"
 };
 
 const actionLabels: Record<string, string> = {

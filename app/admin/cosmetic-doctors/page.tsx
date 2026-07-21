@@ -89,7 +89,7 @@ export default async function CosmeticDoctorsPage({
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <PageHeader
           title="أطباء التجميل"
-          description="قائمة مرتبة تلقائياً حسب النقاط، واختصاصات أطباء التجميل معزولة داخل هذا القسم."
+          description="قائمة أطباء التجميل مرتبة تلقائياً حسب النقاط، وتُدار اختصاصاتهم بصورة مستقلة ضمن هذا القسم."
         />
 
         <Link

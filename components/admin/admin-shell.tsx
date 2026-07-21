@@ -83,7 +83,7 @@ const navItems = [
   },
   {
     href: "/admin/users",
-    label: "حسابات الأدمن",
+    label: "حسابات الإدارة",
     icon: Users
   },
   {

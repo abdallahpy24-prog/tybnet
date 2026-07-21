@@ -35,7 +35,7 @@ const actionLabels: Record<string, string> = {
 };
 
 const entityLabels: Record<string, string> = {
-  User: "حساب أدمن",
+  User: "حساب إداري",
   Governorate: "محافظة",
   Area: "منطقة",
   Specialty: "اختصاص",
@@ -148,7 +148,7 @@ export default async function AuditPage({
             <Input
               name="q"
               defaultValue={q}
-              placeholder="العملية، العنصر، المعرف أو اسم الأدمن..."
+              placeholder="العملية، العنصر، المعرف أو اسم المسؤول..."
             />
           </label>
 

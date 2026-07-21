@@ -66,7 +66,7 @@ export default async function CosmeticCentersPage({
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <PageHeader
           title="مراكز التجميل"
-          description="قائمة صغيرة مرتبة تلقائياً حسب نقاط الاستفسار."
+          description="قائمة مراكز التجميل مرتبة تلقائياً حسب نقاط الاستفسار."
         />
 
         <Link

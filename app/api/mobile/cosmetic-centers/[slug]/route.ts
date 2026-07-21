@@ -474,7 +474,7 @@ export async function GET(
             "التفاصيل",
 
           secondaryActionLabel:
-            "اتصال سريع",
+            "اتصال",
 
           mapActionLabel: "الموقع"
         }

@@ -113,7 +113,7 @@ export async function generateMetadata({
     description:
       pharmacy.bio ??
       pharmacy.services ??
-      "بروفايل صيدلية على منصة طب نت للاستفسار عن الأدوية والخدمات ومعلومات التواصل.",
+      "ملف تعريفي لصيدلية على طب نت، يتضمن الخدمات ومعلومات التواصل.",
     openGraph: {
       images: pharmacy.imageUrl
         ? [pharmacy.imageUrl]
@@ -249,7 +249,7 @@ export default async function PharmacyDetailsPage({
                           className="h-4 w-4"
                           aria-hidden="true"
                         />
-                        استفسار واتساب
+                        تواصل عبر واتساب
                       </Button>
                     </a>
                   ) : null}
@@ -258,7 +258,7 @@ export default async function PharmacyDetailsPage({
                     <a href={phoneUrl} className="inline-flex">
                       <Button type="button" variant="secondary">
                         <Phone className="h-4 w-4" aria-hidden="true" />
-                        اتصال سريع
+                        اتصال
                       </Button>
                     </a>
                   ) : null}
@@ -303,7 +303,7 @@ export default async function PharmacyDetailsPage({
                 <a href={inquiryHref} target="_blank" rel="noreferrer">
                   <Button type="button" className="w-full">
                     <MessageCircle className="h-4 w-4" aria-hidden="true" />
-                    استفسار واتساب
+                    تواصل عبر واتساب
                   </Button>
                 </a>
               ) : null}
@@ -312,7 +312,7 @@ export default async function PharmacyDetailsPage({
                 <a href={phoneUrl}>
                   <Button type="button" variant="secondary" className="w-full">
                     <Phone className="h-4 w-4" aria-hidden="true" />
-                    اتصال سريع
+                    اتصال
                   </Button>
                 </a>
               ) : null}

@@ -74,11 +74,11 @@ export default async function UsersPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="حسابات الأدمن"
-        description="إنشاء حسابات الإدارة وتعديلها أو تعطيلها من صفحة واحدة. جميع الحسابات بصلاحية ADMIN فقط."
+        title="حسابات الإدارة"
+        description="إنشاء حسابات الإدارة وتعديلها أو تعطيلها من صفحة واحدة. جميع الحسابات مخصصة لإدارة المنصة."
       />
 
-      <FormShell title="إضافة حساب أدمن">
+      <FormShell title="إضافة حساب إداري">
         <form
           action={createUser}
           className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
@@ -127,14 +127,14 @@ export default async function UsersPage({
 
           <div className="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-800 md:col-span-2 xl:col-span-4">
             <ShieldCheck className="h-5 w-5" aria-hidden="true" />
-            الصلاحية: ADMIN
+            الصلاحية: مسؤول
           </div>
 
           <Button
             type="submit"
             className="md:col-span-2 xl:col-span-4"
           >
-            إضافة حساب الأدمن
+            إضافة حساب إداري
           </Button>
         </form>
       </FormShell>
@@ -143,7 +143,7 @@ export default async function UsersPage({
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <h2 className="text-lg font-black text-navy">
-              حسابات الأدمن
+              حسابات الإدارة
             </h2>
             <p className="mt-1 text-xs font-bold text-slate-500">
               اضغط على الحساب لفتح معلوماته وتعديلها.
@@ -273,7 +273,7 @@ export default async function UsersPage({
 
                   <p className="mt-4 border-t border-borderSoft pt-4 text-xs font-bold leading-6 text-slate-500">
                     لإيقاف هذا الحساب أزل علامة «الحساب نشط» ثم احفظ.
-                    النظام يمنع تعطيل آخر أدمن نشط حمايةً من فقدان الدخول.
+                    يمنع النظام تعطيل آخر حساب إداري نشط، حفاظاً على إمكانية الدخول.
                   </p>
                 </div>
               </details>
@@ -283,7 +283,7 @@ export default async function UsersPage({
           <Card className="py-12 text-center text-sm font-bold text-slate-500">
             {q
               ? "لا توجد حسابات مطابقة للبحث."
-              : "لا توجد حسابات أدمن."}
+              : "لا توجد حسابات إدارية."}
           </Card>
         )}
       </section>

@@ -160,7 +160,7 @@ export async function generateMetadata({
     description:
       center.bio ??
       center.services ??
-      "بروفايل مركز تجميل على منصة طب نت للاستفسار عن الخدمات ومعلومات التواصل.",
+      "ملف تعريفي لمركز تجميل على طب نت، يتضمن الخدمات ومعلومات التواصل.",
     openGraph: {
       images: center.imageUrl
         ? [center.imageUrl]
@@ -331,7 +331,7 @@ export default async function CosmeticCenterDetailsPage({
                           className="h-4 w-4"
                           aria-hidden="true"
                         />
-                        استفسار واتساب
+                        تواصل عبر واتساب
                       </Button>
                     </a>
                   ) : null}
@@ -349,7 +349,7 @@ export default async function CosmeticCenterDetailsPage({
                           className="h-4 w-4"
                           aria-hidden="true"
                         />
-                        اتصال سريع
+                        اتصال
                       </Button>
                     </a>
                   ) : null}
@@ -443,7 +443,7 @@ export default async function CosmeticCenterDetailsPage({
                       className="h-4 w-4"
                       aria-hidden="true"
                     />
-                    استفسار واتساب
+                    تواصل عبر واتساب
                   </Button>
                 </a>
               ) : null}
@@ -459,7 +459,7 @@ export default async function CosmeticCenterDetailsPage({
                       className="h-4 w-4"
                       aria-hidden="true"
                     />
-                    اتصال سريع
+                    اتصال
                   </Button>
                 </a>
               ) : null}

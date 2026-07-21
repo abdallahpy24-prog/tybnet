@@ -114,7 +114,7 @@ export async function generateMetadata({
     description:
       lab.bio ??
       lab.services ??
-      "بروفايل مختبر طبي على منصة طب نت للاستفسار عن التحاليل والخدمات ومعلومات التواصل.",
+      "ملف تعريفي لمختبر طبي على طب نت، يتضمن التحاليل والخدمات ومعلومات التواصل.",
     openGraph: {
       images: lab.imageUrl
         ? [lab.imageUrl]
@@ -250,7 +250,7 @@ export default async function LabDetailsPage({
                           className="h-4 w-4"
                           aria-hidden="true"
                         />
-                        استفسار واتساب
+                        تواصل عبر واتساب
                       </Button>
                     </a>
                   ) : null}
@@ -259,7 +259,7 @@ export default async function LabDetailsPage({
                     <a href={phoneUrl} className="inline-flex">
                       <Button type="button" variant="secondary">
                         <Phone className="h-4 w-4" aria-hidden="true" />
-                        اتصال سريع
+                        اتصال
                       </Button>
                     </a>
                   ) : null}
@@ -304,7 +304,7 @@ export default async function LabDetailsPage({
                 <a href={inquiryHref} target="_blank" rel="noreferrer">
                   <Button type="button" className="w-full">
                     <MessageCircle className="h-4 w-4" aria-hidden="true" />
-                    استفسار واتساب
+                    تواصل عبر واتساب
                   </Button>
                 </a>
               ) : null}
@@ -313,7 +313,7 @@ export default async function LabDetailsPage({
                 <a href={phoneUrl}>
                   <Button type="button" variant="secondary" className="w-full">
                     <Phone className="h-4 w-4" aria-hidden="true" />
-                    اتصال سريع
+                    اتصال
                   </Button>
                 </a>
               ) : null}
