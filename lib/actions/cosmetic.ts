@@ -6,6 +6,7 @@ import { auditLog } from "@/lib/audit";
 import { requireAdmin } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { uniqueSlug } from "@/lib/slug";
+import { deleteStoredImages } from "@/lib/upload";
 import {
   cosmeticCenterSchema,
   cosmeticDoctorSchema
@@ -36,6 +37,140 @@ async function currentUserId() {
   const session = await requireAdmin();
 
   return session.user.id;
+}
+
+type ImageUrl = string | null | undefined;
+
+async function deleteUnreferencedImages(urls: ImageUrl[]) {
+  const candidates = Array.from(
+    new Set(
+      urls
+        .map((value) => String(value || "").trim())
+        .filter(Boolean)
+    )
+  );
+
+  if (!candidates.length) {
+    return;
+  }
+
+  try {
+    const [
+      providers,
+      pharmacies,
+      labs,
+      cosmeticCenters,
+      offers,
+      media
+    ] = await Promise.all([
+      prisma.provider.findMany({
+        where: {
+          OR: [
+            { imageUrl: { in: candidates } },
+            { imageThumbnailUrl: { in: candidates } },
+            { imageOriginalUrl: { in: candidates } }
+          ]
+        },
+        select: {
+          imageUrl: true,
+          imageThumbnailUrl: true,
+          imageOriginalUrl: true
+        }
+      }),
+      prisma.pharmacy.findMany({
+        where: {
+          OR: [
+            { imageUrl: { in: candidates } },
+            { imageThumbnailUrl: { in: candidates } },
+            { imageOriginalUrl: { in: candidates } }
+          ]
+        },
+        select: {
+          imageUrl: true,
+          imageThumbnailUrl: true,
+          imageOriginalUrl: true
+        }
+      }),
+      prisma.lab.findMany({
+        where: {
+          OR: [
+            { imageUrl: { in: candidates } },
+            { imageThumbnailUrl: { in: candidates } },
+            { imageOriginalUrl: { in: candidates } }
+          ]
+        },
+        select: {
+          imageUrl: true,
+          imageThumbnailUrl: true,
+          imageOriginalUrl: true
+        }
+      }),
+      prisma.cosmeticCenter.findMany({
+        where: {
+          OR: [
+            { imageUrl: { in: candidates } },
+            { imageThumbnailUrl: { in: candidates } },
+            { imageOriginalUrl: { in: candidates } }
+          ]
+        },
+        select: {
+          imageUrl: true,
+          imageThumbnailUrl: true,
+          imageOriginalUrl: true
+        }
+      }),
+      prisma.offer.findMany({
+        where: {
+          imageUrl: { in: candidates }
+        },
+        select: {
+          imageUrl: true
+        }
+      }),
+      prisma.media.findMany({
+        where: {
+          url: { in: candidates }
+        },
+        select: {
+          url: true
+        }
+      })
+    ]);
+
+    const retainedUrls: ImageUrl[] = [
+      ...providers.flatMap((row) => [
+        row.imageUrl,
+        row.imageThumbnailUrl,
+        row.imageOriginalUrl
+      ]),
+      ...pharmacies.flatMap((row) => [
+        row.imageUrl,
+        row.imageThumbnailUrl,
+        row.imageOriginalUrl
+      ]),
+      ...labs.flatMap((row) => [
+        row.imageUrl,
+        row.imageThumbnailUrl,
+        row.imageOriginalUrl
+      ]),
+      ...cosmeticCenters.flatMap((row) => [
+        row.imageUrl,
+        row.imageThumbnailUrl,
+        row.imageOriginalUrl
+      ]),
+      ...offers.map((row) => row.imageUrl),
+      ...media.map((row) => row.url)
+    ];
+
+    await deleteStoredImages(candidates, retainedUrls);
+  } catch (error) {
+    console.error("Unused image cleanup failed", {
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unknown error"
+    });
+  }
 }
 
 async function ensureAreaBelongsToGovernorate(
@@ -287,6 +422,12 @@ export async function updateCosmeticDoctor(
     afterJson: row
   });
 
+  await deleteUnreferencedImages([
+    before.imageUrl,
+    before.imageThumbnailUrl,
+    before.imageOriginalUrl
+  ]);
+
   revalidateCosmeticDoctorPaths([
     before.slug,
     row.slug
@@ -354,6 +495,12 @@ export async function deleteCosmeticDoctor(
       entityId: id,
       beforeJson: before
     });
+
+    await deleteUnreferencedImages([
+      before.imageUrl,
+      before.imageThumbnailUrl,
+      before.imageOriginalUrl
+    ]);
   }
 
   revalidateCosmeticDoctorPaths([before.slug]);
@@ -483,6 +630,12 @@ export async function updateCosmeticCenter(
     afterJson: row
   });
 
+  await deleteUnreferencedImages([
+    before.imageUrl,
+    before.imageThumbnailUrl,
+    before.imageOriginalUrl
+  ]);
+
   revalidateCosmeticCenterPaths([
     before.slug,
     row.slug
@@ -515,6 +668,12 @@ export async function deleteCosmeticCenter(
     entityId: id,
     beforeJson: before
   });
+
+  await deleteUnreferencedImages([
+    before.imageUrl,
+    before.imageThumbnailUrl,
+    before.imageOriginalUrl
+  ]);
 
   revalidateCosmeticCenterPaths([before.slug]);
 }

@@ -24,6 +24,8 @@ const THUMBNAIL_MAX_SIZE = 320;
 const THUMBNAIL_QUALITY = 80;
 const CACHE_CONTROL_SECONDS = "31536000";
 const DEFAULT_BUCKET = "tibnet-uploads";
+const MANAGED_STORAGE_PATH_PATTERN =
+  /^uploads\/\d{4}\/\d{2}\/[a-z0-9-]+-(?:original|profile|thumbnail)\.webp$/i;
 
 type UploadProvider = "local" | "supabase";
 type ImageVariantName = "original" | "profile" | "thumbnail";
@@ -40,6 +42,8 @@ export type SavedImageVariants = {
   imageThumbnailUrl: string;
   imageOriginalUrl: string;
 };
+
+type ImageUrl = string | null | undefined;
 
 function getUploadProvider(): UploadProvider {
   const provider = (process.env.UPLOAD_PROVIDER || "local").toLowerCase();
@@ -68,6 +72,28 @@ function getStoragePath(fileName: string) {
 
 function getPublicLocalUrl(storagePath: string) {
   return `/${storagePath.replace(/\\/g, "/")}`;
+}
+
+function normalizeManagedStoragePath(value: string) {
+  const normalized = value.replace(/\\/g, "/").replace(/^\/+/, "");
+
+  return MANAGED_STORAGE_PATH_PATTERN.test(normalized) ? normalized : null;
+}
+
+function getLocalStoragePathFromUrl(value: string) {
+  const cleanUrl = value.trim();
+
+  if (!cleanUrl.startsWith("/uploads/")) {
+    return null;
+  }
+
+  try {
+    const [pathname] = cleanUrl.split(/[?#]/, 1);
+
+    return normalizeManagedStoragePath(decodeURIComponent(pathname));
+  } catch {
+    return null;
+  }
 }
 
 function createImagePipeline(bytes: Buffer) {
@@ -270,6 +296,37 @@ function getSupabaseStorageContext() {
 
 type SupabaseStorageContext = ReturnType<typeof getSupabaseStorageContext>;
 
+function getSupabaseStoragePathFromUrl(
+  context: SupabaseStorageContext,
+  value: string
+) {
+  try {
+    const publicRoot = context.supabase.storage
+      .from(context.bucket)
+      .getPublicUrl("").data.publicUrl;
+
+    const publicRootUrl = new URL(publicRoot);
+    const candidateUrl = new URL(value.trim());
+
+    if (
+      candidateUrl.origin !== publicRootUrl.origin ||
+      !candidateUrl.pathname.startsWith(publicRootUrl.pathname)
+    ) {
+      return null;
+    }
+
+    const encodedStoragePath = candidateUrl.pathname.slice(
+      publicRootUrl.pathname.length
+    );
+
+    return normalizeManagedStoragePath(
+      decodeURIComponent(encodedStoragePath)
+    );
+  } catch {
+    return null;
+  }
+}
+
 async function saveSupabaseImage(
   context: SupabaseStorageContext,
   output: Buffer,
@@ -427,4 +484,84 @@ export async function saveImageVariants(file: File) {
   }
 
   return savePreparedLocalVariants(variants);
+}
+
+/**
+ * Removes images created by this module after their database references have
+ * been replaced or deleted. External URLs and retained URLs are ignored.
+ * Cleanup is best-effort so a storage outage never rolls back a successful
+ * database update.
+ */
+export async function deleteStoredImages(
+  urls: ImageUrl[],
+  retainedUrls: ImageUrl[] = []
+) {
+  const candidates = Array.from(
+    new Set(
+      urls
+        .map((value) => String(value || "").trim())
+        .filter(Boolean)
+    )
+  );
+
+  const retainedCandidates = Array.from(
+    new Set(
+      retainedUrls
+        .map((value) => String(value || "").trim())
+        .filter(Boolean)
+    )
+  );
+
+  if (!candidates.length) {
+    return;
+  }
+
+  try {
+    const provider = getUploadProvider();
+
+    if (provider === "supabase") {
+      const context = getSupabaseStorageContext();
+      const getStoragePath = (value: string) =>
+        getSupabaseStoragePathFromUrl(context, value);
+
+      const retainedPaths = new Set(
+        retainedCandidates
+          .map(getStoragePath)
+          .filter((value): value is string => value !== null)
+      );
+
+      const storagePaths = Array.from(
+        new Set(
+          candidates
+            .map(getStoragePath)
+            .filter((value): value is string => value !== null)
+            .filter((value) => !retainedPaths.has(value))
+        )
+      );
+
+      await removeSupabaseImages(context, storagePaths);
+      return;
+    }
+
+    const retainedPaths = new Set(
+      retainedCandidates
+        .map(getLocalStoragePathFromUrl)
+        .filter((value): value is string => value !== null)
+    );
+
+    const storagePaths = Array.from(
+      new Set(
+        candidates
+          .map(getLocalStoragePathFromUrl)
+          .filter((value): value is string => value !== null)
+          .filter((value) => !retainedPaths.has(value))
+      )
+    );
+
+    await removeLocalImages(storagePaths);
+  } catch (error) {
+    console.error("Stored image cleanup failed", {
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
 }

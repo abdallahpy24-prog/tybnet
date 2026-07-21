@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireAdminApi } from "@/lib/permissions";
-import { saveImageVariants } from "@/lib/upload";
+import { saveImage, saveImageVariants } from "@/lib/upload";
 
 export const runtime = "nodejs";
 
@@ -15,6 +15,8 @@ const ALLOWED_IMAGE_TYPES = new Set([
   "image/webp",
   "image/gif"
 ]);
+
+type UploadMode = "variants" | "single";
 
 function errorResponse(error: string, status: number) {
   return NextResponse.json(
@@ -52,6 +54,20 @@ function readContentLength(request: NextRequest) {
   return Number.isSafeInteger(length) && length >= 0 ? length : null;
 }
 
+function readUploadMode(formData: FormData): UploadMode | null {
+  const value = formData.get("mode");
+
+  if (value === null || value === "variants") {
+    return "variants";
+  }
+
+  if (value === "single") {
+    return "single";
+  }
+
+  return null;
+}
+
 export async function POST(request: NextRequest) {
   try {
     await requireAdminApi();
@@ -68,6 +84,12 @@ export async function POST(request: NextRequest) {
       formData = await request.formData();
     } catch {
       return errorResponse("تعذر قراءة ملف الصورة المرسل", 400);
+    }
+
+    const uploadMode = readUploadMode(formData);
+
+    if (!uploadMode) {
+      return errorResponse("وضع رفع الصورة غير صحيح", 400);
     }
 
     const file = formData.get("file");
@@ -91,12 +113,35 @@ export async function POST(request: NextRequest) {
       return errorResponse("حجم الصورة يجب ألا يتجاوز 3MB", 413);
     }
 
+    if (uploadMode === "single") {
+      const imageUrl = await saveImage(file);
+
+      return NextResponse.json(
+        {
+          ok: true,
+          mode: "single",
+          url: imageUrl,
+          imageUrl,
+          path: imageUrl,
+          variants: {
+            profile: imageUrl
+          }
+        },
+        {
+          headers: {
+            "Cache-Control": "no-store"
+          }
+        }
+      );
+    }
+
     const { imageUrl, imageThumbnailUrl, imageOriginalUrl } =
       await saveImageVariants(file);
 
     return NextResponse.json(
       {
         ok: true,
+        mode: "variants",
 
         // Backward-compatible fields used by the current admin forms.
         url: imageUrl,

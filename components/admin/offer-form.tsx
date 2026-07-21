@@ -155,6 +155,7 @@ function ImageUploadField({
     }
 
     const formData = new FormData();
+    formData.append("mode", "single");
     formData.append("file", file);
 
     setUploading(true);
