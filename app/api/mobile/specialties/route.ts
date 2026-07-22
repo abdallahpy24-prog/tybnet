@@ -6,10 +6,13 @@ import {
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-const SUCCESS_CACHE_HEADERS = {
+const NO_STORE_HEADERS = {
   "Cache-Control":
-    "public, s-maxage=3600, stale-while-revalidate=86400"
+    "no-store, no-cache, must-revalidate, max-age=0",
+  "CDN-Cache-Control": "no-store",
+  "Vercel-CDN-Cache-Control": "no-store"
 };
 
 type SpecialtyForValue =
@@ -57,7 +60,7 @@ export async function GET(
           items: []
         },
         {
-          headers: SUCCESS_CACHE_HEADERS
+          headers: NO_STORE_HEADERS
         }
       );
     }
@@ -90,7 +93,7 @@ export async function GET(
         items: specialties
       },
       {
-        headers: SUCCESS_CACHE_HEADERS
+        headers: NO_STORE_HEADERS
       }
     );
   } catch (error) {
@@ -107,9 +110,7 @@ export async function GET(
       },
       {
         status: 500,
-        headers: {
-          "Cache-Control": "no-store"
-        }
+        headers: NO_STORE_HEADERS
       }
     );
   }
