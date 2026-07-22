@@ -1,15 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
+import {
+  NextRequest,
+  NextResponse
+} from "next/server";
 
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-const SUCCESS_CACHE_HEADERS = {
+const NO_STORE_HEADERS = {
   "Cache-Control":
-    "public, s-maxage=3600, stale-while-revalidate=86400"
+    "no-store, no-cache, must-revalidate, max-age=0",
+  "CDN-Cache-Control": "no-store",
+  "Vercel-CDN-Cache-Control": "no-store"
 };
 
-function errorResponse(message: string, status: number) {
+function errorResponse(
+  message: string,
+  status: number
+) {
   return NextResponse.json(
     {
       ok: false,
@@ -17,43 +26,61 @@ function errorResponse(message: string, status: number) {
     },
     {
       status,
-      headers: {
-        "Cache-Control": "no-store"
-      }
+      headers: NO_STORE_HEADERS
     }
   );
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(
+  request: NextRequest
+) {
   try {
-    const { searchParams } = new URL(request.url);
-    const rawGovernorateId = searchParams.get("governorateId")?.trim();
+    const { searchParams } = new URL(
+      request.url
+    );
 
-    if (rawGovernorateId && rawGovernorateId.length > 191) {
-      return errorResponse("معرف المحافظة غير صحيح", 400);
+    const rawGovernorateId =
+      searchParams
+        .get("governorateId")
+        ?.trim();
+
+    if (
+      rawGovernorateId &&
+      rawGovernorateId.length > 191
+    ) {
+      return errorResponse(
+        "معرف المحافظة غير صحيح",
+        400
+      );
     }
 
-    const governorateId = rawGovernorateId || undefined;
+    const governorateId =
+      rawGovernorateId || undefined;
 
-    const areas = await prisma.area.findMany({
-      where: {
-        isActive: true,
-        governorate: {
-          isActive: true
+    const areas =
+      await prisma.area.findMany({
+        where: {
+          isActive: true,
+          governorate: {
+            isActive: true
+          },
+          governorateId
         },
-        governorateId
-      },
-      orderBy: [
-        { sortOrder: "asc" },
-        { name: "asc" }
-      ],
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        governorateId: true
-      }
-    });
+        orderBy: [
+          {
+            sortOrder: "asc"
+          },
+          {
+            name: "asc"
+          }
+        ],
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          governorateId: true
+        }
+      });
 
     return NextResponse.json(
       {
@@ -62,11 +89,14 @@ export async function GET(request: NextRequest) {
         items: areas
       },
       {
-        headers: SUCCESS_CACHE_HEADERS
+        headers: NO_STORE_HEADERS
       }
     );
   } catch (error) {
-    console.error("Mobile areas API error", error);
+    console.error(
+      "Mobile areas API error",
+      error
+    );
 
     return errorResponse(
       "صار خطأ أثناء جلب المناطق",
