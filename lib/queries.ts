@@ -502,13 +502,22 @@ function publicCosmeticCenterWhere(
 export function readFilters(
   params: SearchParams = {}
 ) {
+  const featuredOnlyValue = scalar(
+    params.featuredOnly
+  )
+    ?.trim()
+    .toLowerCase();
+
   return {
     q: scalar(params.q)?.trim() || undefined,
     governorateId:
       scalar(params.governorateId) || undefined,
     areaId: scalar(params.areaId) || undefined,
     specialtyId:
-      scalar(params.specialtyId) || undefined
+      scalar(params.specialtyId) || undefined,
+    featuredOnly:
+      featuredOnlyValue === "true" ||
+      featuredOnlyValue === "1"
   };
 }
 
@@ -599,6 +608,10 @@ export async function searchProvidersPage(
 
   if (type !== "DENTIST" && filters.specialtyId) {
     where.specialtyId = filters.specialtyId;
+  }
+
+  if (filters.featuredOnly) {
+    where.isFeatured = true;
   }
 
   if (filters.q) {
