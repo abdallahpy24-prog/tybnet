@@ -222,7 +222,9 @@ export async function GET(request: NextRequest) {
           searchParams.get("governorate") ??
           undefined,
         areaId:
-          searchParams.get("areaId") ?? searchParams.get("area") ?? undefined
+          searchParams.get("areaId") ?? searchParams.get("area") ?? undefined,
+        featuredOnly:
+          searchParams.get("featuredOnly") ?? undefined
       },
       {
         cursor: cursor.value,

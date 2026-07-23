@@ -332,6 +332,9 @@ function publicPharmacyWhere(
     },
     governorateId: filters.governorateId,
     areaId: filters.areaId,
+    isFeatured: filters.featuredOnly
+      ? true
+      : undefined,
     OR: filters.q
       ? [
           {
@@ -392,6 +395,9 @@ function publicLabWhere(
     },
     governorateId: filters.governorateId,
     areaId: filters.areaId,
+    isFeatured: filters.featuredOnly
+      ? true
+      : undefined,
     OR: filters.q
       ? [
           {
@@ -452,6 +458,9 @@ function publicCosmeticCenterWhere(
     },
     governorateId: filters.governorateId,
     areaId: filters.areaId,
+    isFeatured: filters.featuredOnly
+      ? true
+      : undefined,
     OR: filters.q
       ? [
           {

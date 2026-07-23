@@ -13,6 +13,11 @@ type FilterableProviderType =
   | "DOCTOR"
   | "COSMETIC_DOCTOR";
 
+type FilterablePlaceType =
+  | "pharmacies"
+  | "labs"
+  | "cosmetic-centers";
+
 function errorResponse(message: string, status: number) {
   return NextResponse.json(
     {
@@ -34,6 +39,20 @@ function readProviderType(
   if (
     value === "DOCTOR" ||
     value === "COSMETIC_DOCTOR"
+  ) {
+    return value;
+  }
+
+  return null;
+}
+
+function readPlaceType(
+  value: string | null
+): FilterablePlaceType | null {
+  if (
+    value === "pharmacies" ||
+    value === "labs" ||
+    value === "cosmetic-centers"
   ) {
     return value;
   }
@@ -110,6 +129,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const rawPlaceType = searchParams
+      .get("placeType")
+      ?.trim();
+
+    const placeType = readPlaceType(
+      rawPlaceType ?? null
+    );
+
+    if (rawPlaceType && !placeType) {
+      return errorResponse(
+        "نوع القسم غير صحيح",
+        400
+      );
+    }
+
     const governorateId =
       governorateIdResult.value;
     const specialtyId =
@@ -125,12 +159,58 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    if (
+      placeType &&
+      (specialtyId || forType)
+    ) {
+      return errorResponse(
+        "لا يمكن دمج فلتر القسم مع فلتر الاختصاص",
+        400
+      );
+    }
+
+    if (placeType && !governorateId) {
+      return errorResponse(
+        "يجب اختيار المحافظة أولاً",
+        400
+      );
+    }
+
+    const placeWhere: Prisma.AreaWhereInput =
+      placeType === "pharmacies"
+        ? {
+            pharmacies: {
+              some: {
+                status: "ACTIVE"
+              }
+            }
+          }
+        : placeType === "labs"
+          ? {
+              labs: {
+                some: {
+                  status: "ACTIVE"
+                }
+              }
+            }
+          : placeType ===
+              "cosmetic-centers"
+            ? {
+                cosmeticCenters: {
+                  some: {
+                    status: "ACTIVE"
+                  }
+                }
+              }
+            : {};
+
     const where: Prisma.AreaWhereInput = {
       isActive: true,
       governorate: {
         isActive: true
       },
       governorateId,
+      ...placeWhere,
       providers:
         specialtyId && forType
           ? {

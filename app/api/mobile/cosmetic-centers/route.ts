@@ -336,6 +336,12 @@ export async function GET(
               "areaId"
             ) ??
             searchParams.get("area") ??
+            undefined,
+
+          featuredOnly:
+            searchParams.get(
+              "featuredOnly"
+            ) ??
             undefined
         },
         {
