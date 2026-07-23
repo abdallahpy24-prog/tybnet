@@ -7,6 +7,7 @@ import { searchProvidersPage } from "@/lib/queries";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 export const runtime = "nodejs";
 
 type MobileProviderType =
@@ -28,6 +29,20 @@ function readProviderType(
   }
 
   return null;
+}
+
+function readBooleanFlag(
+  value: string | null
+) {
+  const normalizedValue =
+    value?.trim().toLowerCase();
+
+  return (
+    normalizedValue === "true" ||
+    normalizedValue === "1"
+  )
+    ? "true"
+    : undefined;
 }
 
 function clampTake(value: string | null) {
@@ -325,7 +340,14 @@ export async function GET(
                 searchParams.get(
                   "specialty"
                 ) ??
-                undefined
+                undefined,
+
+        featuredOnly:
+          readBooleanFlag(
+            searchParams.get(
+              "featuredOnly"
+            )
+          )
       },
       {
         cursor: cursor.value,
@@ -442,8 +464,7 @@ export async function GET(
       },
       {
         headers: {
-          "Cache-Control":
-            "public, max-age=30, s-maxage=60, stale-while-revalidate=300"
+          "Cache-Control": "no-store"
         }
       }
     );
