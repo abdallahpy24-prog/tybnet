@@ -159,6 +159,7 @@ model Pharmacy {
   mapurl            String?
   phone             String?
   whatsapp          String?
+  instagramUrl      String?
   imageUrl          String?
   imageThumbnailUrl String?
   imageOriginalUrl  String?
@@ -190,6 +191,7 @@ model Lab {
   mapurl            String?
   phone             String?
   whatsapp          String?
+  instagramUrl      String?
   imageUrl          String?
   imageThumbnailUrl String?
   imageOriginalUrl  String?

@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import {
   ArrowRight,
   Clock,
+  Instagram,
   MapPin,
   MessageCircle,
   Phone,
@@ -66,6 +67,33 @@ function normalizeMapUrl(value?: string | null) {
     }
 
     return null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeInstagramUrl(value?: string | null) {
+  const cleanValue = value?.trim();
+
+  if (!cleanValue) return null;
+
+  try {
+    const normalizedValue = /^https?:\/\//i.test(cleanValue)
+      ? cleanValue
+      : cleanValue.startsWith("www.instagram.com/") ||
+          cleanValue.startsWith("instagram.com/")
+        ? `https://${cleanValue}`
+        : null;
+
+    if (!normalizedValue) return null;
+
+    const url = new URL(normalizedValue);
+
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return null;
+    }
+
+    return url.toString();
   } catch {
     return null;
   }
@@ -139,6 +167,7 @@ export default async function PharmacyDetailsPage({
 
   const inquiryHref = `/api/mobile/pharmacies/${pharmacy.slug}/inquiry`;
   const phoneUrl = buildTelUrl(pharmacy.phone);
+  const instagramUrl = normalizeInstagramUrl(pharmacy.instagramUrl);
   const mapUrl =
     normalizeMapUrl(pharmacy.mapurl) ?? getMapUrlFromAddress(pharmacy.address);
 
@@ -254,6 +283,15 @@ export default async function PharmacyDetailsPage({
                     </a>
                   ) : null}
 
+                  {instagramUrl ? (
+                    <a href={instagramUrl} target="_blank" rel="noreferrer">
+                      <Button type="button" variant="secondary">
+                        <Instagram className="h-4 w-4" aria-hidden="true" />
+                        إنستغرام
+                      </Button>
+                    </a>
+                  ) : null}
+
                   {phoneUrl ? (
                     <a href={phoneUrl} className="inline-flex">
                       <Button type="button" variant="secondary">
@@ -304,6 +342,15 @@ export default async function PharmacyDetailsPage({
                   <Button type="button" className="w-full">
                     <MessageCircle className="h-4 w-4" aria-hidden="true" />
                     تواصل عبر واتساب
+                  </Button>
+                </a>
+              ) : null}
+
+              {instagramUrl ? (
+                <a href={instagramUrl} target="_blank" rel="noreferrer">
+                  <Button type="button" variant="secondary" className="w-full">
+                    <Instagram className="h-4 w-4" aria-hidden="true" />
+                    إنستغرام
                   </Button>
                 </a>
               ) : null}

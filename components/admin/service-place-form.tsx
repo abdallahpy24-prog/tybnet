@@ -460,6 +460,13 @@ export function ServicePlaceForm({
       ? "صورة المختبر"
       : "صورة الصيدلية";
 
+  const instagramPlaceholder =
+    isCosmeticCenter
+      ? "@center.name"
+      : isLab
+        ? "@lab.name"
+        : "@pharmacy.name";
+
   return (
     <form
       action={action}
@@ -628,11 +635,7 @@ export function ServicePlaceForm({
 
       <AdminSection
         title="التواصل"
-        description={
-          isCosmeticCenter
-            ? "يُستخدم واتساب للاستفسارات، ورقم الهاتف للاتصال، ويظهر إنستغرام كرابط خارجي."
-            : "يُستخدم واتساب للاستفسارات، ورقم الهاتف للاتصال."
-        }
+        description="يُستخدم واتساب للاستفسارات، ورقم الهاتف للاتصال، ويظهر إنستغرام كرابط خارجي."
       >
         <Field label="واتساب">
           <Input
@@ -654,18 +657,18 @@ export function ServicePlaceForm({
           />
         </Field>
 
-        {isCosmeticCenter ? (
-          <Field label="إنستغرام">
-            <Input
-              name="instagramUrl"
-              defaultValue={
-                row?.instagramUrl ?? ""
-              }
-              placeholder="@center.name"
-              className="ltr"
-            />
-          </Field>
-        ) : null}
+        <Field label="إنستغرام">
+          <Input
+            name="instagramUrl"
+            defaultValue={
+              row?.instagramUrl ?? ""
+            }
+            placeholder={
+              instagramPlaceholder
+            }
+            className="ltr"
+          />
+        </Field>
       </AdminSection>
 
       <AdminSection

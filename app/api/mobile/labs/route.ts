@@ -299,6 +299,8 @@ export async function GET(request: NextRequest) {
             whatsapp: lab.whatsapp,
             whatsappUrl: buildWhatsappUrl(lab.whatsapp, whatsappMessage),
 
+            instagramUrl: lab.instagramUrl,
+
             address: lab.address,
             mapUrl,
 

@@ -274,6 +274,8 @@ export async function GET(
           whatsapp: lab.whatsapp,
           whatsappUrl: buildWhatsappUrl(lab.whatsapp, whatsappMessage),
 
+          instagramUrl: lab.instagramUrl,
+
           address: lab.address,
           mapUrl,
 

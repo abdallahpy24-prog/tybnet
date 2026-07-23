@@ -299,6 +299,7 @@ export async function GET(request: NextRequest) {
 
             whatsapp: pharmacy.whatsapp,
             whatsappUrl: buildWhatsappUrl(pharmacy.whatsapp, whatsappMessage),
+            instagramUrl: pharmacy.instagramUrl,
 
             address: pharmacy.address,
             mapUrl,

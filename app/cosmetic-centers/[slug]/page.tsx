@@ -105,6 +105,47 @@ function normalizeMapUrl(
   }
 }
 
+function normalizeInstagramUrl(
+  value?: string | null
+) {
+  const cleanValue = value?.trim();
+
+  if (!cleanValue) {
+    return null;
+  }
+
+  try {
+    const normalizedValue =
+      /^https?:\/\//i.test(cleanValue)
+        ? cleanValue
+        : cleanValue.startsWith(
+              "www.instagram.com/"
+            ) ||
+            cleanValue.startsWith(
+              "instagram.com/"
+            )
+          ? `https://${cleanValue}`
+          : null;
+
+    if (!normalizedValue) {
+      return null;
+    }
+
+    const url = new URL(normalizedValue);
+
+    if (
+      url.protocol !== "http:" &&
+      url.protocol !== "https:"
+    ) {
+      return null;
+    }
+
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 function getMapUrlFromAddress(
   address?: string | null
 ) {
@@ -224,8 +265,13 @@ export default async function CosmeticCenterDetailsPage({
     center.imageOriginalUrl ??
     profileImageUrl;
 
+  const instagramUrl =
+    normalizeInstagramUrl(
+      center.instagramUrl
+    );
+
   const instaLabel = instagramLabel(
-    center.instagramUrl
+    instagramUrl
   );
 
   return (
@@ -336,6 +382,25 @@ export default async function CosmeticCenterDetailsPage({
                     </a>
                   ) : null}
 
+                  {instagramUrl ? (
+                    <a
+                      href={instagramUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <Button
+                        type="button"
+                        variant="secondary"
+                      >
+                        <Instagram
+                          className="h-4 w-4"
+                          aria-hidden="true"
+                        />
+                        {instaLabel}
+                      </Button>
+                    </a>
+                  ) : null}
+
                   {phoneUrl ? (
                     <a
                       href={phoneUrl}
@@ -373,26 +438,6 @@ export default async function CosmeticCenterDetailsPage({
                     </a>
                   ) : null}
 
-                  {center.instagramUrl ? (
-                    <a
-                      href={
-                        center.instagramUrl
-                      }
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      <Button
-                        type="button"
-                        variant="secondary"
-                      >
-                        <Instagram
-                          className="h-4 w-4"
-                          aria-hidden="true"
-                        />
-                        {instaLabel}
-                      </Button>
-                    </a>
-                  ) : null}
                 </div>
               </div>
             </div>
@@ -448,6 +493,26 @@ export default async function CosmeticCenterDetailsPage({
                 </a>
               ) : null}
 
+              {instagramUrl ? (
+                <a
+                  href={instagramUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full"
+                  >
+                    <Instagram
+                      className="h-4 w-4"
+                      aria-hidden="true"
+                    />
+                    {instaLabel}
+                  </Button>
+                </a>
+              ) : null}
+
               {phoneUrl ? (
                 <a href={phoneUrl}>
                   <Button
@@ -484,25 +549,6 @@ export default async function CosmeticCenterDetailsPage({
                 </a>
               ) : null}
 
-              {center.instagramUrl ? (
-                <a
-                  href={center.instagramUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="w-full"
-                  >
-                    <Instagram
-                      className="h-4 w-4"
-                      aria-hidden="true"
-                    />
-                    {instaLabel}
-                  </Button>
-                </a>
-              ) : null}
             </div>
           </Card>
         </div>

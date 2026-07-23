@@ -405,6 +405,7 @@ export const servicePlaceSchema = z.object({
 
   phone: optionalPhone,
   whatsapp: optionalIraqWhatsapp,
+  instagramUrl: optionalInstagramUrl,
 
   imageUrl: optionalImageUrl,
   imageThumbnailUrl: optionalImageUrl,
@@ -421,6 +422,4 @@ export const servicePlaceSchema = z.object({
     .default(0)
 });
 
-export const cosmeticCenterSchema = servicePlaceSchema.extend({
-  instagramUrl: optionalInstagramUrl
-});
+export const cosmeticCenterSchema = servicePlaceSchema;
