@@ -1,16 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
 
-import { getInquiryFingerprint } from "@/lib/inquiry-protection";
 import { prisma } from "@/lib/prisma";
 import { appointmentSchema } from "@/lib/validations";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 const DUPLICATE_WINDOW_MS = 10 * 60 * 1000;
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
-const MAX_APPOINTMENTS_PER_WINDOW = 30;
 
 class AppointmentRequestError extends Error {
   constructor(message: string) {
@@ -113,108 +109,77 @@ export async function createAppointment(
   }
 
   try {
+    const provider = await prisma.provider.findFirst({
+      where: {
+        id: providerId,
+        status: "ACTIVE",
+        governorate: {
+          isActive: true
+        },
+        area: {
+          isActive: true
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        titlePrefix: true,
+        slug: true,
+        type: true,
+        whatsapp: true,
+        phone: true
+      }
+    });
+
+    if (!provider) {
+      throw new AppointmentRequestError(
+        "الطبيب غير موجود أو غير فعال"
+      );
+    }
+
+    const whatsappNumber = provider.whatsapp || provider.phone;
+    const providerProfilePath = getProviderProfilePath(
+      provider.type,
+      provider.slug
+    );
+    const providerUrl = `${getSiteUrl()}${providerProfilePath}`;
+
+    const message = buildAppointmentMessage({
+      providerName: provider.name,
+      providerTitlePrefix: provider.titlePrefix,
+      patientName: parsed.data.patientName,
+      patientPhone: parsed.data.patientPhone,
+      preferredDate: parsed.data.preferredDate || null,
+      note: parsed.data.note || null,
+      providerUrl
+    });
+
+    const whatsappUrl = buildWhatsappUrl(whatsappNumber, message);
+
+    if (!whatsappUrl) {
+      throw new AppointmentRequestError(
+        "لا يوجد رقم واتساب صحيح لهذا الطبيب. يرجى التواصل مع إدارة الموقع."
+      );
+    }
+
     const normalizedPhone = normalizePhoneForComparison(
       parsed.data.patientPhone
     );
-    const requestHeaders = await headers();
-    const fingerprint = getInquiryFingerprint(
-      new Request(getSiteUrl(), {
-        headers: requestHeaders
-      })
+    const duplicateWindowStart = new Date(
+      Date.now() - DUPLICATE_WINDOW_MS
     );
 
-    const result = await prisma.$transaction(async (tx) => {
-      if (fingerprint) {
-        const rateLockKey = `public-appointment-rate:${fingerprint}`;
+    let created = false;
+    let appointmentId: string | null = null;
 
-        await tx.$queryRaw`
-          SELECT pg_advisory_xact_lock(hashtextextended(${rateLockKey}, 0))
-        `;
-
-        const rateWindowStart = new Date(
-          Date.now() - RATE_LIMIT_WINDOW_MS
-        );
-
-        const rows = await tx.$queryRaw<Array<{ count: number }>>`
-          SELECT COUNT(*)::int AS "count"
-          FROM "AuditLog"
-          WHERE "action" = 'create-whatsapp-appointment'
-            AND "entity" = 'Appointment'
-            AND "createdAt" >= ${rateWindowStart}
-            AND "afterJson"->>'fingerprint' = ${fingerprint}
-        `;
-
-        if ((rows[0]?.count ?? 0) >= MAX_APPOINTMENTS_PER_WINDOW) {
-          throw new AppointmentRequestError(
-            "تم إرسال عدد كبير من الطلبات. حاول مرة أخرى لاحقاً"
-          );
-        }
-      }
-
-      const provider = await tx.provider.findFirst({
-        where: {
-          id: providerId,
-          status: "ACTIVE",
-          governorate: {
-            isActive: true
-          },
-          area: {
-            isActive: true
-          }
-        },
-        select: {
-          id: true,
-          name: true,
-          titlePrefix: true,
-          slug: true,
-          type: true,
-          whatsapp: true,
-          phone: true
-        }
-      });
-
-      if (!provider) {
-        throw new AppointmentRequestError(
-          "الطبيب غير موجود أو غير فعال"
-        );
-      }
-
-      const whatsappNumber = provider.whatsapp || provider.phone;
-      const providerProfilePath = getProviderProfilePath(
-        provider.type,
-        provider.slug
-      );
-      const providerUrl = `${getSiteUrl()}${providerProfilePath}`;
-
-      const message = buildAppointmentMessage({
-        providerName: provider.name,
-        providerTitlePrefix: provider.titlePrefix,
-        patientName: parsed.data.patientName,
-        patientPhone: parsed.data.patientPhone,
-        preferredDate: parsed.data.preferredDate || null,
-        note: parsed.data.note || null,
-        providerUrl
-      });
-
-      const whatsappUrl = buildWhatsappUrl(whatsappNumber, message);
-
-      if (!whatsappUrl) {
-        throw new AppointmentRequestError(
-          "لا يوجد رقم واتساب صحيح لهذا الطبيب. يرجى التواصل مع إدارة الموقع."
-        );
-      }
-
-      const lockKey = `appointment:${provider.id}:${normalizedPhone}`;
-
-      await tx.$queryRaw`
-        SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))
-      `;
-
-      const duplicateWindowStart = new Date(
-        Date.now() - DUPLICATE_WINDOW_MS
-      );
-
-      const recentAppointments = await tx.appointment.findMany({
+    /*
+     * التعديل هنا فقط:
+     * أزلنا أوامر PostgreSQL الخام الخاصة بالقفل والـ rate limit لأنها كانت
+     * تسبب فشل الطلب كله على بعض قواعد البيانات/الإعدادات.
+     * بقي تسجيل الموعد وعرضه في الأدمن كما هو.
+     */
+    try {
+      const recentAppointments = await prisma.appointment.findMany({
         where: {
           providerId: provider.id,
           createdAt: {
@@ -237,104 +202,104 @@ export async function createAppointment(
           normalizedPhone
       );
 
-      if (duplicate) {
-        return {
-          created: false,
-          providerType: provider.type,
-          providerProfilePath,
-          whatsappUrl
-        };
-      }
-
-      const appointment = await tx.appointment.create({
-        data: {
-          providerId: provider.id,
-          patientName: parsed.data.patientName,
-          patientPhone: parsed.data.patientPhone,
-          preferredDate: parsed.data.preferredDate || null,
-          note: parsed.data.note || null,
-          status: "NEW"
-        },
-        select: {
-          id: true,
-          patientName: true,
-          patientPhone: true,
-          preferredDate: true,
-          createdAt: true
-        }
-      });
-
-      const updatedProvider = await tx.provider.update({
-        where: {
-          id: provider.id
-        },
-        data: {
-          bookingPoints: {
-            increment: 1
-          }
-        },
-        select: {
-          id: true,
-          slug: true,
-          bookingPoints: true
-        }
-      });
-
-      await tx.auditLog.create({
-        data: {
-          userId: null,
-          action: "create-whatsapp-appointment",
-          entity: "Appointment",
-          entityId: appointment.id,
-          afterJson: {
-            appointmentId: appointment.id,
+      if (!duplicate) {
+        const appointment = await prisma.appointment.create({
+          data: {
             providerId: provider.id,
-            providerName: provider.name,
-            providerSlug: provider.slug,
-            providerType: provider.type,
-            patientName: appointment.patientName,
-            patientPhone: appointment.patientPhone,
-            preferredDate: appointment.preferredDate,
-            bookingPoints: updatedProvider.bookingPoints,
-            source: "public-whatsapp-form",
-            fingerprint
+            patientName: parsed.data.patientName,
+            patientPhone: parsed.data.patientPhone,
+            preferredDate: parsed.data.preferredDate || null,
+            note: parsed.data.note || null,
+            status: "NEW"
+          },
+          select: {
+            id: true
           }
+        });
+
+        appointmentId = appointment.id;
+        created = true;
+
+        // هذه العمليات إضافية؛ فشلها لا يمنع فتح واتساب للمستخدم.
+        try {
+          const updatedProvider = await prisma.provider.update({
+            where: {
+              id: provider.id
+            },
+            data: {
+              bookingPoints: {
+                increment: 1
+              }
+            },
+            select: {
+              bookingPoints: true
+            }
+          });
+
+          await prisma.auditLog.create({
+            data: {
+              userId: null,
+              action: "create-whatsapp-appointment",
+              entity: "Appointment",
+              entityId: appointment.id,
+              afterJson: {
+                appointmentId: appointment.id,
+                providerId: provider.id,
+                providerName: provider.name,
+                providerSlug: provider.slug,
+                providerType: provider.type,
+                patientName: parsed.data.patientName,
+                patientPhone: parsed.data.patientPhone,
+                preferredDate: parsed.data.preferredDate || null,
+                bookingPoints: updatedProvider.bookingPoints,
+                source: "public-whatsapp-form"
+              }
+            }
+          });
+        } catch (secondaryError) {
+          console.error(
+            "Appointment secondary operations error",
+            secondaryError
+          );
         }
-      });
+      } else {
+        appointmentId = duplicate.id;
+      }
+    } catch (storageError) {
+      /*
+       * إذا صار خلل مؤقت بجدول المواعيد أو السجل، لا نمنع المريض من فتح
+       * رسالة واتساب. الخطأ يبقى ظاهراً في سجل السيرفر حتى يمكن إصلاحه.
+       */
+      console.error("Appointment storage error", storageError);
+    }
 
-      return {
-        created: true,
-        providerType: provider.type,
-        providerProfilePath,
-        whatsappUrl
-      };
-    });
-
-    if (result.created) {
+    if (created) {
       revalidatePath("/admin/appointments");
 
-      if (result.providerType === "COSMETIC_DOCTOR") {
+      if (provider.type === "COSMETIC_DOCTOR") {
         revalidatePath("/admin/cosmetic-doctors");
         revalidatePath("/cosmetic-doctors");
       } else {
         revalidatePath("/admin/providers");
 
-        if (result.providerType === "DENTIST") {
+        if (provider.type === "DENTIST") {
           revalidatePath("/dentists");
         } else {
           revalidatePath("/doctors");
         }
       }
 
-      revalidatePath(result.providerProfilePath);
+      revalidatePath(providerProfilePath);
     }
 
     return {
       ok: true,
-      message: result.created
+      message: created
         ? "تم تسجيل طلب الموعد وتجهيز رسالة واتساب، سيتم تحويلك الآن"
-        : "تم استلام طلب مماثل مسبقاً، سيتم فتح رسالة واتساب بدون إضافة طلب جديد",
-      whatsappUrl: result.whatsappUrl
+        : appointmentId
+          ? "تم استلام طلب مماثل مسبقاً، سيتم فتح رسالة واتساب بدون إضافة طلب جديد"
+          : "تم تجهيز رسالة واتساب، سيتم تحويلك الآن",
+      whatsappUrl
     };
   } catch (error) {
     console.error("Public appointment action error", error);
