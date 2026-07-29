@@ -9,8 +9,6 @@ import { buildWhatsappUrl } from "@/lib/whatsapp";
 export const dynamic = "force-dynamic";
 
 const DUPLICATE_WINDOW_MS = 10 * 60 * 1000;
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
-const MAX_APPOINTMENTS_PER_WINDOW = 30;
 const MAX_REQUEST_BYTES = 16 * 1024;
 
 class AppointmentRequestError extends Error {
@@ -214,115 +212,91 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    /*
+     * جلب بيانات الطبيب أولاً بدون transaction أو أوامر SQL خام.
+     * هذا يمنع فشل الطلب بسبب pg_advisory_xact_lock أو استعلام AuditLog.
+     */
+    const provider = await prisma.provider.findFirst({
+      where: {
+        id: providerId,
+        status: "ACTIVE",
+        governorate: {
+          isActive: true
+        },
+        area: {
+          isActive: true
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        titlePrefix: true,
+        slug: true,
+        type: true,
+        whatsapp: true,
+        phone: true
+      }
+    });
+
+    if (!provider) {
+      throw new AppointmentRequestError(
+        "مقدم الخدمة غير موجود أو غير فعال",
+        404
+      );
+    }
+
+    const whatsappNumber = provider.whatsapp || provider.phone;
+
+    if (!whatsappNumber) {
+      throw new AppointmentRequestError(
+        "لا يوجد رقم واتساب أو هاتف صحيح لهذا الطبيب",
+        422
+      );
+    }
+
+    const providerProfilePath = getProviderProfilePath(
+      provider.type,
+      provider.slug
+    );
+
+    const providerUrl = `${getSiteUrl()}${providerProfilePath}`;
+
+    const message = buildAppointmentMessage({
+      providerName: provider.name,
+      providerTitlePrefix: provider.titlePrefix || "",
+      patientName: parsed.data.patientName,
+      patientPhone: parsed.data.patientPhone,
+      preferredDate: parsed.data.preferredDate || null,
+      note: parsed.data.note || null,
+      providerUrl
+    });
+
+    const whatsappUrl = buildWhatsappUrl(whatsappNumber, message);
+
+    if (!whatsappUrl) {
+      throw new AppointmentRequestError(
+        "لا يوجد رقم واتساب أو هاتف صحيح لهذا الطبيب",
+        422
+      );
+    }
+
     const normalizedPhone = normalizePhoneForComparison(
       parsed.data.patientPhone
     );
-    const fingerprint = getInquiryFingerprint(request);
+    const duplicateWindowStart = new Date(
+      Date.now() - DUPLICATE_WINDOW_MS
+    );
+    const fingerprint = getInquiryFingerprint(request) || null;
 
-    const result = await prisma.$transaction(async (tx) => {
-      if (fingerprint) {
-        const rateLockKey = `mobile-appointment-rate:${fingerprint}`;
+    let created = false;
+    let appointmentId: string | null = null;
 
-        await tx.$queryRaw`
-          SELECT pg_advisory_xact_lock(hashtextextended(${rateLockKey}, 0))
-        `;
-
-        const rateWindowStart = new Date(
-          Date.now() - RATE_LIMIT_WINDOW_MS
-        );
-
-        const rows = await tx.$queryRaw<Array<{ count: number }>>`
-          SELECT COUNT(*)::int AS "count"
-          FROM "AuditLog"
-          WHERE "action" = 'create-mobile-appointment'
-            AND "entity" = 'Appointment'
-            AND "createdAt" >= ${rateWindowStart}
-            AND "afterJson"->>'fingerprint' = ${fingerprint}
-        `;
-
-        if ((rows[0]?.count ?? 0) >= MAX_APPOINTMENTS_PER_WINDOW) {
-          throw new AppointmentRequestError(
-            "تم إرسال عدد كبير من الطلبات. حاول مرة أخرى لاحقاً",
-            429
-          );
-        }
-      }
-
-      const provider = await tx.provider.findFirst({
-        where: {
-          id: providerId,
-          status: "ACTIVE",
-          governorate: {
-            isActive: true
-          },
-          area: {
-            isActive: true
-          }
-        },
-        select: {
-          id: true,
-          name: true,
-          titlePrefix: true,
-          slug: true,
-          type: true,
-          whatsapp: true,
-          phone: true
-        }
-      });
-
-      if (!provider) {
-        throw new AppointmentRequestError(
-          "مقدم الخدمة غير موجود أو غير فعال",
-          404
-        );
-      }
-
-      const whatsappNumber = provider.whatsapp || provider.phone;
-
-      if (!whatsappNumber) {
-        throw new AppointmentRequestError(
-          "لا يوجد رقم واتساب أو هاتف صحيح لهذا الطبيب",
-          422
-        );
-      }
-
-      const providerProfilePath = getProviderProfilePath(
-        provider.type,
-        provider.slug
-      );
-
-      const providerUrl = `${getSiteUrl()}${providerProfilePath}`;
-
-      const message = buildAppointmentMessage({
-        providerName: provider.name,
-        providerTitlePrefix: provider.titlePrefix,
-        patientName: parsed.data.patientName,
-        patientPhone: parsed.data.patientPhone,
-        preferredDate: parsed.data.preferredDate || null,
-        note: parsed.data.note || null,
-        providerUrl
-      });
-
-      const whatsappUrl = buildWhatsappUrl(whatsappNumber, message);
-
-      if (!whatsappUrl) {
-        throw new AppointmentRequestError(
-          "لا يوجد رقم واتساب أو هاتف صحيح لهذا الطبيب",
-          422
-        );
-      }
-
-      const lockKey = `appointment:${provider.id}:${normalizedPhone}`;
-
-      await tx.$queryRaw`
-        SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))
-      `;
-
-      const duplicateWindowStart = new Date(
-        Date.now() - DUPLICATE_WINDOW_MS
-      );
-
-      const recentAppointments = await tx.appointment.findMany({
+    /*
+     * نحاول تسجيل الموعد كالمعتاد.
+     * إذا حدث خطأ بقاعدة البيانات، لا نمنع فتح واتساب للمستخدم.
+     */
+    try {
+      const recentAppointments = await prisma.appointment.findMany({
         where: {
           providerId: provider.id,
           createdAt: {
@@ -346,108 +320,109 @@ export async function POST(request: NextRequest) {
       );
 
       if (duplicate) {
-        return {
-          created: false,
-          appointmentId: duplicate.id,
-          providerType: provider.type,
-          providerProfilePath,
-          whatsappUrl
-        };
-      }
-
-      const appointment = await tx.appointment.create({
-        data: {
-          providerId: provider.id,
-          patientName: parsed.data.patientName,
-          patientPhone: parsed.data.patientPhone,
-          preferredDate: parsed.data.preferredDate || null,
-          note: parsed.data.note || null,
-          status: "NEW"
-        },
-        select: {
-          id: true,
-          patientName: true,
-          patientPhone: true,
-          preferredDate: true,
-          note: true,
-          createdAt: true
-        }
-      });
-
-      const updatedProvider = await tx.provider.update({
-        where: {
-          id: provider.id
-        },
-        data: {
-          bookingPoints: {
-            increment: 1
-          }
-        },
-        select: {
-          id: true,
-          slug: true,
-          bookingPoints: true
-        }
-      });
-
-      await tx.auditLog.create({
-        data: {
-          userId: null,
-          action: "create-mobile-appointment",
-          entity: "Appointment",
-          entityId: appointment.id,
-          afterJson: {
-            appointmentId: appointment.id,
+        appointmentId = duplicate.id;
+      } else {
+        const appointment = await prisma.appointment.create({
+          data: {
             providerId: provider.id,
-            providerName: provider.name,
-            providerSlug: provider.slug,
-            providerType: provider.type,
-            patientName: appointment.patientName,
-            patientPhone: appointment.patientPhone,
-            preferredDate: appointment.preferredDate,
-            note: appointment.note,
-            bookingPoints: updatedProvider.bookingPoints,
-            source: "mobile-api",
-            fingerprint
+            patientName: parsed.data.patientName,
+            patientPhone: parsed.data.patientPhone,
+            preferredDate: parsed.data.preferredDate || null,
+            note: parsed.data.note || null,
+            status: "NEW"
+          },
+          select: {
+            id: true,
+            patientName: true,
+            patientPhone: true,
+            preferredDate: true,
+            note: true
           }
+        });
+
+        appointmentId = appointment.id;
+        created = true;
+
+        /*
+         * زيادة النقاط وAuditLog عمليات ثانوية.
+         * فشلها لا يلغي الموعد ولا يعيد للمستخدم خطأ.
+         */
+        try {
+          const updatedProvider = await prisma.provider.update({
+            where: {
+              id: provider.id
+            },
+            data: {
+              bookingPoints: {
+                increment: 1
+              }
+            },
+            select: {
+              bookingPoints: true
+            }
+          });
+
+          await prisma.auditLog.create({
+            data: {
+              userId: null,
+              action: "create-mobile-appointment",
+              entity: "Appointment",
+              entityId: appointment.id,
+              afterJson: {
+                appointmentId: appointment.id,
+                providerId: provider.id,
+                providerName: provider.name,
+                providerSlug: provider.slug,
+                providerType: provider.type,
+                patientName: appointment.patientName,
+                patientPhone: appointment.patientPhone,
+                preferredDate: appointment.preferredDate,
+                note: appointment.note,
+                bookingPoints: updatedProvider.bookingPoints,
+                source: "mobile-api",
+                fingerprint
+              }
+            }
+          });
+        } catch (secondaryError) {
+          console.error(
+            "Mobile appointment secondary operations error",
+            secondaryError
+          );
         }
-      });
+      }
+    } catch (storageError) {
+      console.error("Mobile appointment storage error", storageError);
+    }
 
-      return {
-        created: true,
-        appointmentId: appointment.id,
-        providerType: provider.type,
-        providerProfilePath,
-        whatsappUrl
-      };
-    });
-
-    if (result.created) {
+    if (created) {
       revalidatePath("/admin/appointments");
 
-      if (result.providerType === "COSMETIC_DOCTOR") {
+      if (provider.type === "COSMETIC_DOCTOR") {
         revalidatePath("/admin/cosmetic-doctors");
         revalidatePath("/cosmetic-doctors");
       } else {
         revalidatePath("/admin/providers");
 
-        if (result.providerType === "DENTIST") {
+        if (provider.type === "DENTIST") {
           revalidatePath("/dentists");
         } else {
           revalidatePath("/doctors");
         }
       }
 
-      revalidatePath(result.providerProfilePath);
+      revalidatePath(providerProfilePath);
     }
 
     return NextResponse.json({
       ok: true,
-      message: result.created
+      message: created
         ? "تم تسجيل طلب الموعد وتجهيز رابط واتساب"
-        : "تم استلام طلب مماثل مسبقاً، سيتم فتح واتساب بدون إضافة طلب جديد",
-      appointmentId: result.appointmentId,
-      whatsappUrl: result.whatsappUrl
+        : appointmentId
+          ? "تم استلام طلب مماثل مسبقاً، سيتم فتح واتساب بدون إضافة طلب جديد"
+          : "تم تجهيز رابط واتساب",
+      appointmentId,
+      whatsappUrl
     });
   } catch (error) {
     console.error("Mobile appointments API error", error);
@@ -459,13 +434,7 @@ export async function POST(request: NextRequest) {
           message: error.message
         },
         {
-          status: error.status,
-          headers:
-            error.status === 429
-              ? {
-                  "Retry-After": "3600"
-                }
-              : undefined
+          status: error.status
         }
       );
     }
