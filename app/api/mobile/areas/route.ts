@@ -11,6 +11,7 @@ export const revalidate = 0;
 
 type FilterableProviderType =
   | "DOCTOR"
+  | "DENTIST"
   | "COSMETIC_DOCTOR";
 
 type FilterablePlaceType =
@@ -38,6 +39,7 @@ function readProviderType(
 ): FilterableProviderType | null {
   if (
     value === "DOCTOR" ||
+    value === "DENTIST" ||
     value === "COSMETIC_DOCTOR"
   ) {
     return value;
@@ -149,12 +151,30 @@ export async function GET(request: NextRequest) {
     const specialtyId =
       specialtyIdResult.value;
 
+    if (specialtyId && !forType) {
+      return errorResponse(
+        "يجب إرسال نوع مقدم الخدمة مع الاختصاص",
+        400
+      );
+    }
+
     if (
-      Boolean(specialtyId) !==
-      Boolean(forType)
+      forType &&
+      forType !== "DENTIST" &&
+      !specialtyId
     ) {
       return errorResponse(
-        "يجب إرسال الاختصاص ونوع مقدم الخدمة معاً",
+        "يجب إرسال الاختصاص مع نوع مقدم الخدمة",
+        400
+      );
+    }
+
+    if (
+      forType === "DENTIST" &&
+      specialtyId
+    ) {
+      return errorResponse(
+        "قسم أطباء الأسنان لا يستخدم فلتر الاختصاص",
         400
       );
     }
@@ -212,20 +232,28 @@ export async function GET(request: NextRequest) {
       governorateId,
       ...placeWhere,
       providers:
-        specialtyId && forType
+        forType === "DENTIST"
           ? {
               some: {
                 status: "ACTIVE",
-                type: forType,
-                governorateId,
-                specialtyId,
-                specialty: {
-                  isActive: true,
-                  forType
-                }
+                type: "DENTIST",
+                governorateId
               }
             }
-          : undefined
+          : specialtyId && forType
+            ? {
+                some: {
+                  status: "ACTIVE",
+                  type: forType,
+                  governorateId,
+                  specialtyId,
+                  specialty: {
+                    isActive: true,
+                    forType
+                  }
+                }
+              }
+            : undefined
     };
 
     const areas = await prisma.area.findMany({
