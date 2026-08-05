@@ -282,6 +282,7 @@ export async function GET(
           workingHours: lab.workingHours,
           isFeatured: lab.isFeatured,
           inquiryCount: lab.inquiryCount,
+          lastVerifiedAt: lab.lastVerifiedAt,
 
           profileUrl,
           detailsUrl: profileUrl,

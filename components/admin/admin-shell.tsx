@@ -8,6 +8,7 @@ import {
   Building2,
   CalendarDays,
   FileText,
+  Flag,
   FlaskConical,
   Home,
   LayoutDashboard,
@@ -35,6 +36,11 @@ const navItems = [
     href: "/admin/appointments",
     label: "المواعيد",
     icon: CalendarDays
+  },
+  {
+    href: "/admin/information-reports",
+    label: "بلاغات المعلومات",
+    icon: Flag
   },
   {
     href: "/admin/providers",

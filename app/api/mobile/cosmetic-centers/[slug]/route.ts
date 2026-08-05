@@ -462,6 +462,9 @@ export async function GET(
           inquiryCount:
             center.inquiryCount,
 
+          lastVerifiedAt:
+            center.lastVerifiedAt,
+
           profileUrl,
           detailsUrl: profileUrl,
           shareUrl: profileUrl,

@@ -333,6 +333,9 @@ export async function GET(
           isFeatured:
             provider.isFeatured,
 
+          lastVerifiedAt:
+            provider.lastVerifiedAt,
+
           offers: (
             provider.offers ?? []
           ).map((offer) => ({

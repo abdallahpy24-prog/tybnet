@@ -134,6 +134,7 @@ model Provider {
   bookingPoints     Int           @default(0)
   offers            Offer[]
   appointments      Appointment[]
+  lastVerifiedAt    DateTime?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
@@ -167,6 +168,7 @@ model Pharmacy {
   status            PublishStatus @default(INACTIVE)
   isFeatured        Boolean       @default(false)
   inquiryCount      Int           @default(0)
+  lastVerifiedAt    DateTime?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
@@ -199,6 +201,7 @@ model Lab {
   status            PublishStatus @default(INACTIVE)
   isFeatured        Boolean       @default(false)
   inquiryCount      Int           @default(0)
+  lastVerifiedAt    DateTime?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
@@ -231,6 +234,7 @@ model CosmeticCenter {
   status            PublishStatus @default(INACTIVE)
   isFeatured        Boolean       @default(false)
   inquiryCount      Int           @default(0)
+  lastVerifiedAt    DateTime?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
@@ -242,23 +246,39 @@ model CosmeticCenter {
 }
 
 model Offer {
-  id           String    @id @default(cuid())
-  title        String
-  slug         String    @unique
-  description  String?
-  imageUrl     String?
-  discountText String?
-  startsAt     DateTime?
-  endsAt       DateTime?
-  isActive     Boolean   @default(true)
-  providerId   String?
-  provider     Provider? @relation(fields: [providerId], references: [id])
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  title          String
+  slug           String    @unique
+  description    String?
+  imageUrl       String?
+  discountText   String?
+  startsAt       DateTime?
+  endsAt         DateTime?
+  isActive       Boolean   @default(true)
+  providerId     String?
+  provider       Provider? @relation(fields: [providerId], references: [id])
+  createdAt      DateTime  @default(now())
+  pushNotifiedAt DateTime?
+  updatedAt      DateTime  @updatedAt
 
   @@index([isActive, endsAt])
   @@index([providerId])
   @@index([createdAt])
+}
+
+model PushSubscription {
+  id             String   @id @default(cuid())
+  installationId String   @unique
+  expoPushToken String   @unique
+  platform      String
+  offersEnabled Boolean  @default(true)
+  appVersion    String?
+  lastSeenAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([offersEnabled, updatedAt])
+  @@index([lastSeenAt])
 }
 
 model Appointment {
@@ -275,6 +295,26 @@ model Appointment {
 
   @@index([providerId])
   @@index([status, createdAt])
+}
+
+model InformationReport {
+  id          String   @id @default(cuid())
+  entityType  String
+  entityId    String
+  entitySlug  String
+  entityName  String
+  issueType   String
+  details     String?
+  status      String   @default("NEW")
+  adminNote   String?
+  fingerprint String?
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([entityType, entityId])
+  @@index([fingerprint, createdAt])
 }
 
 model Media {

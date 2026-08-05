@@ -31,7 +31,9 @@ const actionLabels: Record<string, string> = {
   delete: "حذف",
   "disable-linked": "تعطيل آمن",
   "create-mobile-appointment": "موعد من التطبيق",
-  "create-whatsapp-appointment": "موعد من الموقع"
+  "create-whatsapp-appointment": "موعد من الموقع",
+  "resolve-and-verify": "تصحيح وتحقق",
+  reject: "رفض"
 };
 
 const entityLabels: Record<string, string> = {
@@ -45,7 +47,8 @@ const entityLabels: Record<string, string> = {
   CosmeticCenter: "مركز تجميل",
   Offer: "عرض",
   Appointment: "موعد",
-  Setting: "إعداد"
+  Setting: "إعداد",
+  InformationReport: "بلاغ معلومات"
 };
 
 function actionLabel(value: string) {

@@ -333,7 +333,8 @@ export async function createCosmeticDoctor(
       imageUrl: parsed.imageUrl || null,
       imageThumbnailUrl: parsed.imageThumbnailUrl || null,
       imageOriginalUrl: parsed.imageOriginalUrl || null,
-      workingHours: parsed.workingHours || null
+      workingHours: parsed.workingHours || null,
+      lastVerifiedAt: new Date()
     }
   });
 
@@ -409,7 +410,8 @@ export async function updateCosmeticDoctor(
       imageUrl: parsed.imageUrl || null,
       imageThumbnailUrl: parsed.imageThumbnailUrl || null,
       imageOriginalUrl: parsed.imageOriginalUrl || null,
-      workingHours: parsed.workingHours || null
+      workingHours: parsed.workingHours || null,
+      lastVerifiedAt: new Date()
     }
   });
 
@@ -543,7 +545,8 @@ export async function createCosmeticCenter(
       workingHours: parsed.workingHours || null,
       status: parsed.status,
       isFeatured: parsed.isFeatured,
-      inquiryCount: parsed.inquiryCount
+      inquiryCount: parsed.inquiryCount,
+      lastVerifiedAt: new Date()
     }
   });
 
@@ -617,7 +620,8 @@ export async function updateCosmeticCenter(
       workingHours: parsed.workingHours || null,
       status: parsed.status,
       isFeatured: parsed.isFeatured,
-      inquiryCount: parsed.inquiryCount
+      inquiryCount: parsed.inquiryCount,
+      lastVerifiedAt: new Date()
     }
   });
 

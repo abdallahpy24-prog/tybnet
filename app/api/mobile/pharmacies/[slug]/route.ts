@@ -282,6 +282,7 @@ export async function GET(
           workingHours: pharmacy.workingHours,
           isFeatured: pharmacy.isFeatured,
           inquiryCount: pharmacy.inquiryCount,
+          lastVerifiedAt: pharmacy.lastVerifiedAt,
 
           profileUrl,
           detailsUrl: profileUrl,

@@ -133,6 +133,11 @@ export default async function OffersAdminPage({
                           {row.title}
                         </h3>
                         <StatusPill value={row.isActive} />
+                        {row.pushNotifiedAt ? (
+                          <span className="rounded-full bg-cyan-50 px-2 py-1 text-[11px] font-black text-cyan-800">
+                            تم إرسال إشعار العرض
+                          </span>
+                        ) : null}
                       </div>
 
                       <p className="mt-1 text-xs font-semibold text-slate-500">

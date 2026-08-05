@@ -5,6 +5,7 @@ import { AppointmentStatus, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 import { prisma } from "@/lib/prisma";
+import { sendOfferPublishedNotificationSafely } from "@/lib/push-notifications";
 import { auditLog } from "@/lib/audit";
 import { requireAdmin } from "@/lib/permissions";
 import { uniqueSlug } from "@/lib/slug";
@@ -803,6 +804,7 @@ export async function createProvider(formData: FormData) {
       imageThumbnailUrl: parsed.imageThumbnailUrl || null,
       imageOriginalUrl: parsed.imageOriginalUrl || null,
       workingHours: parsed.workingHours || null,
+      lastVerifiedAt: new Date(),
     },
   });
 
@@ -863,6 +865,7 @@ export async function updateProvider(formData: FormData) {
       imageThumbnailUrl: parsed.imageThumbnailUrl || null,
       imageOriginalUrl: parsed.imageOriginalUrl || null,
       workingHours: parsed.workingHours || null,
+      lastVerifiedAt: new Date(),
     },
   });
 
@@ -987,6 +990,8 @@ export async function createOffer(formData: FormData) {
     afterJson: row,
   });
 
+  await sendOfferPublishedNotificationSafely(row);
+
   revalidatePath("/admin/offers");
   revalidatePath("/offers");
 }
@@ -1033,6 +1038,10 @@ export async function updateOffer(formData: FormData) {
   });
 
   await deleteUnreferencedImages([before.imageUrl]);
+
+  if (row.isActive && !before.pushNotifiedAt) {
+    await sendOfferPublishedNotificationSafely(row);
+  }
 
   revalidatePath("/admin/offers");
   revalidatePath("/offers");
@@ -1098,6 +1107,7 @@ export async function createPharmacy(formData: FormData) {
       status: parsed.status,
       isFeatured: parsed.isFeatured,
       inquiryCount: parsed.inquiryCount,
+      lastVerifiedAt: new Date(),
     },
   });
 
@@ -1160,6 +1170,7 @@ export async function updatePharmacy(formData: FormData) {
       status: parsed.status,
       isFeatured: parsed.isFeatured,
       inquiryCount: parsed.inquiryCount,
+      lastVerifiedAt: new Date(),
     },
   });
 
@@ -1249,6 +1260,7 @@ export async function createLab(formData: FormData) {
       status: parsed.status,
       isFeatured: parsed.isFeatured,
       inquiryCount: parsed.inquiryCount,
+      lastVerifiedAt: new Date(),
     },
   });
 
@@ -1311,6 +1323,7 @@ export async function updateLab(formData: FormData) {
       status: parsed.status,
       isFeatured: parsed.isFeatured,
       inquiryCount: parsed.inquiryCount,
+      lastVerifiedAt: new Date(),
     },
   });
 
