@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 const SUCCESS_CACHE_HEADERS = {
   "Cache-Control":
-    "public, s-maxage=3600, stale-while-revalidate=86400"
+    "no-store, no-cache, max-age=0, must-revalidate"
 };
 
 export async function GET() {
@@ -53,4 +53,5 @@ export async function GET() {
     );
   }
 }
+
 
