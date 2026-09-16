@@ -5,12 +5,12 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
-  return new PrismaClient({
-    log:
-      process.env.NODE_ENV === "development"
-        ? ["query", "error", "warn"]
-        : ["error"]
+  const client = new PrismaClient({
+    log: [{ emit: "event", level: "error" }]
   });
+  // Prisma error messages can contain submitted patient data and connection URLs.
+  client.$on("error", () => console.error("Database operation failed."));
+  return client;
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();

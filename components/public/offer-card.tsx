@@ -1,3 +1,4 @@
+import { normalizeDisplayImageUrl } from "@/lib/image-url";
 import Image from "next/image";
 import { CalendarDays, Percent, UserRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -15,15 +16,16 @@ type OfferData = {
 };
 
 export function OfferCard({ offer }: { offer: OfferData }) {
+  const imageUrl = normalizeDisplayImageUrl(offer.imageUrl);
   const startsText = offer.startsAt ? formatDate(offer.startsAt) : "متاح الآن";
   const endsText = offer.endsAt ? formatDate(offer.endsAt) : "حتى إشعار آخر";
 
   return (
     <Card className="overflow-hidden p-0">
       <div className="relative aspect-[16/9] bg-primary-soft">
-        {offer.imageUrl ? (
+        {imageUrl ? (
           <Image
-            src={offer.imageUrl}
+            src={imageUrl}
             alt={offer.title}
             fill
             sizes="(max-width: 768px) 100vw, 33vw"

@@ -9,12 +9,13 @@ import {
   Sparkles
 } from "lucide-react";
 import { SiteShell } from "@/components/layout/site-shell";
-import { Button } from "@/components/ui/button";
+import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const metadata: Metadata = {
-  title: "انضم إلى طب نت | طب نت",
+  alternates: { canonical: "/join" },
+  title: "انضم إلى طب نت",
   description:
     "أضف عيادتك أو مركزك أو صيدليتك أو مختبرك إلى طب نت، واعرض معلوماتك ووسائل التواصل بصورة واضحة ومنظمة."
 };
@@ -84,18 +85,22 @@ export default function JoinPage() {
 
               <div className="mt-6 flex flex-wrap gap-3">
                 {whatsappUrl ? (
-                  <a href={whatsappUrl} target="_blank" rel="noreferrer">
-                    <Button type="button">
-                      <MessageCircle className="h-4 w-4" aria-hidden="true" />
-                      ابدأ طلب الانضمام
-                    </Button>
+                  <a
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={buttonStyles()}
+                  >
+                    <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                    ابدأ طلب الانضمام
                   </a>
                 ) : null}
 
-                <Link href="/contact">
-                  <Button type="button" variant="secondary">
-                    تواصل مع الفريق
-                  </Button>
+                <Link
+                  href="/contact"
+                  className={buttonStyles({ variant: "secondary" })}
+                >
+                  تواصل مع الفريق
                 </Link>
               </div>
             </div>
@@ -178,17 +183,18 @@ export default function JoinPage() {
 
               <div className="shrink-0">
                 {whatsappUrl ? (
-                  <a href={whatsappUrl} target="_blank" rel="noreferrer">
-                    <Button type="button">
-                      <MessageCircle className="h-4 w-4" aria-hidden="true" />
-                      ابدأ الآن
-                    </Button>
+                  <a
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={buttonStyles()}
+                  >
+                    <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                    ابدأ الآن
                   </a>
                 ) : (
-                  <Link href="/contact">
-                    <Button type="button">
-                      تواصل معنا
-                    </Button>
+                  <Link href="/contact" className={buttonStyles()}>
+                    تواصل معنا
                   </Link>
                 )}
               </div>

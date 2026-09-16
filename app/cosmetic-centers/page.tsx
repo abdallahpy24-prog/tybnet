@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { listPageMetadata } from "@/lib/list-metadata";
 
 import { SiteShell } from "@/components/layout/site-shell";
 import { FilterForm } from "@/components/public/filter-form";
@@ -15,11 +16,16 @@ import {
   type SearchParams
 } from "@/lib/queries";
 
-export const metadata: Metadata = {
-  title: "مراكز التجميل في العراق | طب نت",
+const baseMetadata: Metadata = {
+  alternates: { canonical: "/cosmetic-centers" },
+  title: "مراكز التجميل في العراق",
   description:
     "ابحث عن مراكز التجميل في العراق حسب المحافظة والمنطقة، واطّلع على الخدمات ومعلومات التواصل عبر منصة طب نت."
 };
+
+export async function generateMetadata({ searchParams }: { searchParams?: Promise<SearchParams> }): Promise<Metadata> {
+  return listPageMetadata(baseMetadata, (await searchParams) ?? {});
+}
 
 type CosmeticCenterPageItem = Awaited<
   ReturnType<typeof getPublicCosmeticCentersPage>
@@ -35,10 +41,9 @@ function toPublicListItem(
     imageUrl: item.imageUrl,
     imageThumbnailUrl: item.imageThumbnailUrl,
     whatsapp: item.whatsapp,
-    instagramUrl: item.instagramUrl,
     workingHours: item.workingHours,
     address: item.address,
-    inquiryCount: item.inquiryCount,
+    lastVerifiedAt: item.lastVerifiedAt?.toISOString() ?? null,
     governorate: {
       name: item.governorate.name
     },
@@ -60,7 +65,7 @@ export default async function CosmeticCentersPage({
     await Promise.all([
       getFilterOptions(),
       getPublicCosmeticCentersPage(params, {
-        take: 5
+        take: 8
       })
     ]);
 
@@ -78,6 +83,7 @@ export default async function CosmeticCentersPage({
     <SiteShell>
       <section className="container-page py-10">
         <SectionTitle
+          as="h1"
           eyebrow="التجميل"
           title="ابحث عن مركز تجميل حسب المحافظة والمنطقة"
           description="استعرض مراكز التجميل المتاحة على طب نت، واستخدم عوامل التصفية حسب المحافظة أو المنطقة أو اسم المركز."
@@ -89,17 +95,20 @@ export default async function CosmeticCentersPage({
           governorates={options.governorates}
           areas={options.areas}
           showSpecialties={false}
+          placeType="cosmetic-centers"
         />
 
         {initialItems.length ? (
           <PlaceResults
-            key={resultsKey}
+            key={`${resultsKey}:${Array.isArray(params.cursor) ? params.cursor[0] : params.cursor ?? ""}`}
             kind="cosmetic-center"
             label="مركز تجميل"
             initialItems={initialItems}
             initialCursor={cosmeticCentersPage.nextCursor}
             initialHasMore={cosmeticCentersPage.hasMore}
+            initialTotal={cosmeticCentersPage.total}
             filters={{
+              featuredOnly: filters.featuredOnly,
               q: filters.q,
               governorateId: filters.governorateId,
               areaId: filters.areaId

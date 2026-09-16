@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { listPageMetadata } from "@/lib/list-metadata";
 
 import { SiteShell } from "@/components/layout/site-shell";
 import { FilterForm } from "@/components/public/filter-form";
@@ -15,11 +16,16 @@ import {
   type SearchParams
 } from "@/lib/queries";
 
-export const metadata: Metadata = {
-  title: "ابحث عن صيدليات في العراق | طب نت",
+const baseMetadata: Metadata = {
+  alternates: { canonical: "/pharmacies" },
+  title: "ابحث عن صيدليات في العراق",
   description:
     "ابحث عن صيدليات في العراق حسب المحافظة والمنطقة، واطّلع على معلومات التواصل عبر منصة طب نت."
 };
+
+export async function generateMetadata({ searchParams }: { searchParams?: Promise<SearchParams> }): Promise<Metadata> {
+  return listPageMetadata(baseMetadata, (await searchParams) ?? {});
+}
 
 type PharmacyPageItem = Awaited<
   ReturnType<typeof getPublicPharmaciesPage>
@@ -34,10 +40,11 @@ function toPublicListItem(
     slug: item.slug,
     imageUrl: item.imageUrl,
     imageThumbnailUrl: item.imageThumbnailUrl,
+    phone: item.phone,
     whatsapp: item.whatsapp,
     workingHours: item.workingHours,
     address: item.address,
-    inquiryCount: item.inquiryCount,
+    lastVerifiedAt: item.lastVerifiedAt?.toISOString() ?? null,
     governorate: {
       name: item.governorate.name
     },
@@ -58,7 +65,7 @@ export default async function PharmaciesPage({
   const [options, pharmaciesPage] = await Promise.all([
     getFilterOptions(),
     getPublicPharmaciesPage(params, {
-      take: 5
+      take: 8
     })
   ]);
 
@@ -76,6 +83,7 @@ export default async function PharmaciesPage({
     <SiteShell>
       <section className="container-page py-10">
         <SectionTitle
+          as="h1"
           eyebrow="الصيدليات"
           title="ابحث عن صيدلية حسب المحافظة والمنطقة"
           description="استعرض الصيدليات المتاحة على طب نت، واستخدم عوامل التصفية حسب المحافظة أو المنطقة أو اسم الصيدلية للوصول إلى المكان المناسب."
@@ -87,17 +95,20 @@ export default async function PharmaciesPage({
           governorates={options.governorates}
           areas={options.areas}
           showSpecialties={false}
+          placeType="pharmacies"
         />
 
         {initialItems.length ? (
           <PlaceResults
-            key={resultsKey}
+            key={`${resultsKey}:${Array.isArray(params.cursor) ? params.cursor[0] : params.cursor ?? ""}`}
             kind="pharmacy"
             label="صيدلية"
             initialItems={initialItems}
             initialCursor={pharmaciesPage.nextCursor}
             initialHasMore={pharmaciesPage.hasMore}
+            initialTotal={pharmaciesPage.total}
             filters={{
+              featuredOnly: filters.featuredOnly,
               q: filters.q,
               governorateId: filters.governorateId,
               areaId: filters.areaId

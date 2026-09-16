@@ -6,13 +6,14 @@ import {
 import {
   getPublicCosmeticCenterBySlug
 } from "@/lib/queries";
+import { normalizeTrustedMapUrl, trustedMapUrlFromText } from "@/lib/maps";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
 
 const SUCCESS_CACHE_HEADERS = {
   "Cache-Control":
-    "public, s-maxage=300, stale-while-revalidate=3600"
+    "no-store"
 };
 
 function getBaseUrl(request: NextRequest) {
@@ -117,92 +118,6 @@ function normalizeAssetUrl(
   } catch {
     return cleanValue;
   }
-}
-
-function normalizeMapUrl(
-  value?: string | null
-) {
-  const cleanValue = value?.trim();
-
-  if (!cleanValue) {
-    return null;
-  }
-
-  try {
-    if (
-      /^https?:\/\//i.test(cleanValue)
-    ) {
-      return new URL(
-        cleanValue
-      ).toString();
-    }
-
-    if (
-      cleanValue.startsWith(
-        "www.google.com/maps"
-      ) ||
-      cleanValue.startsWith(
-        "google.com/maps"
-      ) ||
-      cleanValue.startsWith(
-        "maps.google.com"
-      ) ||
-      cleanValue.startsWith(
-        "maps.app.goo.gl"
-      ) ||
-      cleanValue.startsWith(
-        "goo.gl/maps"
-      ) ||
-      cleanValue.startsWith(
-        "maps.apple.com"
-      )
-    ) {
-      return new URL(
-        `https://${cleanValue}`
-      ).toString();
-    }
-
-    if (
-      /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(
-        cleanValue
-      )
-    ) {
-      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        cleanValue
-      )}`;
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-function readMapUrlFromText(
-  value?: string | null
-) {
-  const cleanValue = value?.trim();
-
-  if (!cleanValue) {
-    return null;
-  }
-
-  const directUrl =
-    normalizeMapUrl(cleanValue);
-
-  if (directUrl) {
-    return directUrl;
-  }
-
-  const match = cleanValue.match(
-    /(https?:\/\/(?:www\.)?google\.com\/maps[^\s،]+|https?:\/\/maps\.google\.com[^\s،]+|https?:\/\/maps\.app\.goo\.gl[^\s،]+|https?:\/\/goo\.gl\/maps[^\s،]+|https?:\/\/maps\.apple\.com[^\s،]+)/i
-  );
-
-  if (!match?.[0]) {
-    return null;
-  }
-
-  return normalizeMapUrl(match[0]);
 }
 
 function buildCosmeticCenterSummary(
@@ -348,8 +263,8 @@ export async function GET(
       `${baseUrl}/api/mobile/cosmetic-centers/${center.slug}/inquiry`;
 
     const mapUrl =
-      normalizeMapUrl(center.mapurl) ??
-      readMapUrlFromText(
+      normalizeTrustedMapUrl(center.mapurl) ??
+      trustedMapUrlFromText(
         center.address
       );
 

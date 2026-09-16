@@ -6,7 +6,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { getOffers } from "@/lib/queries";
 
 export const metadata: Metadata = {
-  title: "العروض المتاحة في العراق | طب نت",
+  alternates: { canonical: "/offers" },
+  title: "العروض المتاحة في العراق",
   description:
     "استعرض العروض المتاحة من مقدمي الخدمات الصحية والتجميلية عبر طب نت."
 };
@@ -18,8 +19,9 @@ export default async function OffersPage() {
     <SiteShell>
       <section className="container-page py-10">
         <SectionTitle
+          as="h1"
           eyebrow="العروض"
-          title="العروض متاحة عبر طب نت"
+          title="العروض المتاحة على طب نت"
           description="اطّلع على العروض والخدمات المميزة، وتأكد من التفاصيل مباشرة مع مقدم الخدمة قبل طلب الموعد أو الزيارة."
         />
 

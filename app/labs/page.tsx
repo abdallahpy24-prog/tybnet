@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { listPageMetadata } from "@/lib/list-metadata";
 
 import { SiteShell } from "@/components/layout/site-shell";
 import { FilterForm } from "@/components/public/filter-form";
@@ -15,11 +16,16 @@ import {
   type SearchParams
 } from "@/lib/queries";
 
-export const metadata: Metadata = {
-  title: "ابحث عن مختبرات طبية في العراق | طب نت",
+const baseMetadata: Metadata = {
+  alternates: { canonical: "/labs" },
+  title: "ابحث عن مختبرات طبية في العراق",
   description:
     "ابحث عن مختبرات طبية في العراق حسب المحافظة والمنطقة، واطّلع على معلومات التواصل عبر منصة طب نت."
 };
+
+export async function generateMetadata({ searchParams }: { searchParams?: Promise<SearchParams> }): Promise<Metadata> {
+  return listPageMetadata(baseMetadata, (await searchParams) ?? {});
+}
 
 type LabPageItem = Awaited<
   ReturnType<typeof getPublicLabsPage>
@@ -34,10 +40,11 @@ function toPublicListItem(
     slug: item.slug,
     imageUrl: item.imageUrl,
     imageThumbnailUrl: item.imageThumbnailUrl,
+    phone: item.phone,
     whatsapp: item.whatsapp,
     workingHours: item.workingHours,
     address: item.address,
-    inquiryCount: item.inquiryCount,
+    lastVerifiedAt: item.lastVerifiedAt?.toISOString() ?? null,
     governorate: {
       name: item.governorate.name
     },
@@ -58,7 +65,7 @@ export default async function LabsPage({
   const [options, labsPage] = await Promise.all([
     getFilterOptions(),
     getPublicLabsPage(params, {
-      take: 5
+      take: 8
     })
   ]);
 
@@ -76,6 +83,7 @@ export default async function LabsPage({
     <SiteShell>
       <section className="container-page py-10">
         <SectionTitle
+          as="h1"
           eyebrow="المختبرات"
           title="ابحث عن مختبر طبي حسب المحافظة والمنطقة"
           description="استعرض المختبرات الطبية المتاحة على طب نت، واستخدم عوامل التصفية حسب المحافظة أو المنطقة أو اسم المختبر."
@@ -87,17 +95,20 @@ export default async function LabsPage({
           governorates={options.governorates}
           areas={options.areas}
           showSpecialties={false}
+          placeType="labs"
         />
 
         {initialItems.length ? (
           <PlaceResults
-            key={resultsKey}
+            key={`${resultsKey}:${Array.isArray(params.cursor) ? params.cursor[0] : params.cursor ?? ""}`}
             kind="lab"
             label="مختبر"
             initialItems={initialItems}
             initialCursor={labsPage.nextCursor}
             initialHasMore={labsPage.hasMore}
+            initialTotal={labsPage.total}
             filters={{
+              featuredOnly: filters.featuredOnly,
               q: filters.q,
               governorateId: filters.governorateId,
               areaId: filters.areaId

@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/permissions";
 import { CalendarDays, Pencil, Tag } from "lucide-react";
 
 import { AdminSearch } from "@/components/admin/admin-search";
@@ -30,6 +31,8 @@ function formatDate(value: Date) {
 export default async function OffersAdminPage({
   searchParams
 }: OffersAdminPageProps) {
+  await requireAdmin();
+
   const q = (await searchParams).q?.trim() ?? "";
 
   const [providers, rows] = await Promise.all([

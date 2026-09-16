@@ -1,203 +1,184 @@
+import { normalizeDisplayImageUrl } from "@/lib/image-url";
 import Image from "next/image";
 import Link from "next/link";
 import {
+  Clock3,
   ExternalLink,
-  MapPin
+  FlaskConical,
+  MapPin,
+  MessageCircleMore,
+  ShieldCheck,
+  Sparkles,
+  Store
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { buildWhatsappUrl } from "@/lib/whatsapp";
 
-type PlaceKind =
-  | "pharmacy"
-  | "lab"
-  | "cosmetic-center";
+type PlaceKind = "pharmacy" | "lab" | "cosmetic-center";
 
 type PlaceData = {
   name: string;
   slug?: string | null;
   imageUrl?: string | null;
   imageThumbnailUrl?: string | null;
+  phone?: string | null;
   whatsapp?: string | null;
-  instagramUrl?: string | null;
   workingHours?: string | null;
   address?: string | null;
   bio?: string | null;
   services?: string | null;
-  inquiryCount?: number | null;
-  inquiryUrl?: string | null;
-
-  governorate: {
-    name: string;
-  };
-
-  area: {
-    name: string;
-  };
+  lastVerifiedAt?: string | Date | null;
+  governorate: { name: string };
+  area: { name: string };
 };
 
 type PlaceCardProps = {
   item: PlaceData;
   label: string;
   kind?: PlaceKind;
+  returnTo?: string;
 };
 
-function inferKind(
-  label: string,
-  providedKind?: PlaceKind
-): PlaceKind {
-  if (providedKind) {
-    return providedKind;
-  }
-
-  if (
-    label.includes("مختبر") ||
-    label.includes("تحليل")
-  ) {
-    return "lab";
-  }
-
+function inferKind(label: string, providedKind?: PlaceKind): PlaceKind {
+  if (providedKind) return providedKind;
+  if (label.includes("مختبر") || label.includes("تحليل")) return "lab";
+  if (label.includes("تجميل")) return "cosmetic-center";
   return "pharmacy";
 }
 
-function getProfileHref(
-  item: PlaceData,
-  kind: PlaceKind
-) {
-  if (!item.slug) {
-    return null;
-  }
+function getProfileHref(item: PlaceData, kind: PlaceKind, returnTo?: string) {
+  if (!item.slug) return null;
 
+  const base =
+    kind === "lab"
+      ? `/labs/${item.slug}`
+      : kind === "cosmetic-center"
+        ? `/cosmetic-centers/${item.slug}`
+        : `/pharmacies/${item.slug}`;
+
+  return returnTo ? `${base}?from=${encodeURIComponent(returnTo)}` : base;
+}
+
+function kindMeta(kind: PlaceKind) {
   if (kind === "lab") {
-    return `/labs/${item.slug}`;
+    return { label: "مختبر طبي", Icon: FlaskConical };
   }
 
   if (kind === "cosmetic-center") {
-    return `/cosmetic-centers/${item.slug}`;
+    return { label: "مركز تجميل", Icon: Sparkles };
   }
 
-  return `/pharmacies/${item.slug}`;
+  return { label: "صيدلية", Icon: Store };
 }
 
-function placeKindLabel(kind: PlaceKind) {
-  if (kind === "lab") {
-    return "مختبر طبي";
-  }
+function verificationLabel(value?: string | Date | null) {
+  if (!value) return null;
 
-  if (kind === "cosmetic-center") {
-    return "مركز تجميل";
-  }
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
 
-  return "صيدلية";
+  return new Intl.DateTimeFormat("ar-IQ", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    timeZone: "Asia/Baghdad"
+  }).format(date);
 }
 
-function fallbackImageLabel(kind: PlaceKind) {
-  if (kind === "lab") {
-    return "مختبر";
-  }
-
-  if (kind === "cosmetic-center") {
-    return "تجميل";
-  }
-
-  return "صيدلية";
-}
-
-export function PlaceCard({
-  item,
-  label,
-  kind: providedKind
-}: PlaceCardProps) {
-  const kind = inferKind(
-    label,
-    providedKind
+export function PlaceCard({ item, label, kind: providedKind, returnTo }: PlaceCardProps) {
+  const kind = inferKind(label, providedKind);
+  const { label: kindLabel, Icon } = kindMeta(kind);
+  const profileHref = getProfileHref(item, kind, returnTo);
+  const cardImageUrl = normalizeDisplayImageUrl(item.imageThumbnailUrl) || normalizeDisplayImageUrl(item.imageUrl);
+  const verifiedAt = verificationLabel(item.lastVerifiedAt);
+  const whatsappUrl = buildWhatsappUrl(
+    item.whatsapp || item.phone,
+    `مرحبا، وصلت إلى ${item.name} عبر طب نت وأرغب بالاستفسار.`
   );
-
-  const profileHref = getProfileHref(
-    item,
-    kind
-  );
-
-  const locationText =
-    item.address ||
-    `${item.governorate.name} - ${item.area.name}`;
-
-  const kindLabel = placeKindLabel(kind);
-  const imageLabel =
-    fallbackImageLabel(kind);
-
-  const inquiryCount =
-    item.inquiryCount ?? 0;
-
-  const cardImageUrl =
-    item.imageThumbnailUrl || item.imageUrl;
 
   return (
-    <Card className="flex h-full flex-col overflow-hidden p-5">
-      <div className="flex flex-1 gap-4">
-        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full border-4 border-primary-soft bg-surface shadow-sm">
+    <Card className="flex h-full flex-col p-5">
+      <div className="flex items-start gap-4">
+        <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-borderSoft bg-slate-50">
           {cardImageUrl ? (
             <Image
               src={cardImageUrl}
-              alt={item.name}
+              alt={`صورة ${item.name}`}
               fill
-              sizes="96px"
+              sizes="80px"
               className="object-cover"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-lg font-black text-primary">
-              {imageLabel}
-            </div>
+            <Icon className="h-8 w-8 text-primary" aria-hidden="true" />
           )}
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-black text-primary">
-              {kindLabel}
-            </span>
-
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">
-              النقاط: {inquiryCount}
-            </span>
-          </div>
+          <span className="inline-flex rounded-full bg-primary-soft px-3 py-1 text-xs font-black text-primary-dark">
+            {kindLabel}
+          </span>
 
           <h3 className="mt-2 line-clamp-2 text-lg font-black leading-7 text-navy md:text-xl">
             {item.name}
           </h3>
 
-          <p className="mt-3 flex items-start gap-2 text-sm leading-7 text-slate-600">
-            <MapPin
-              className="mt-1 h-4 w-4 shrink-0 text-accent"
-              aria-hidden="true"
-            />
-
+          <p className="mt-2 flex items-start gap-2 text-sm leading-6 text-slate-600">
+            <MapPin className="mt-1 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
             <span className="line-clamp-2">
-              {locationText}
+              {item.governorate.name} · {item.area.name}
+              {item.address ? ` — ${item.address}` : ""}
             </span>
           </p>
         </div>
       </div>
 
-      {profileHref ? (
-        <div className="mt-5">
+      <div className="mt-4 space-y-2 border-t border-borderSoft pt-4 text-sm text-slate-600">
+        {item.workingHours ? (
+          <p className="flex items-start gap-2">
+            <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+            <span className="line-clamp-2">{item.workingHours}</span>
+          </p>
+        ) : null}
+
+        {verifiedAt ? (
+          <p className="flex items-center gap-2 text-xs font-bold text-slate-500">
+            <ShieldCheck className="h-4 w-4 text-emerald-700" aria-hidden="true" />
+            آخر تحقق من البيانات: <bdi dir="ltr">{verifiedAt}</bdi>
+          </p>
+        ) : null}
+      </div>
+
+      <div className="mt-auto grid gap-2 pt-5 sm:grid-cols-2">
+        {profileHref ? (
           <Link
             href={profileHref}
-            className="block w-full"
+            className={buttonStyles({
+              variant: "secondary",
+              className: cn(!whatsappUrl && "sm:col-span-2")
+            })}
+            aria-label={`عرض تفاصيل ${item.name}`}
           >
-            <Button
-              type="button"
-              className="w-full"
-            >
-              <ExternalLink
-                className="h-4 w-4"
-                aria-hidden="true"
-              />
-              عرض التفاصيل
-            </Button>
+            <ExternalLink className="h-4 w-4" aria-hidden="true" />
+            عرض التفاصيل
           </Link>
-        </div>
-      ) : null}
+        ) : null}
+
+        {whatsappUrl ? (
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={buttonStyles()}
+            aria-label={`التواصل مع ${item.name} عبر واتساب`}
+          >
+            <MessageCircleMore className="h-4 w-4" aria-hidden="true" />
+            واتساب
+          </a>
+        ) : null}
+      </div>
     </Card>
   );
 }

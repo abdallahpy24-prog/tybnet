@@ -5,7 +5,8 @@ import { SiteShell } from "@/components/layout/site-shell";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "إخلاء المسؤولية الطبية | طب نت",
+  alternates: { canonical: "/medical-disclaimer" },
+  title: "إخلاء المسؤولية الطبية",
   description:
     "تعرّف على حدود دور منصة طب نت فيما يتعلق بالمعلومات والخدمات الصحية والتجميلية المعروضة في الموقع والتطبيق."
 };

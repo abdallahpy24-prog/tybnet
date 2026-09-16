@@ -514,19 +514,6 @@ export function ServicePlaceForm({
           </Select>
         </Field>
 
-        <Field label="النقاط">
-          <Input
-            name="inquiryCount"
-            type="number"
-            min={0}
-            step={1}
-            defaultValue={String(
-              row?.inquiryCount ?? 0
-            )}
-            placeholder="0"
-          />
-        </Field>
-
         <label className="flex h-11 items-center gap-2 rounded-2xl border border-borderSoft bg-slate-50 px-3 text-sm font-bold text-slate-700">
           <input
             name="isFeatured"

@@ -58,8 +58,9 @@ export async function inquiryWasRecentlyCounted(
     input.fingerprint
   ].join(":");
 
-  await tx.$queryRaw`
-    SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))
+  // PostgreSQL returns void here; cast it so Prisma can deserialize the result.
+  await tx.$queryRaw<Array<{ lock: string }>>`
+    SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))::text AS "lock"
   `;
 
   const windowStart = new Date(Date.now() - INQUIRY_WINDOW_MS);

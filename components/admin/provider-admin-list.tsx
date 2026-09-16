@@ -11,7 +11,6 @@ type ProviderListRow = {
   titlePrefix: string | null;
   imageUrl: string | null;
   status: "ACTIVE" | "INACTIVE";
-  bookingPoints: number;
   isFeatured: boolean;
   specialty: { name: string } | null;
   governorate: { name: string };
@@ -95,11 +94,7 @@ export function ProviderAdminList({
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-3 sm:justify-end">
-              <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-black text-primary-dark">
-                {row.bookingPoints} نقطة
-              </span>
-
+            <div className="flex items-center justify-end gap-3">
               <Link
                 href={`${editBasePath}/${row.id}/edit`}
                 className="focus-ring inline-flex h-9 items-center gap-2 rounded-xl border border-borderSoft px-3 text-xs font-black text-navy hover:bg-primary-soft"

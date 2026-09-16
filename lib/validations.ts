@@ -1,6 +1,9 @@
+import { normalizeDisplayImageUrl } from "@/lib/image-url";
 import { z } from "zod";
 
 import { normalizeInstagram } from "@/lib/instagram";
+import { normalizeTrustedMapUrl } from "@/lib/maps";
+import { normalizeArabicDigits } from "@/lib/search";
 import { normalizeIraqWhatsapp } from "@/lib/whatsapp";
 
 const MAX_LOCATION_SORT_ORDER = 1_000_000;
@@ -126,56 +129,29 @@ const optionalMapUrl = z
   .optional()
   .nullable()
   .transform((value, ctx) => {
-    if (!value) {
-      return null;
-    }
+    if (!value) return null;
 
-    const cleanValue = value.trim();
+    const normalized = normalizeTrustedMapUrl(value);
 
-    try {
-      if (/^https?:\/\//i.test(cleanValue)) {
-        return new URL(cleanValue).toString();
-      }
-
-      if (
-        cleanValue.startsWith("www.google.com/maps") ||
-        cleanValue.startsWith("google.com/maps") ||
-        cleanValue.startsWith("maps.google.com") ||
-        cleanValue.startsWith("maps.app.goo.gl") ||
-        cleanValue.startsWith("goo.gl/maps") ||
-        cleanValue.startsWith("maps.apple.com")
-      ) {
-        return new URL(`https://${cleanValue}`).toString();
-      }
-
-      if (/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(cleanValue)) {
-        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-          cleanValue
-        )}`;
-      }
-
+    if (!normalized) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "رابط الموقع على الخريطة غير صحيح"
+        message: "رابط الخريطة يجب أن يكون من Google Maps أو Apple Maps أو Waze، أو إحداثيات صحيحة"
       });
-
-      return z.NEVER;
-    } catch {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "رابط الموقع على الخريطة غير صحيح"
-      });
-
       return z.NEVER;
     }
+
+    return normalized;
   });
 
 function isValidPhone(value: string) {
-  if (!/^[+\d\s()-]+$/.test(value)) {
+  const normalized = normalizeArabicDigits(value);
+
+  if (!/^[+\d\s().-]+$/.test(normalized)) {
     return false;
   }
 
-  const digits = value.replace(/\D/g, "");
+  const digits = normalized.replace(/\D/g, "");
 
   return digits.length >= 7 && digits.length <= 15;
 }
@@ -194,14 +170,15 @@ const optionalPhone = z
       });
     }
   })
-  .transform((value) => value || null);
+  .transform((value) => (value ? normalizeArabicDigits(value) : null));
 
 const requiredPhone = z
   .string()
   .trim()
   .min(7, "رقم الهاتف مطلوب")
   .max(32, "رقم الهاتف طويل جداً")
-  .refine(isValidPhone, "رقم الهاتف غير صحيح");
+  .refine(isValidPhone, "رقم الهاتف غير صحيح")
+  .transform((value) => normalizeArabicDigits(value));
 
 const optionalImageUrl = z
   .string()
@@ -214,26 +191,10 @@ const optionalImageUrl = z
       return null;
     }
 
-    if (value.startsWith("/") && !value.startsWith("//")) {
-      return value;
-    }
-
-    try {
-      const url = new URL(value);
-
-      if (url.protocol !== "https:" && url.protocol !== "http:") {
-        throw new Error("Unsupported image URL protocol");
-      }
-
-      return url.toString();
-    } catch {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "رابط الصورة غير صحيح"
-      });
-
-      return z.NEVER;
-    }
+    const normalized = normalizeDisplayImageUrl(value);
+    if (normalized) return normalized;
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "ارفع الصورة من النموذج أو استخدم رابط صورة من التخزين المعتمد" });
+    return z.NEVER;
   });
 
 export const governorateSchema = z.object({
@@ -328,6 +289,22 @@ export const providerSchema = providerBaseSchema
         message: "اختصاص الطبيب مطلوب"
       });
     }
+
+    if (value.status === "ACTIVE" && !value.phone && !value.whatsapp) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["phone"],
+        message: "لا يمكن تفعيل الملف بدون رقم هاتف أو واتساب موثق"
+      });
+    }
+
+    if (value.status === "ACTIVE" && !value.address) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["address"],
+        message: "العنوان التفصيلي مطلوب قبل تفعيل الملف"
+      });
+    }
   });
 
 export const cosmeticDoctorSchema = providerBaseSchema
@@ -340,6 +317,22 @@ export const cosmeticDoctorSchema = providerBaseSchema
         code: z.ZodIssueCode.custom,
         path: ["specialtyId"],
         message: "اختصاص طبيب التجميل مطلوب"
+      });
+    }
+
+    if (value.status === "ACTIVE" && !value.phone && !value.whatsapp) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["phone"],
+        message: "لا يمكن تفعيل الملف بدون رقم هاتف أو واتساب موثق"
+      });
+    }
+
+    if (value.status === "ACTIVE" && !value.address) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["address"],
+        message: "العنوان التفصيلي مطلوب قبل تفعيل الملف"
       });
     }
   });
@@ -379,8 +372,8 @@ export const appointmentSchema = z.object({
   patientName: z
     .string()
     .trim()
-    .min(2, "اسم المريض مطلوب")
-    .max(120, "اسم المريض طويل جداً"),
+    .min(2, "اسم المراجع مطلوب")
+    .max(120, "اسم المراجع طويل جداً"),
   patientPhone: requiredPhone,
   preferredDate: optionalText(120, "الموعد المفضل طويل جداً"),
   note: optionalText(1000, "الملاحظة طويلة جداً")
@@ -417,9 +410,25 @@ export const servicePlaceSchema = z.object({
   inquiryCount: z.coerce
     .number()
     .int()
-    .min(0, "عدد النقاط لا يمكن أن يكون أقل من صفر")
-    .max(1_000_000_000, "عدد النقاط كبير جداً")
+    .min(0, "عدد محاولات التواصل لا يمكن أن يكون أقل من صفر")
+    .max(1_000_000_000, "عدد محاولات التواصل كبير جداً")
     .default(0)
+}).superRefine((value, ctx) => {
+  if (value.status === "ACTIVE" && !value.phone && !value.whatsapp) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["phone"],
+      message: "لا يمكن تفعيل السجل بدون رقم هاتف أو واتساب موثق"
+    });
+  }
+
+  if (value.status === "ACTIVE" && !value.address) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["address"],
+      message: "العنوان التفصيلي مطلوب قبل التفعيل"
+    });
+  }
 });
 
 export const cosmeticCenterSchema = servicePlaceSchema;

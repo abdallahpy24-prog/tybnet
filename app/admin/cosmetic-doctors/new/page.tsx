@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/permissions";
 import Link from "next/link";
 
 import { AdminFormHeader } from "@/components/admin/admin-form-header";
@@ -10,6 +11,8 @@ import {
 } from "@/lib/admin-form-options";
 
 export default async function NewCosmeticDoctorPage() {
+  await requireAdmin();
+
   const [{ governorates, areas }, specialties] = await Promise.all([
     getAdminLocationOptions(),
     getAdminSpecialtyOptions("COSMETIC_DOCTOR")

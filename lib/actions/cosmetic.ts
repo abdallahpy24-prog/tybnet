@@ -315,28 +315,26 @@ export async function createCosmeticDoctor(
 
   await ensureCosmeticSpecialty(parsed.specialtyId);
 
+  const slug = await uniqueProviderSlug(parsed.name, parsed.slug);
+
   const row = await prisma.provider.create({
-    data: {
-      ...parsed,
-      type: "COSMETIC_DOCTOR",
-      slug: await uniqueProviderSlug(
-        parsed.name,
-        parsed.slug
-      ),
-      specialtyId: parsed.specialtyId,
-      bio: parsed.bio || null,
-      address: parsed.address || null,
-      mapurl: parsed.mapurl || null,
-      phone: parsed.phone || null,
-      whatsapp: parsed.whatsapp || null,
-      instagramUrl: parsed.instagramUrl || null,
-      imageUrl: parsed.imageUrl || null,
-      imageThumbnailUrl: parsed.imageThumbnailUrl || null,
-      imageOriginalUrl: parsed.imageOriginalUrl || null,
-      workingHours: parsed.workingHours || null,
-      lastVerifiedAt: new Date()
-    }
-  });
+      data: {
+        ...parsed,
+        type: "COSMETIC_DOCTOR",
+        slug,
+        specialtyId: parsed.specialtyId,
+        bio: parsed.bio || null,
+        address: parsed.address || null,
+        mapurl: parsed.mapurl || null,
+        phone: parsed.phone || null,
+        whatsapp: parsed.whatsapp || null,
+        instagramUrl: parsed.instagramUrl || null,
+        imageUrl: parsed.imageUrl || null,
+        imageThumbnailUrl: parsed.imageThumbnailUrl || null,
+        imageOriginalUrl: parsed.imageOriginalUrl || null,
+        workingHours: parsed.workingHours || null
+      }
+    });
 
   await auditLog({
     userId,
@@ -393,27 +391,24 @@ export async function updateCosmeticDoctor(
     : before.slug;
 
   const row = await prisma.provider.update({
-    where: {
-      id
-    },
-    data: {
-      ...parsed,
-      type: "COSMETIC_DOCTOR",
-      slug: nextSlug,
-      specialtyId: parsed.specialtyId,
-      bio: parsed.bio || null,
-      address: parsed.address || null,
-      mapurl: parsed.mapurl || null,
-      phone: parsed.phone || null,
-      whatsapp: parsed.whatsapp || null,
-      instagramUrl: parsed.instagramUrl || null,
-      imageUrl: parsed.imageUrl || null,
-      imageThumbnailUrl: parsed.imageThumbnailUrl || null,
-      imageOriginalUrl: parsed.imageOriginalUrl || null,
-      workingHours: parsed.workingHours || null,
-      lastVerifiedAt: new Date()
-    }
-  });
+      where: { id },
+      data: {
+        ...parsed,
+        type: "COSMETIC_DOCTOR",
+        slug: nextSlug,
+        specialtyId: parsed.specialtyId,
+        bio: parsed.bio || null,
+        address: parsed.address || null,
+        mapurl: parsed.mapurl || null,
+        phone: parsed.phone || null,
+        whatsapp: parsed.whatsapp || null,
+        instagramUrl: parsed.instagramUrl || null,
+        imageUrl: parsed.imageUrl || null,
+        imageThumbnailUrl: parsed.imageThumbnailUrl || null,
+        imageOriginalUrl: parsed.imageOriginalUrl || null,
+        workingHours: parsed.workingHours || null
+      }
+    });
 
   await auditLog({
     userId,
@@ -523,32 +518,33 @@ export async function createCosmeticCenter(
     parsed.governorateId
   );
 
+  const slug = await uniqueCosmeticCenterSlug(
+    parsed.name,
+    parsed.slug
+  );
+
   const row = await prisma.cosmeticCenter.create({
-    data: {
-      name: parsed.name,
-      slug: await uniqueCosmeticCenterSlug(
-        parsed.name,
-        parsed.slug
-      ),
-      governorateId: parsed.governorateId,
-      areaId: parsed.areaId,
-      bio: parsed.bio || null,
-      services: parsed.services || null,
-      address: parsed.address || null,
-      mapurl: parsed.mapurl || null,
-      phone: parsed.phone || null,
-      whatsapp: parsed.whatsapp || null,
-      instagramUrl: parsed.instagramUrl || null,
-      imageUrl: parsed.imageUrl || null,
-      imageThumbnailUrl: parsed.imageThumbnailUrl || null,
-      imageOriginalUrl: parsed.imageOriginalUrl || null,
-      workingHours: parsed.workingHours || null,
-      status: parsed.status,
-      isFeatured: parsed.isFeatured,
-      inquiryCount: parsed.inquiryCount,
-      lastVerifiedAt: new Date()
-    }
-  });
+      data: {
+        name: parsed.name,
+        slug,
+        governorateId: parsed.governorateId,
+        areaId: parsed.areaId,
+        bio: parsed.bio || null,
+        services: parsed.services || null,
+        address: parsed.address || null,
+        mapurl: parsed.mapurl || null,
+        phone: parsed.phone || null,
+        whatsapp: parsed.whatsapp || null,
+        instagramUrl: parsed.instagramUrl || null,
+        imageUrl: parsed.imageUrl || null,
+        imageThumbnailUrl: parsed.imageThumbnailUrl || null,
+        imageOriginalUrl: parsed.imageOriginalUrl || null,
+        workingHours: parsed.workingHours || null,
+        status: parsed.status,
+        isFeatured: parsed.isFeatured,
+        inquiryCount: parsed.inquiryCount
+      }
+    });
 
   await auditLog({
     userId,
@@ -599,31 +595,28 @@ export async function updateCosmeticCenter(
     : before.slug;
 
   const row = await prisma.cosmeticCenter.update({
-    where: {
-      id
-    },
-    data: {
-      name: parsed.name,
-      slug: nextSlug,
-      governorateId: parsed.governorateId,
-      areaId: parsed.areaId,
-      bio: parsed.bio || null,
-      services: parsed.services || null,
-      address: parsed.address || null,
-      mapurl: parsed.mapurl || null,
-      phone: parsed.phone || null,
-      whatsapp: parsed.whatsapp || null,
-      instagramUrl: parsed.instagramUrl || null,
-      imageUrl: parsed.imageUrl || null,
-      imageThumbnailUrl: parsed.imageThumbnailUrl || null,
-      imageOriginalUrl: parsed.imageOriginalUrl || null,
-      workingHours: parsed.workingHours || null,
-      status: parsed.status,
-      isFeatured: parsed.isFeatured,
-      inquiryCount: parsed.inquiryCount,
-      lastVerifiedAt: new Date()
-    }
-  });
+      where: { id },
+      data: {
+        name: parsed.name,
+        slug: nextSlug,
+        governorateId: parsed.governorateId,
+        areaId: parsed.areaId,
+        bio: parsed.bio || null,
+        services: parsed.services || null,
+        address: parsed.address || null,
+        mapurl: parsed.mapurl || null,
+        phone: parsed.phone || null,
+        whatsapp: parsed.whatsapp || null,
+        instagramUrl: parsed.instagramUrl || null,
+        imageUrl: parsed.imageUrl || null,
+        imageThumbnailUrl: parsed.imageThumbnailUrl || null,
+        imageOriginalUrl: parsed.imageOriginalUrl || null,
+        workingHours: parsed.workingHours || null,
+        status: parsed.status,
+        isFeatured: parsed.isFeatured,
+        inquiryCount: parsed.inquiryCount
+      }
+    });
 
   await auditLog({
     userId,

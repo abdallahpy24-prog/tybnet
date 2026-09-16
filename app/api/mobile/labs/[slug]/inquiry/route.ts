@@ -129,6 +129,12 @@ async function handleInquiry(
     );
   }
 
+  // GET is intentionally side-effect free: browser previews and crawlers must
+  // never increase business counters. Only an explicit POST interaction may count.
+  if (responseType === "redirect") {
+    return NextResponse.redirect(whatsappUrl);
+  }
+
   const fingerprint = getInquiryFingerprint(request);
 
   const result = await prisma.$transaction(async (tx) => {
@@ -185,10 +191,6 @@ async function handleInquiry(
   if (result.incremented) {
     revalidatePath("/labs");
     revalidatePath(`/labs/${lab.slug}`);
-  }
-
-  if (responseType === "redirect") {
-    return NextResponse.redirect(whatsappUrl);
   }
 
   return NextResponse.json({

@@ -1,3 +1,6 @@
+import { requireAdmin } from "@/lib/permissions";
+import { redirect } from "next/navigation";
+import type { Prisma } from "@prisma/client";
 import Link from "next/link";
 import {
   CalendarClock,
@@ -13,7 +16,9 @@ import {
   deleteAppointment,
   updateAppointmentStatus
 } from "@/lib/actions/admin";
+import { ADMIN_PAGE_SIZE, parseAdminPage } from "@/lib/admin-pagination";
 import { prisma } from "@/lib/prisma";
+import { AdminPagination } from "@/components/admin/admin-pagination";
 import { PageHeader } from "@/components/admin/page-header";
 import { StatusPill } from "@/components/admin/status-pill";
 import { Button } from "@/components/ui/button";
@@ -33,6 +38,7 @@ type AppointmentsPageProps = {
   searchParams: Promise<{
     q?: string;
     status?: string;
+    page?: string;
   }>;
 };
 
@@ -60,59 +66,74 @@ function formatCreatedAt(value: Date) {
 export default async function AppointmentsPage({
   searchParams
 }: AppointmentsPageProps) {
+  await requireAdmin();
+
   const params = await searchParams;
   const q = params.q?.trim() ?? "";
   const status = getStatus(params.status);
-
-  const rows = await prisma.appointment.findMany({
-    where: {
-      ...(status ? { status } : {}),
-      ...(q
-        ? {
-            OR: [
-              {
-                patientName: {
+  const page = parseAdminPage(params.page);
+  const where: Prisma.AppointmentWhereInput = {
+    ...(status ? { status } : {}),
+    ...(q
+      ? {
+          OR: [
+            {
+              patientName: {
+                contains: q,
+                mode: "insensitive"
+              }
+            },
+            {
+              patientPhone: {
+                contains: q,
+                mode: "insensitive"
+              }
+            },
+            {
+              preferredDate: {
+                contains: q,
+                mode: "insensitive"
+              }
+            },
+            {
+              note: {
+                contains: q,
+                mode: "insensitive"
+              }
+            },
+            {
+              provider: {
+                name: {
                   contains: q,
                   mode: "insensitive"
-                }
-              },
-              {
-                patientPhone: {
-                  contains: q,
-                  mode: "insensitive"
-                }
-              },
-              {
-                preferredDate: {
-                  contains: q,
-                  mode: "insensitive"
-                }
-              },
-              {
-                note: {
-                  contains: q,
-                  mode: "insensitive"
-                }
-              },
-              {
-                provider: {
-                  name: {
-                    contains: q,
-                    mode: "insensitive"
-                  }
                 }
               }
-            ]
-          }
-        : {})
-    },
-    include: {
-      provider: true
-    },
-    orderBy: {
-      createdAt: "desc"
+            }
+          ]
+        }
+      : {})
+  };
+
+  const [rows, total] = await Promise.all([
+    prisma.appointment.findMany({
+      where,
+      include: { provider: true },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * ADMIN_PAGE_SIZE,
+      take: ADMIN_PAGE_SIZE
+    }),
+    prisma.appointment.count({ where })
+  ]);
+
+  const lastPage = Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE));
+  if (page > lastPage) {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (key !== "page" && typeof value === "string" && value) query.set(key, value);
     }
-  });
+    if (lastPage > 1) query.set("page", String(lastPage));
+    redirect(`/admin/appointments${query.size ? `?${query.toString()}` : ""}`);
+  }
 
   return (
     <div className="space-y-6">
@@ -166,11 +187,11 @@ export default async function AppointmentsPage({
             قائمة المواعيد
           </h2>
           <p className="mt-1 text-xs font-bold text-slate-500">
-            النتائج: {rows.length} — اضغط على الموعد لفتح تفاصيله.
+            النتائج: {total} — اضغط على الموعد لفتح تفاصيله.
           </p>
         </div>
 
-        {rows.length && !q && !status ? (
+        {rows.length > 0 && !q && !status ? (
           <details className="relative">
             <summary className="focus-ring inline-flex h-10 cursor-pointer list-none items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 text-sm font-black text-red-700 [&::-webkit-details-marker]:hidden">
               <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -309,6 +330,14 @@ export default async function AppointmentsPage({
             : "لا توجد طلبات مواعيد بعد."}
         </Card>
       )}
+
+      <AdminPagination
+        basePath="/admin/appointments"
+        page={page}
+        total={total}
+        pageSize={ADMIN_PAGE_SIZE}
+        query={{ q: q || undefined, status }}
+      />
     </div>
   );
 }

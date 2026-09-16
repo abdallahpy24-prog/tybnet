@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { readJsonBodyWithLimit } from "@/lib/http-body";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -71,26 +72,6 @@ function buildFingerprint(request: NextRequest) {
     .digest("hex");
 }
 
-async function readJsonBody(request: NextRequest) {
-  const contentType = request.headers.get("content-type")?.toLowerCase() || "";
-
-  if (!contentType.startsWith("application/json")) {
-    return { ok: false as const, status: 415, message: "نوع البيانات غير مدعوم" };
-  }
-
-  const contentLength = Number(request.headers.get("content-length") || 0);
-
-  if (Number.isFinite(contentLength) && contentLength > MAX_REQUEST_BYTES) {
-    return { ok: false as const, status: 413, message: "حجم البيانات كبير جداً" };
-  }
-
-  try {
-    return { ok: true as const, body: (await request.json()) as unknown };
-  } catch {
-    return { ok: false as const, status: 400, message: "البيانات المرسلة غير صحيحة" };
-  }
-}
-
 async function findReportableEntity(input: {
   entityType: "PROVIDER" | "PHARMACY" | "LAB" | "COSMETIC_CENTER";
   entityId: string;
@@ -128,7 +109,7 @@ async function findReportableEntity(input: {
 
 export async function POST(request: NextRequest) {
   try {
-    const bodyResult = await readJsonBody(request);
+    const bodyResult = await readJsonBodyWithLimit(request, MAX_REQUEST_BYTES);
 
     if (!bodyResult.ok) {
       return NextResponse.json(

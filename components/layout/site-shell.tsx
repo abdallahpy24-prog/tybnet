@@ -5,9 +5,16 @@ import { SiteFooter } from "@/components/layout/site-footer";
 export function SiteShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col bg-surface">
+      <a
+        href="#main-content"
+        className="skip-link focus-ring"
+      >
+        انتقل إلى المحتوى
+      </a>
+
       <SiteHeader />
 
-      <main className="flex-1">
+      <main id="main-content" className="flex-1" tabIndex={-1}>
         {children}
       </main>
 

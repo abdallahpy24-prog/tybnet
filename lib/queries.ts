@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import {
   Prisma,
   ProviderType,
@@ -5,6 +7,11 @@ import {
 } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import {
+  clampPublicSearchQuery,
+  searchTokenVariants,
+  tokenizeSearch
+} from "@/lib/search";
 
 export type SearchParams = Record<
   string,
@@ -19,11 +26,40 @@ export type PublicPageOptions = {
 const DEFAULT_PUBLIC_PAGE_SIZE = 9;
 const MAX_PUBLIC_PAGE_SIZE = 24;
 
-type RankedCursor = {
-  score: number;
-  updatedAt: Date;
+type ProviderCursor = {
   id: string;
 };
+
+function encodeProviderCursor(id: string) {
+  return Buffer.from(
+    JSON.stringify({ v: 1, i: id })
+  ).toString("base64url");
+}
+
+function decodeProviderCursor(
+  value?: string | null
+): ProviderCursor | null {
+  if (!value || value.length > 512) return null;
+
+  try {
+    const parsed = JSON.parse(
+      Buffer.from(value, "base64url").toString("utf8")
+    ) as { v?: unknown; i?: unknown };
+
+    if (
+      parsed.v !== 1 ||
+      typeof parsed.i !== "string" ||
+      !parsed.i ||
+      parsed.i.length > 191
+    ) {
+      return null;
+    }
+
+    return { id: parsed.i };
+  } catch {
+    return null;
+  }
+}
 
 function scalar(
   value: string | string[] | undefined
@@ -50,205 +86,6 @@ function cursorFromParams(params: SearchParams) {
   }
 
   return cursor;
-}
-
-function encodeRankedCursor(
-  score: number,
-  updatedAt: Date,
-  id: string
-) {
-  return Buffer.from(
-    JSON.stringify({
-      v: 1,
-      s: score,
-      u: updatedAt.toISOString(),
-      i: id
-    })
-  ).toString("base64url");
-}
-
-function decodeRankedCursor(
-  value?: string | null
-): RankedCursor | null {
-  if (!value || value.length > 512) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(
-      Buffer.from(value, "base64url").toString("utf8")
-    ) as {
-      v?: unknown;
-      s?: unknown;
-      u?: unknown;
-      i?: unknown;
-    };
-
-    if (
-      parsed.v !== 1 ||
-      typeof parsed.s !== "number" ||
-      !Number.isSafeInteger(parsed.s) ||
-      parsed.s < 0 ||
-      typeof parsed.u !== "string" ||
-      typeof parsed.i !== "string" ||
-      !parsed.i ||
-      parsed.i.length > 191
-    ) {
-      return null;
-    }
-
-    const updatedAt = new Date(parsed.u);
-
-    if (Number.isNaN(updatedAt.getTime())) {
-      return null;
-    }
-
-    return {
-      score: parsed.s,
-      updatedAt,
-      id: parsed.i
-    };
-  } catch {
-    return null;
-  }
-}
-
-function buildRankedPage<
-  Row extends {
-    id: string;
-    updatedAt: Date;
-  }
->(
-  rows: Row[],
-  take: number,
-  score: (row: Row) => number
-) {
-  const hasMore = rows.length > take;
-  const items = hasMore
-    ? rows.slice(0, take)
-    : rows;
-  const lastItem = items[items.length - 1];
-
-  return {
-    items,
-    hasMore,
-    nextCursor:
-      hasMore && lastItem
-        ? encodeRankedCursor(
-            score(lastItem),
-            lastItem.updatedAt,
-            lastItem.id
-          )
-        : null
-  };
-}
-
-function providerAfterCursor(
-  cursor: RankedCursor
-): Prisma.ProviderWhereInput {
-  return {
-    OR: [
-      {
-        bookingPoints: {
-          lt: cursor.score
-        }
-      },
-      {
-        bookingPoints: cursor.score,
-        updatedAt: {
-          lt: cursor.updatedAt
-        }
-      },
-      {
-        bookingPoints: cursor.score,
-        updatedAt: cursor.updatedAt,
-        id: {
-          lt: cursor.id
-        }
-      }
-    ]
-  };
-}
-
-function pharmacyAfterCursor(
-  cursor: RankedCursor
-): Prisma.PharmacyWhereInput {
-  return {
-    OR: [
-      {
-        inquiryCount: {
-          lt: cursor.score
-        }
-      },
-      {
-        inquiryCount: cursor.score,
-        updatedAt: {
-          lt: cursor.updatedAt
-        }
-      },
-      {
-        inquiryCount: cursor.score,
-        updatedAt: cursor.updatedAt,
-        id: {
-          lt: cursor.id
-        }
-      }
-    ]
-  };
-}
-
-function labAfterCursor(
-  cursor: RankedCursor
-): Prisma.LabWhereInput {
-  return {
-    OR: [
-      {
-        inquiryCount: {
-          lt: cursor.score
-        }
-      },
-      {
-        inquiryCount: cursor.score,
-        updatedAt: {
-          lt: cursor.updatedAt
-        }
-      },
-      {
-        inquiryCount: cursor.score,
-        updatedAt: cursor.updatedAt,
-        id: {
-          lt: cursor.id
-        }
-      }
-    ]
-  };
-}
-
-function cosmeticCenterAfterCursor(
-  cursor: RankedCursor
-): Prisma.CosmeticCenterWhereInput {
-  return {
-    OR: [
-      {
-        inquiryCount: {
-          lt: cursor.score
-        }
-      },
-      {
-        inquiryCount: cursor.score,
-        updatedAt: {
-          lt: cursor.updatedAt
-        }
-      },
-      {
-        inquiryCount: cursor.score,
-        updatedAt: cursor.updatedAt,
-        id: {
-          lt: cursor.id
-        }
-      }
-    ]
-  };
 }
 
 function specialtyTypesForProvider(
@@ -319,66 +156,52 @@ function publicAnyProviderWhere(): Prisma.ProviderWhereInput {
   };
 }
 
+function placeTokenClauses(
+  query?: string
+): Array<{
+  OR: Array<Record<string, unknown>>;
+}> | undefined {
+  const tokens = tokenizeSearch(query);
+
+  if (!tokens.length) return undefined;
+
+  return tokens.map((token) => {
+    const matches: Array<Record<string, unknown>> = [];
+
+    for (const variant of searchTokenVariants(token)) {
+      matches.push(
+        { name: { contains: variant, mode: "insensitive" } },
+        { bio: { contains: variant, mode: "insensitive" } },
+        { services: { contains: variant, mode: "insensitive" } },
+        { address: { contains: variant, mode: "insensitive" } },
+        {
+          governorate: {
+            name: { contains: variant, mode: "insensitive" }
+          }
+        },
+        {
+          area: {
+            name: { contains: variant, mode: "insensitive" }
+          }
+        }
+      );
+    }
+
+    return { OR: matches };
+  });
+}
+
 function publicPharmacyWhere(
   filters: ReturnType<typeof readFilters>
 ): Prisma.PharmacyWhereInput {
   return {
     status: "ACTIVE",
-    governorate: {
-      isActive: true
-    },
-    area: {
-      isActive: true
-    },
+    governorate: { isActive: true },
+    area: { isActive: true },
     governorateId: filters.governorateId,
     areaId: filters.areaId,
-    isFeatured: filters.featuredOnly
-      ? true
-      : undefined,
-    OR: filters.q
-      ? [
-          {
-            name: {
-              contains: filters.q,
-              mode: "insensitive"
-            }
-          },
-          {
-            bio: {
-              contains: filters.q,
-              mode: "insensitive"
-            }
-          },
-          {
-            services: {
-              contains: filters.q,
-              mode: "insensitive"
-            }
-          },
-          {
-            address: {
-              contains: filters.q,
-              mode: "insensitive"
-            }
-          },
-          {
-            governorate: {
-              name: {
-                contains: filters.q,
-                mode: "insensitive"
-              }
-            }
-          },
-          {
-            area: {
-              name: {
-                contains: filters.q,
-                mode: "insensitive"
-              }
-            }
-          }
-        ]
-      : undefined
+    isFeatured: filters.featuredOnly ? true : undefined,
+    AND: placeTokenClauses(filters.q) as Prisma.PharmacyWhereInput[] | undefined
   };
 }
 
@@ -387,61 +210,12 @@ function publicLabWhere(
 ): Prisma.LabWhereInput {
   return {
     status: "ACTIVE",
-    governorate: {
-      isActive: true
-    },
-    area: {
-      isActive: true
-    },
+    governorate: { isActive: true },
+    area: { isActive: true },
     governorateId: filters.governorateId,
     areaId: filters.areaId,
-    isFeatured: filters.featuredOnly
-      ? true
-      : undefined,
-    OR: filters.q
-      ? [
-          {
-            name: {
-              contains: filters.q,
-              mode: "insensitive"
-            }
-          },
-          {
-            bio: {
-              contains: filters.q,
-              mode: "insensitive"
-            }
-          },
-          {
-            services: {
-              contains: filters.q,
-              mode: "insensitive"
-            }
-          },
-          {
-            address: {
-              contains: filters.q,
-              mode: "insensitive"
-            }
-          },
-          {
-            governorate: {
-              name: {
-                contains: filters.q,
-                mode: "insensitive"
-              }
-            }
-          },
-          {
-            area: {
-              name: {
-                contains: filters.q,
-                mode: "insensitive"
-              }
-            }
-          }
-        ]
-      : undefined
+    isFeatured: filters.featuredOnly ? true : undefined,
+    AND: placeTokenClauses(filters.q) as Prisma.LabWhereInput[] | undefined
   };
 }
 
@@ -450,61 +224,12 @@ function publicCosmeticCenterWhere(
 ): Prisma.CosmeticCenterWhereInput {
   return {
     status: "ACTIVE",
-    governorate: {
-      isActive: true
-    },
-    area: {
-      isActive: true
-    },
+    governorate: { isActive: true },
+    area: { isActive: true },
     governorateId: filters.governorateId,
     areaId: filters.areaId,
-    isFeatured: filters.featuredOnly
-      ? true
-      : undefined,
-    OR: filters.q
-      ? [
-          {
-            name: {
-              contains: filters.q,
-              mode: "insensitive"
-            }
-          },
-          {
-            bio: {
-              contains: filters.q,
-              mode: "insensitive"
-            }
-          },
-          {
-            services: {
-              contains: filters.q,
-              mode: "insensitive"
-            }
-          },
-          {
-            address: {
-              contains: filters.q,
-              mode: "insensitive"
-            }
-          },
-          {
-            governorate: {
-              name: {
-                contains: filters.q,
-                mode: "insensitive"
-              }
-            }
-          },
-          {
-            area: {
-              name: {
-                contains: filters.q,
-                mode: "insensitive"
-              }
-            }
-          }
-        ]
-      : undefined
+    isFeatured: filters.featuredOnly ? true : undefined,
+    AND: placeTokenClauses(filters.q) as Prisma.CosmeticCenterWhereInput[] | undefined
   };
 }
 
@@ -517,13 +242,16 @@ export function readFilters(
     ?.trim()
     .toLowerCase();
 
+  const readId = (value: string | string[] | undefined) => {
+    const item = scalar(value)?.trim();
+    return item && item.length <= 191 ? item : undefined;
+  };
+
   return {
-    q: scalar(params.q)?.trim() || undefined,
-    governorateId:
-      scalar(params.governorateId) || undefined,
-    areaId: scalar(params.areaId) || undefined,
-    specialtyId:
-      scalar(params.specialtyId) || undefined,
+    q: clampPublicSearchQuery(scalar(params.q), 120),
+    governorateId: readId(params.governorateId),
+    areaId: readId(params.areaId),
+    specialtyId: readId(params.specialtyId),
     featuredOnly:
       featuredOnlyValue === "true" ||
       featuredOnlyValue === "1"
@@ -592,6 +320,44 @@ export async function getFilterOptions(
   };
 }
 
+export async function getHomeSearchOptions() {
+  const [governorates, specialties] = await Promise.all([
+    prisma.governorate.findMany({
+      where: {
+        isActive: true,
+        providers: {
+          some: {
+            type: "DOCTOR",
+            status: "ACTIVE",
+            specialty: {
+              isActive: true,
+              forType: "DOCTOR"
+            }
+          }
+        }
+      },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      select: { id: true, name: true }
+    }),
+    prisma.specialty.findMany({
+      where: {
+        isActive: true,
+        forType: "DOCTOR",
+        providers: {
+          some: {
+            type: "DOCTOR",
+            status: "ACTIVE"
+          }
+        }
+      },
+      orderBy: [{ name: "asc" }],
+      select: { id: true, name: true }
+    })
+  ]);
+
+  return { governorates, specialties };
+}
+
 export async function searchProvidersPage(
   type: ProviderType,
   params: SearchParams = {},
@@ -599,7 +365,7 @@ export async function searchProvidersPage(
 ) {
   const filters = readFilters(params);
   const take = normalizePageSize(options.take);
-  const cursor = decodeRankedCursor(
+  const cursor = decodeProviderCursor(
     options.cursor ?? cursorFromParams(params)
   );
 
@@ -607,8 +373,7 @@ export async function searchProvidersPage(
     publicProviderWhere(type);
 
   if (filters.governorateId) {
-    where.governorateId =
-      filters.governorateId;
+    where.governorateId = filters.governorateId;
   }
 
   if (filters.areaId) {
@@ -623,82 +388,73 @@ export async function searchProvidersPage(
     where.isFeatured = true;
   }
 
-  if (filters.q) {
-    const textSearch: Prisma.ProviderWhereInput[] = [
-      {
-        name: {
-          contains: filters.q,
-          mode: "insensitive"
-        }
-      },
-      {
-        bio: {
-          contains: filters.q,
-          mode: "insensitive"
-        }
-      },
-      {
-        address: {
-          contains: filters.q,
-          mode: "insensitive"
-        }
-      },
-      {
-        governorate: {
-          name: {
-            contains: filters.q,
-            mode: "insensitive"
-          }
-        }
-      },
-      {
-        area: {
-          name: {
-            contains: filters.q,
-            mode: "insensitive"
-          }
-        }
-      }
-    ];
+  const tokens = tokenizeSearch(filters.q);
 
-    if (type !== "DENTIST") {
-      textSearch.push({
-        specialty: {
-          name: {
-            contains: filters.q,
-            mode: "insensitive"
+  if (tokens.length) {
+    const tokenClauses: Prisma.ProviderWhereInput[] =
+      tokens.map((token) => {
+        const variants = searchTokenVariants(token);
+        const matches: Prisma.ProviderWhereInput[] = [];
+
+        for (const variant of variants) {
+          matches.push(
+            { name: { contains: variant, mode: "insensitive" } },
+            { bio: { contains: variant, mode: "insensitive" } },
+            { address: { contains: variant, mode: "insensitive" } },
+            { governorate: { name: { contains: variant, mode: "insensitive" } } },
+            { area: { name: { contains: variant, mode: "insensitive" } } }
+          );
+
+          if (type !== "DENTIST") {
+            matches.push({
+              specialty: {
+                name: { contains: variant, mode: "insensitive" }
+              }
+            });
           }
         }
+
+        return { OR: matches };
       });
-    }
 
-    where.OR = textSearch;
+    where.AND = tokenClauses;
   }
 
-  const rows = await prisma.provider.findMany({
-    where: cursor
-      ? {
-          AND: [where, providerAfterCursor(cursor)]
-        }
-      : where,
-    include: {
-      specialty: true,
-      governorate: true,
-      area: true
-    },
-    orderBy: [
-      { bookingPoints: "desc" },
-      { updatedAt: "desc" },
-      { id: "desc" }
-    ],
-    take: take + 1
-  });
+  const orderBy: Prisma.ProviderOrderByWithRelationInput[] = [
+    { lastVerifiedAt: { sort: "desc", nulls: "last" } },
+    { updatedAt: "desc" },
+    { id: "desc" }
+  ];
 
-  return buildRankedPage(
-    rows,
-    take,
-    (row) => row.bookingPoints
-  );
+  const [rows, total] = await Promise.all([
+    prisma.provider.findMany({
+      where,
+      include: {
+        specialty: true,
+        governorate: true,
+        area: true
+      },
+      orderBy,
+      cursor: cursor ? { id: cursor.id } : undefined,
+      skip: cursor ? 1 : 0,
+      take: take + 1
+    }),
+    prisma.provider.count({ where })
+  ]);
+
+  const hasMore = rows.length > take;
+  const items = hasMore ? rows.slice(0, take) : rows;
+  const lastItem = items[items.length - 1];
+
+  return {
+    items,
+    total,
+    hasMore,
+    nextCursor:
+      hasMore && lastItem
+        ? encodeProviderCursor(lastItem.id)
+        : null
+  };
 }
 
 export async function searchProviders(
@@ -718,106 +474,38 @@ export async function searchProviders(
 }
 
 export async function getHomeData() {
-  const [counts, featured] =
-    await Promise.all([
-      Promise.all([
-        prisma.provider.count({
-          where:
-            publicProviderWhere("DOCTOR")
-        }),
-
-        prisma.provider.count({
-          where:
-            publicProviderWhere("DENTIST")
-        }),
-
-        prisma.provider.count({
-          where: publicProviderWhere(
-            "COSMETIC_DOCTOR"
-          )
-        }),
-
-        prisma.pharmacy.count({
-          where: {
-            status: "ACTIVE",
-            governorate: {
-              isActive: true
-            },
-            area: {
-              isActive: true
-            }
-          }
-        }),
-
-        prisma.lab.count({
-          where: {
-            status: "ACTIVE",
-            governorate: {
-              isActive: true
-            },
-            area: {
-              isActive: true
-            }
-          }
-        }),
-
-        prisma.cosmeticCenter.count({
-          where: {
-            status: "ACTIVE",
-            governorate: {
-              isActive: true
-            },
-            area: {
-              isActive: true
-            }
-          }
-        })
-      ]),
-
-      prisma.provider.findMany({
-        where: {
-          status: "ACTIVE",
-          isFeatured: true,
-          governorate: {
-            isActive: true
-          },
-          area: {
-            isActive: true
-          },
-          OR: [
-            {
-              type: "DOCTOR",
-              specialty: {
-                isActive: true,
-                forType: "DOCTOR"
-              }
-            },
-            {
-              type: "DENTIST"
-            },
-            {
-              type: "COSMETIC_DOCTOR",
-              specialty: {
-                isActive: true,
-                forType:
-                  "COSMETIC_DOCTOR"
-              }
-            }
-          ]
-        },
-        include: {
-          specialty: true,
-          governorate: true,
-          area: true
-        },
-        orderBy: [
-          { bookingPoints: "desc" },
-          { updatedAt: "desc" },
-          { id: "desc" }
-        ],
-        take: 6
-      })
-    ]);
+  const counts = await Promise.all([
+    prisma.provider.count({
+      where: publicProviderWhere("DOCTOR")
+    }),
+    prisma.provider.count({
+      where: publicProviderWhere("DENTIST")
+    }),
+    prisma.provider.count({
+      where: publicProviderWhere("COSMETIC_DOCTOR")
+    }),
+    prisma.pharmacy.count({
+      where: {
+        status: "ACTIVE",
+        governorate: { isActive: true },
+        area: { isActive: true }
+      }
+    }),
+    prisma.lab.count({
+      where: {
+        status: "ACTIVE",
+        governorate: { isActive: true },
+        area: { isActive: true }
+      }
+    }),
+    prisma.cosmeticCenter.count({
+      where: {
+        status: "ACTIVE",
+        governorate: { isActive: true },
+        area: { isActive: true }
+      }
+    })
+  ]);
 
   return {
     counts: {
@@ -827,14 +515,13 @@ export async function getHomeData() {
       pharmacies: counts[3],
       labs: counts[4],
       cosmeticCenters: counts[5]
-    },
-    featured
+    }
   };
 }
 
-export async function getProviderBySlug(
+export const getProviderBySlug = cache(async (
   slug: string
-) {
+) => {
   return prisma.provider.findFirst({
     where: {
       slug,
@@ -870,11 +557,11 @@ export async function getProviderBySlug(
       }
     }
   });
-}
+});
 
-export async function getCosmeticDoctorBySlug(
+export const getCosmeticDoctorBySlug = cache(async (
   slug: string
-) {
+) => {
   return prisma.provider.findFirst({
     where: {
       slug,
@@ -903,7 +590,7 @@ export async function getCosmeticDoctorBySlug(
       }
     }
   });
-}
+});
 
 export function activeOfferWhere():
   Prisma.OfferWhereInput {
@@ -969,48 +656,42 @@ export async function getPublicPharmaciesPage(
 ) {
   const filters = readFilters(params);
   const take = normalizePageSize(options.take);
-  const cursor = decodeRankedCursor(
-    options.cursor ?? cursorFromParams(params)
-  );
+  const cursor = decodeProviderCursor(options.cursor ?? cursorFromParams(params));
+  const where = publicPharmacyWhere(filters);
 
-  const baseWhere = publicPharmacyWhere(filters);
-  const rows = await prisma.pharmacy.findMany({
-    where: cursor
-      ? {
-          AND: [baseWhere, pharmacyAfterCursor(cursor)]
-        }
-      : baseWhere,
-    include: {
-      governorate: true,
-      area: true
-    },
-    orderBy: [
-      { inquiryCount: "desc" },
-      { updatedAt: "desc" },
-      { id: "desc" }
-    ],
-    take: take + 1
-  });
+  const [rows, total] = await Promise.all([
+    prisma.pharmacy.findMany({
+      where,
+      include: { governorate: true, area: true },
+      orderBy: [
+        { lastVerifiedAt: { sort: "desc", nulls: "last" } },
+        { updatedAt: "desc" },
+        { id: "desc" }
+      ],
+      cursor: cursor ? { id: cursor.id } : undefined,
+      skip: cursor ? 1 : 0,
+      take: take + 1
+    }),
+    prisma.pharmacy.count({ where })
+  ]);
 
-  return buildRankedPage(
-    rows,
-    take,
-    (row) => row.inquiryCount
-  );
+  const hasMore = rows.length > take;
+  const items = hasMore ? rows.slice(0, take) : rows;
+  const lastItem = items[items.length - 1];
+
+  return {
+    items,
+    total,
+    hasMore,
+    nextCursor: hasMore && lastItem ? encodeProviderCursor(lastItem.id) : null
+  };
 }
 
 export async function getPublicPharmacies(
   params: SearchParams = {},
   take = 24
 ) {
-  const page = await getPublicPharmaciesPage(
-    params,
-    {
-      take
-    }
-  );
-
-  return page.items;
+  return (await getPublicPharmaciesPage(params, { take })).items;
 }
 
 export async function getPublicLabsPage(
@@ -1019,48 +700,42 @@ export async function getPublicLabsPage(
 ) {
   const filters = readFilters(params);
   const take = normalizePageSize(options.take);
-  const cursor = decodeRankedCursor(
-    options.cursor ?? cursorFromParams(params)
-  );
+  const cursor = decodeProviderCursor(options.cursor ?? cursorFromParams(params));
+  const where = publicLabWhere(filters);
 
-  const baseWhere = publicLabWhere(filters);
-  const rows = await prisma.lab.findMany({
-    where: cursor
-      ? {
-          AND: [baseWhere, labAfterCursor(cursor)]
-        }
-      : baseWhere,
-    include: {
-      governorate: true,
-      area: true
-    },
-    orderBy: [
-      { inquiryCount: "desc" },
-      { updatedAt: "desc" },
-      { id: "desc" }
-    ],
-    take: take + 1
-  });
+  const [rows, total] = await Promise.all([
+    prisma.lab.findMany({
+      where,
+      include: { governorate: true, area: true },
+      orderBy: [
+        { lastVerifiedAt: { sort: "desc", nulls: "last" } },
+        { updatedAt: "desc" },
+        { id: "desc" }
+      ],
+      cursor: cursor ? { id: cursor.id } : undefined,
+      skip: cursor ? 1 : 0,
+      take: take + 1
+    }),
+    prisma.lab.count({ where })
+  ]);
 
-  return buildRankedPage(
-    rows,
-    take,
-    (row) => row.inquiryCount
-  );
+  const hasMore = rows.length > take;
+  const items = hasMore ? rows.slice(0, take) : rows;
+  const lastItem = items[items.length - 1];
+
+  return {
+    items,
+    total,
+    hasMore,
+    nextCursor: hasMore && lastItem ? encodeProviderCursor(lastItem.id) : null
+  };
 }
 
 export async function getPublicLabs(
   params: SearchParams = {},
   take = 24
 ) {
-  const page = await getPublicLabsPage(
-    params,
-    {
-      take
-    }
-  );
-
-  return page.items;
+  return (await getPublicLabsPage(params, { take })).items;
 }
 
 export async function getPublicCosmeticCentersPage(
@@ -1069,57 +744,47 @@ export async function getPublicCosmeticCentersPage(
 ) {
   const filters = readFilters(params);
   const take = normalizePageSize(options.take);
-  const cursor = decodeRankedCursor(
-    options.cursor ?? cursorFromParams(params)
-  );
+  const cursor = decodeProviderCursor(options.cursor ?? cursorFromParams(params));
+  const where = publicCosmeticCenterWhere(filters);
 
-  const baseWhere =
-    publicCosmeticCenterWhere(filters);
-  const rows = await prisma.cosmeticCenter.findMany({
-    where: cursor
-      ? {
-          AND: [
-            baseWhere,
-            cosmeticCenterAfterCursor(cursor)
-          ]
-        }
-      : baseWhere,
-    include: {
-      governorate: true,
-      area: true
-    },
-    orderBy: [
-      { inquiryCount: "desc" },
-      { updatedAt: "desc" },
-      { id: "desc" }
-    ],
-    take: take + 1
-  });
+  const [rows, total] = await Promise.all([
+    prisma.cosmeticCenter.findMany({
+      where,
+      include: { governorate: true, area: true },
+      orderBy: [
+        { lastVerifiedAt: { sort: "desc", nulls: "last" } },
+        { updatedAt: "desc" },
+        { id: "desc" }
+      ],
+      cursor: cursor ? { id: cursor.id } : undefined,
+      skip: cursor ? 1 : 0,
+      take: take + 1
+    }),
+    prisma.cosmeticCenter.count({ where })
+  ]);
 
-  return buildRankedPage(
-    rows,
-    take,
-    (row) => row.inquiryCount
-  );
+  const hasMore = rows.length > take;
+  const items = hasMore ? rows.slice(0, take) : rows;
+  const lastItem = items[items.length - 1];
+
+  return {
+    items,
+    total,
+    hasMore,
+    nextCursor: hasMore && lastItem ? encodeProviderCursor(lastItem.id) : null
+  };
 }
 
 export async function getPublicCosmeticCenters(
   params: SearchParams = {},
   take = 24
 ) {
-  const page = await getPublicCosmeticCentersPage(
-    params,
-    {
-      take
-    }
-  );
-
-  return page.items;
+  return (await getPublicCosmeticCentersPage(params, { take })).items;
 }
 
-export async function getPublicPharmacyBySlug(
+export const getPublicPharmacyBySlug = cache(async (
   slug: string
-) {
+) => {
   return prisma.pharmacy.findFirst({
     where: {
       slug,
@@ -1136,11 +801,11 @@ export async function getPublicPharmacyBySlug(
       area: true
     }
   });
-}
+});
 
-export async function getPublicLabBySlug(
+export const getPublicLabBySlug = cache(async (
   slug: string
-) {
+) => {
   return prisma.lab.findFirst({
     where: {
       slug,
@@ -1157,11 +822,11 @@ export async function getPublicLabBySlug(
       area: true
     }
   });
-}
+});
 
-export async function getPublicCosmeticCenterBySlug(
+export const getPublicCosmeticCenterBySlug = cache(async (
   slug: string
-) {
+) => {
   return prisma.cosmeticCenter.findFirst({
     where: {
       slug,
@@ -1178,7 +843,7 @@ export async function getPublicCosmeticCenterBySlug(
       area: true
     }
   });
-}
+});
 
 export async function incrementPharmacyInquiryCount(
   slug: string

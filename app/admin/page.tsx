@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/permissions";
 import Link from "next/link";
 import {
   Activity,
@@ -57,6 +58,8 @@ function formatActivityDate(value: Date) {
 }
 
 export default async function AdminDashboardPage() {
+  await requireAdmin();
+
   const [
     doctorCount,
     dentistCount,

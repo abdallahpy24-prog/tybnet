@@ -1,14 +1,15 @@
 import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 
-import { getInquiryFingerprint } from "@/lib/inquiry-protection";
+import { readJsonBodyWithLimit } from "@/lib/http-body";
+import { storeAppointmentSafely } from "@/lib/appointments";
+import { logServerError } from "@/lib/server-error";
 import { prisma } from "@/lib/prisma";
 import { appointmentSchema } from "@/lib/validations";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
 
-const DUPLICATE_WINDOW_MS = 10 * 60 * 1000;
 const MAX_REQUEST_BYTES = 16 * 1024;
 
 class AppointmentRequestError extends Error {
@@ -21,85 +22,18 @@ class AppointmentRequestError extends Error {
   }
 }
 
-async function readJsonBody(request: NextRequest) {
-  const contentType = request.headers.get("content-type")?.toLowerCase() || "";
-
-  if (!contentType.startsWith("application/json")) {
-    throw new AppointmentRequestError(
-      "نوع البيانات المرسلة غير مدعوم",
-      415
-    );
-  }
-
-  const contentLengthValue = request.headers.get("content-length");
-  const contentLength = contentLengthValue
-    ? Number(contentLengthValue)
-    : null;
-
-  if (
-    contentLength !== null &&
-    Number.isFinite(contentLength) &&
-    contentLength > MAX_REQUEST_BYTES
-  ) {
-    throw new AppointmentRequestError(
-      "حجم البيانات المرسلة كبير جداً",
-      413
-    );
-  }
-
-  if (!request.body) {
-    return null;
-  }
-
-  const reader = request.body.getReader();
-  const decoder = new TextDecoder();
-  let totalBytes = 0;
-  let text = "";
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-
-      if (done) {
-        break;
-      }
-
-      totalBytes += value.byteLength;
-
-      if (totalBytes > MAX_REQUEST_BYTES) {
-        await reader.cancel();
-        throw new AppointmentRequestError(
-          "حجم البيانات المرسلة كبير جداً",
-          413
-        );
-      }
-
-      text += decoder.decode(value, {
-        stream: true
-      });
-    }
-
-    text += decoder.decode();
-  } finally {
-    reader.releaseLock();
-  }
-
-  if (!text.trim()) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(text) as unknown;
-  } catch {
-    return null;
-  }
+function jsonResponse(body: unknown, init: ResponseInit = {}) {
+  const headers = new Headers(init.headers);
+  headers.set("Cache-Control", "no-store");
+  return NextResponse.json(body, { ...init, headers });
 }
 
 function getSiteUrl() {
   return (
     process.env.PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.AUTH_URL ||
-    "https://tybnet.com"
+    "https://www.tybnet.com"
   ).replace(/\/$/, "");
 }
 
@@ -107,33 +41,9 @@ function getProviderProfilePath(
   providerType: "DOCTOR" | "DENTIST" | "COSMETIC_DOCTOR",
   slug: string
 ) {
-  if (providerType === "COSMETIC_DOCTOR") {
-    return `/cosmetic-doctors/${slug}`;
-  }
-
-  return `/providers/${slug}`;
-}
-
-function normalizePhoneForComparison(value: string) {
-  const digits = value.replace(/\D/g, "");
-
-  if (digits.startsWith("00964")) {
-    return digits.slice(2);
-  }
-
-  if (digits.startsWith("964")) {
-    return digits;
-  }
-
-  if (digits.startsWith("0")) {
-    return `964${digits.slice(1)}`;
-  }
-
-  return digits;
-}
-
-function cleanLine(value?: string | null) {
-  return String(value || "").trim();
+  return providerType === "COSMETIC_DOCTOR"
+    ? `/cosmetic-doctors/${slug}`
+    : `/providers/${slug}`;
 }
 
 function buildAppointmentMessage(input: {
@@ -145,87 +55,67 @@ function buildAppointmentMessage(input: {
   note?: string | null;
   providerUrl: string;
 }) {
-  const providerFullName =
-    `${input.providerTitlePrefix} ${input.providerName}`.trim();
+  const fullName = `${input.providerTitlePrefix} ${input.providerName}`.trim();
 
-  const preferredDate =
-    cleanLine(input.preferredDate) || "لم يتم تحديده";
-
-  const note = cleanLine(input.note);
-
-  const lines = [
-    "مرحباً، وصلت لكم عن طريق طب نت وأرغب بحجز موعد.",
+  return [
+    "مرحباً، وصلت لكم عن طريق طب نت وأرغب بطلب موعد.",
     "",
-    `الطبيب/الجهة: ${providerFullName}`,
+    `الطبيب/الجهة: ${fullName}`,
     `اسم المراجع: ${input.patientName}`,
     `رقم الهاتف: ${input.patientPhone}`,
-    `الموعد المفضل: ${preferredDate}`,
-    note ? `ملاحظة: ${note}` : null,
+    `الموعد المفضل: ${input.preferredDate || "لم يتم تحديده"}`,
+    input.note ? `ملاحظة: ${input.note}` : null,
     "",
     `رابط الصفحة: ${input.providerUrl}`
-  ].filter(Boolean);
-
-  return lines.join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await readJsonBody(request);
+    const bodyResult = await readJsonBodyWithLimit(request, MAX_REQUEST_BYTES);
+    if (!bodyResult.ok) {
+      return jsonResponse(
+        { ok: false, message: bodyResult.message },
+        { status: bodyResult.status }
+      );
+    }
+    const body = bodyResult.body;
 
     if (!body) {
-      return NextResponse.json(
-        {
-          ok: false,
-          message: "البيانات المرسلة غير صحيحة"
-        },
-        {
-          status: 400
-        }
+      return jsonResponse(
+        { ok: false, message: "البيانات المرسلة غير صحيحة" },
+        { status: 400 }
       );
     }
 
     const parsed = appointmentSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
+      return jsonResponse(
         {
           ok: false,
-          message: parsed.error.issues[0]?.message ?? "تحقق من البيانات"
+          message: parsed.error.issues[0]?.message ?? "تحقق من البيانات",
+          fieldErrors: parsed.error.flatten().fieldErrors
         },
-        {
-          status: 400
-        }
+        { status: 400 }
       );
     }
 
-    const providerId = parsed.data.providerId;
-
-    if (!providerId) {
-      return NextResponse.json(
-        {
-          ok: false,
-          message: "بيانات مقدم الخدمة غير مكتملة"
-        },
-        {
-          status: 400
-        }
+    if (!parsed.data.providerId) {
+      return jsonResponse(
+        { ok: false, message: "بيانات مقدم الخدمة غير مكتملة" },
+        { status: 400 }
       );
     }
 
-    /*
-     * جلب بيانات الطبيب أولاً بدون transaction أو أوامر SQL خام.
-     * هذا يمنع فشل الطلب بسبب pg_advisory_xact_lock أو استعلام AuditLog.
-     */
     const provider = await prisma.provider.findFirst({
       where: {
-        id: providerId,
+        id: parsed.data.providerId,
         status: "ACTIVE",
-        governorate: {
-          isActive: true
-        },
-        area: {
-          isActive: true
-        }
+        governorate: { isActive: true },
+        area: { isActive: true }
       },
       select: {
         id: true,
@@ -239,28 +129,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (!provider) {
-      throw new AppointmentRequestError(
-        "مقدم الخدمة غير موجود أو غير فعال",
-        404
-      );
+      throw new AppointmentRequestError("مقدم الخدمة غير موجود أو غير فعال", 404);
     }
 
-    const whatsappNumber = provider.whatsapp || provider.phone;
-
-    if (!whatsappNumber) {
-      throw new AppointmentRequestError(
-        "لا يوجد رقم واتساب أو هاتف صحيح لهذا الطبيب",
-        422
-      );
-    }
-
-    const providerProfilePath = getProviderProfilePath(
-      provider.type,
-      provider.slug
-    );
-
-    const providerUrl = `${getSiteUrl()}${providerProfilePath}`;
-
+    const profilePath = getProviderProfilePath(provider.type, provider.slug);
     const message = buildAppointmentMessage({
       providerName: provider.name,
       providerTitlePrefix: provider.titlePrefix || "",
@@ -268,10 +140,9 @@ export async function POST(request: NextRequest) {
       patientPhone: parsed.data.patientPhone,
       preferredDate: parsed.data.preferredDate || null,
       note: parsed.data.note || null,
-      providerUrl
+      providerUrl: `${getSiteUrl()}${profilePath}`
     });
-
-    const whatsappUrl = buildWhatsappUrl(whatsappNumber, message);
+    const whatsappUrl = buildWhatsappUrl(provider.whatsapp, message) || buildWhatsappUrl(provider.phone, message);
 
     if (!whatsappUrl) {
       throw new AppointmentRequestError(
@@ -280,173 +151,57 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const normalizedPhone = normalizePhoneForComparison(
-      parsed.data.patientPhone
-    );
-    const duplicateWindowStart = new Date(
-      Date.now() - DUPLICATE_WINDOW_MS
-    );
-    const fingerprint = getInquiryFingerprint(request) || null;
+    let stored:
+      | Awaited<ReturnType<typeof storeAppointmentSafely>>
+      | null = null;
 
-    let created = false;
-    let appointmentId: string | null = null;
-
-    /*
-     * نحاول تسجيل الموعد كالمعتاد.
-     * إذا حدث خطأ بقاعدة البيانات، لا نمنع فتح واتساب للمستخدم.
-     */
     try {
-      const recentAppointments = await prisma.appointment.findMany({
-        where: {
-          providerId: provider.id,
-          createdAt: {
-            gte: duplicateWindowStart
-          }
-        },
-        orderBy: {
-          createdAt: "desc"
-        },
-        take: 200,
-        select: {
-          id: true,
-          patientPhone: true
-        }
+      stored = await storeAppointmentSafely({
+        providerId: provider.id,
+        patientName: parsed.data.patientName,
+        patientPhone: parsed.data.patientPhone,
+        preferredDate: parsed.data.preferredDate || null,
+        note: parsed.data.note || null,
+        source: "mobile-api"
       });
-
-      const duplicate = recentAppointments.find(
-        (appointment) =>
-          normalizePhoneForComparison(appointment.patientPhone) ===
-          normalizedPhone
-      );
-
-      if (duplicate) {
-        appointmentId = duplicate.id;
-      } else {
-        const appointment = await prisma.appointment.create({
-          data: {
-            providerId: provider.id,
-            patientName: parsed.data.patientName,
-            patientPhone: parsed.data.patientPhone,
-            preferredDate: parsed.data.preferredDate || null,
-            note: parsed.data.note || null,
-            status: "NEW"
-          },
-          select: {
-            id: true,
-            patientName: true,
-            patientPhone: true,
-            preferredDate: true,
-            note: true
-          }
-        });
-
-        appointmentId = appointment.id;
-        created = true;
-
-        /*
-         * زيادة النقاط وAuditLog عمليات ثانوية.
-         * فشلها لا يلغي الموعد ولا يعيد للمستخدم خطأ.
-         */
-        try {
-          const updatedProvider = await prisma.provider.update({
-            where: {
-              id: provider.id
-            },
-            data: {
-              bookingPoints: {
-                increment: 1
-              }
-            },
-            select: {
-              bookingPoints: true
-            }
-          });
-
-          await prisma.auditLog.create({
-            data: {
-              userId: null,
-              action: "create-mobile-appointment",
-              entity: "Appointment",
-              entityId: appointment.id,
-              afterJson: {
-                appointmentId: appointment.id,
-                providerId: provider.id,
-                providerName: provider.name,
-                providerSlug: provider.slug,
-                providerType: provider.type,
-                patientName: appointment.patientName,
-                patientPhone: appointment.patientPhone,
-                preferredDate: appointment.preferredDate,
-                note: appointment.note,
-                bookingPoints: updatedProvider.bookingPoints,
-                source: "mobile-api",
-                fingerprint
-              }
-            }
-          });
-        } catch (secondaryError) {
-          console.error(
-            "Mobile appointment secondary operations error",
-            secondaryError
-          );
-        }
-      }
     } catch (storageError) {
-      console.error("Mobile appointment storage error", storageError);
+      logServerError("Mobile appointment storage error", storageError);
     }
 
-    if (created) {
+    if (stored?.saved) {
       revalidatePath("/admin/appointments");
-
-      if (provider.type === "COSMETIC_DOCTOR") {
-        revalidatePath("/admin/cosmetic-doctors");
-        revalidatePath("/cosmetic-doctors");
-      } else {
-        revalidatePath("/admin/providers");
-
-        if (provider.type === "DENTIST") {
-          revalidatePath("/dentists");
-        } else {
-          revalidatePath("/doctors");
-        }
-      }
-
-      revalidatePath(providerProfilePath);
+      revalidatePath(profilePath);
     }
 
-    return NextResponse.json({
+    return jsonResponse({
       ok: true,
-      message: created
-        ? "تم تسجيل طلب الموعد وتجهيز رابط واتساب"
-        : appointmentId
-          ? "تم استلام طلب مماثل مسبقاً، سيتم فتح واتساب بدون إضافة طلب جديد"
-          : "تم تجهيز رابط واتساب",
-      appointmentId,
-      whatsappUrl
+      saved: Boolean(stored?.saved),
+      duplicate: Boolean(stored?.duplicate),
+      rateLimited: Boolean(stored?.rateLimited),
+      appointmentId: stored?.appointmentId ?? null,
+      message: stored?.saved
+        ? "تم حفظ طلب الموعد وتجهيز رابط واتساب"
+        : stored?.duplicate
+          ? "يوجد طلب مماثل محفوظ حديثاً؛ جُهز رابط واتساب بدون سجل مكرر"
+          : stored?.rateLimited
+            ? "لم نُنشئ سجلاً جديداً بسبب كثرة الطلبات خلال مدة قصيرة؛ رابط واتساب ما زال متاحاً"
+            : "تعذر حفظ الطلب مؤقتاً؛ رابط واتساب ما زال متاحاً",
+      whatsappUrl,
+      whatsappMessage: message
     });
   } catch (error) {
-    console.error("Mobile appointments API error", error);
+    logServerError("Mobile appointments API error", error);
 
     if (error instanceof AppointmentRequestError) {
-      return NextResponse.json(
-        {
-          ok: false,
-          message: error.message
-        },
-        {
-          status: error.status
-        }
+      return jsonResponse(
+        { ok: false, message: error.message },
+        { status: error.status }
       );
     }
 
-    return NextResponse.json(
-      {
-        ok: false,
-        message: "صار خطأ أثناء إرسال طلب الموعد"
-      },
-      {
-        status: 500
-      }
+    return jsonResponse(
+      { ok: false, message: "تعذر تجهيز طلب الموعد. يُرجى المحاولة مجدداً." },
+      { status: 500 }
     );
   }
 }

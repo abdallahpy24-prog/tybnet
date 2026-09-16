@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/permissions";
 import { Map, Plus, Save, Trash2 } from "lucide-react";
 
 import { AdminSearch } from "@/components/admin/admin-search";
@@ -23,6 +24,8 @@ type GovernoratesPageProps = {
 export default async function GovernoratesPage({
   searchParams
 }: GovernoratesPageProps) {
+  await requireAdmin();
+
   const q = (await searchParams).q?.trim() ?? "";
 
   const rows = await prisma.governorate.findMany({

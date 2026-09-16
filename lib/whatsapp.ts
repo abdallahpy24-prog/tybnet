@@ -1,14 +1,20 @@
+import { normalizeArabicDigits } from "@/lib/search";
+
 export function normalizeIraqWhatsapp(input?: string | null) {
   if (!input) return null;
 
-  const digits = input.replace(/[\s+\-().]/g, "");
+  const digits = normalizeArabicDigits(input).replace(/\D/g, "");
+
+  if (/^009647\d{9}$/.test(digits)) {
+    return digits.slice(2);
+  }
 
   if (/^07\d{9}$/.test(digits)) {
-    return "964" + digits.slice(1);
+    return `964${digits.slice(1)}`;
   }
 
   if (/^7\d{9}$/.test(digits)) {
-    return "964" + digits;
+    return `964${digits}`;
   }
 
   if (/^9647\d{9}$/.test(digits)) {
@@ -26,5 +32,5 @@ export function buildWhatsappUrl(
 
   if (!normalized) return null;
 
-  return "https://wa.me/" + normalized + "?text=" + encodeURIComponent(message);
+  return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
 }

@@ -8,7 +8,7 @@ import {
 
 export const runtime = "nodejs";
 
-const DEFAULT_PAGE_SIZE = 4;
+const DEFAULT_PAGE_SIZE = 8;
 const MAX_PAGE_SIZE = 12;
 const MAX_QUERY_LENGTH = 120;
 const MAX_ID_LENGTH = 191;
@@ -101,8 +101,10 @@ function toPublicListItem(
     slug: provider.slug,
     imageUrl: provider.imageUrl,
     imageThumbnailUrl: provider.imageThumbnailUrl,
+    phone: provider.phone,
     whatsapp: provider.whatsapp,
-    instagramUrl: provider.instagramUrl,
+    address: provider.address,
+    lastVerifiedAt: provider.lastVerifiedAt?.toISOString() ?? null,
     specialty: provider.specialty
       ? {
           name: provider.specialty.name
@@ -114,8 +116,7 @@ function toPublicListItem(
     area: {
       name: provider.area.name
     },
-    isFeatured: provider.isFeatured,
-    bookingPoints: provider.bookingPoints
+    isFeatured: provider.isFeatured
   };
 }
 
@@ -177,6 +178,7 @@ export async function GET(request: NextRequest) {
     }
 
     const params: SearchParams = {
+      featuredOnly: request.nextUrl.searchParams.get("featuredOnly") === "1" || request.nextUrl.searchParams.get("featuredOnly") === "true" ? "true" : undefined,
       q: q.value,
       governorateId: governorateId.value,
       areaId: areaId.value,
@@ -197,7 +199,8 @@ export async function GET(request: NextRequest) {
         ok: true,
         items: page.items.map(toPublicListItem),
         nextCursor: page.nextCursor,
-        hasMore: page.hasMore
+        hasMore: page.hasMore,
+        total: page.total
       },
       {
         headers: {

@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --font-arabic: "Tajawal";
+  --font-arabic: Tahoma, "Segoe UI", Arial, sans-serif;
   color-scheme: light;
 }
 
@@ -21,7 +21,9 @@ body {
   min-height: 100vh;
   background: #f4fbfd;
   color: #102d55;
-  font-family: var(--font-arabic), "Noto Sans Arabic", Arial, sans-serif;
+  font-family: var(--font-arabic);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
@@ -36,8 +38,18 @@ textarea {
   font: inherit;
 }
 
-.ltr {
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ltr,
+[dir="ltr"] {
   direction: ltr;
+  unicode-bidi: isolate;
 }
 
 .container-page {
@@ -47,11 +59,60 @@ textarea {
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
   gap: 18px;
 }
 
-.focus-ring:focus-visible {
-  outline: 3px solid rgba(0, 169, 183, 0.35);
-  outline-offset: 2px;
+.focus-ring:focus-visible,
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(8, 121, 137, 0.38);
+  outline-offset: 3px;
+}
+
+.skip-link {
+  position: fixed;
+  inset-inline-start: 1rem;
+  top: 0.75rem;
+  z-index: 100;
+  transform: translateY(-160%);
+  border-radius: 0.75rem;
+  background: #102d55;
+  color: white;
+  padding: 0.65rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  transition: transform 160ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+::selection {
+  background: rgba(8, 121, 137, 0.2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .container-page {
+    width: min(100% - 24px, 1180px);
+  }
 }

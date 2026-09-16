@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { listPageMetadata } from "@/lib/list-metadata";
 
 import { SiteShell } from "@/components/layout/site-shell";
 import { FilterForm } from "@/components/public/filter-form";
@@ -15,11 +16,16 @@ import {
   type SearchParams
 } from "@/lib/queries";
 
-export const metadata: Metadata = {
-  title: "ابحث عن أطباء في العراق | طب نت",
+const baseMetadata: Metadata = {
+  alternates: { canonical: "/doctors" },
+  title: "ابحث عن أطباء في العراق",
   description:
     "ابحث عن أطباء في العراق حسب المحافظة والمنطقة والاختصاص، واطّلع على بيانات التواصل وطلب المواعيد عبر منصة طب نت."
 };
+
+export async function generateMetadata({ searchParams }: { searchParams?: Promise<SearchParams> }): Promise<Metadata> {
+  return listPageMetadata(baseMetadata, (await searchParams) ?? {});
+}
 
 type ProviderPageItem = Awaited<
   ReturnType<typeof searchProvidersPage>
@@ -35,8 +41,10 @@ function toPublicListItem(
     slug: provider.slug,
     imageUrl: provider.imageUrl,
     imageThumbnailUrl: provider.imageThumbnailUrl,
+    phone: provider.phone,
     whatsapp: provider.whatsapp,
-    instagramUrl: provider.instagramUrl,
+    address: provider.address,
+    lastVerifiedAt: provider.lastVerifiedAt?.toISOString() ?? null,
     specialty: provider.specialty
       ? {
           name: provider.specialty.name
@@ -48,8 +56,7 @@ function toPublicListItem(
     area: {
       name: provider.area.name
     },
-    isFeatured: provider.isFeatured,
-    bookingPoints: provider.bookingPoints
+    isFeatured: provider.isFeatured
   };
 }
 
@@ -64,7 +71,7 @@ export default async function DoctorsPage({
   const [options, doctorsPage] = await Promise.all([
     getFilterOptions("DOCTOR"),
     searchProvidersPage("DOCTOR", params, {
-      take: 5
+      take: 8
     })
   ]);
 
@@ -78,6 +85,7 @@ export default async function DoctorsPage({
     <SiteShell>
       <section className="container-page py-10">
         <SectionTitle
+          as="h1"
           eyebrow="الأطباء"
           title="ابحث عن طبيب حسب المحافظة والاختصاص"
           description="استعرض الأطباء المتاحين على طب نت، واستخدم عوامل التصفية حسب المحافظة والمنطقة والاختصاص للوصول إلى الطبيب الأنسب لك."
@@ -89,15 +97,17 @@ export default async function DoctorsPage({
           governorates={options.governorates}
           areas={options.areas}
           specialties={options.specialties}
+          providerType="DOCTOR"
         />
 
         {initialItems.length ? (
           <ProviderResults
-            key={resultsKey}
+            key={`${resultsKey}:${Array.isArray(params.cursor) ? params.cursor[0] : params.cursor ?? ""}`}
             type="DOCTOR"
             initialItems={initialItems}
             initialCursor={doctorsPage.nextCursor}
             initialHasMore={doctorsPage.hasMore}
+            initialTotal={doctorsPage.total}
             filters={filters}
           />
         ) : (

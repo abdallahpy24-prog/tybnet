@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/permissions";
 import Link from "next/link";
 import { MapPin, Plus, Save, Trash2 } from "lucide-react";
 
@@ -24,6 +25,8 @@ type AreasPageProps = {
 export default async function AreasPage({
   searchParams
 }: AreasPageProps) {
+  await requireAdmin();
+
   const q = (await searchParams).q?.trim() ?? "";
 
   const [governorates, rows] = await Promise.all([

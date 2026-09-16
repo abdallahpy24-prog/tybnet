@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { readJsonBodyWithLimit } from "@/lib/http-body";
 import { prisma } from "@/lib/prisma";
 import { isValidExpoPushToken } from "@/lib/push-notifications";
 
@@ -24,41 +25,9 @@ const registerSchema = z.object({
   appVersion: z.string().trim().max(40).optional().nullable()
 });
 
-async function readJsonBody(request: NextRequest) {
-  const contentType = request.headers.get("content-type")?.toLowerCase() || "";
-
-  if (!contentType.startsWith("application/json")) {
-    return {
-      ok: false as const,
-      status: 415,
-      message: "نوع البيانات غير مدعوم"
-    };
-  }
-
-  const contentLength = Number(request.headers.get("content-length") || 0);
-
-  if (Number.isFinite(contentLength) && contentLength > MAX_REQUEST_BYTES) {
-    return {
-      ok: false as const,
-      status: 413,
-      message: "حجم البيانات كبير جداً"
-    };
-  }
-
-  try {
-    return { ok: true as const, body: (await request.json()) as unknown };
-  } catch {
-    return {
-      ok: false as const,
-      status: 400,
-      message: "البيانات المرسلة غير صحيحة"
-    };
-  }
-}
-
 export async function POST(request: NextRequest) {
   try {
-    const bodyResult = await readJsonBody(request);
+    const bodyResult = await readJsonBodyWithLimit(request, MAX_REQUEST_BYTES);
 
     if (!bodyResult.ok) {
       return NextResponse.json(

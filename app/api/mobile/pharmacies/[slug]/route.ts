@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getPublicPharmacyBySlug } from "@/lib/queries";
+import { normalizeTrustedMapUrl, trustedMapUrlFromText } from "@/lib/maps";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
 
 const SUCCESS_CACHE_HEADERS = {
   "Cache-Control":
-    "public, s-maxage=300, stale-while-revalidate=3600"
+    "no-store"
 };
 
 function getBaseUrl(request: NextRequest) {
@@ -73,56 +74,6 @@ function normalizeAssetUrl(value: string | null | undefined, baseUrl: string) {
   }
 }
 
-function normalizeMapUrl(value?: string | null) {
-  const cleanValue = value?.trim();
-
-  if (!cleanValue) return null;
-
-  try {
-    if (/^https?:\/\//i.test(cleanValue)) {
-      return new URL(cleanValue).toString();
-    }
-
-    if (
-      cleanValue.startsWith("www.google.com/maps") ||
-      cleanValue.startsWith("google.com/maps") ||
-      cleanValue.startsWith("maps.google.com") ||
-      cleanValue.startsWith("maps.app.goo.gl") ||
-      cleanValue.startsWith("goo.gl/maps") ||
-      cleanValue.startsWith("maps.apple.com")
-    ) {
-      return new URL(`https://${cleanValue}`).toString();
-    }
-
-    if (/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(cleanValue)) {
-      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        cleanValue
-      )}`;
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-function readMapUrlFromText(value?: string | null) {
-  const cleanValue = value?.trim();
-
-  if (!cleanValue) return null;
-
-  const directUrl = normalizeMapUrl(cleanValue);
-
-  if (directUrl) return directUrl;
-
-  const match = cleanValue.match(
-    /(https?:\/\/(?:www\.)?google\.com\/maps[^\s،]+|https?:\/\/maps\.google\.com[^\s،]+|https?:\/\/maps\.app\.goo\.gl[^\s،]+|https?:\/\/goo\.gl\/maps[^\s،]+|https?:\/\/maps\.apple\.com[^\s،]+)/i
-  );
-
-  if (!match?.[0]) return null;
-
-  return normalizeMapUrl(match[0]);
-}
 
 function buildPharmacySummary(input: {
   name: string;
@@ -218,7 +169,7 @@ export async function GET(
     const inquiryUrl = `${baseUrl}/api/mobile/pharmacies/${pharmacy.slug}/inquiry`;
 
     const mapUrl =
-      normalizeMapUrl(pharmacy.mapurl) ?? readMapUrlFromText(pharmacy.address);
+      normalizeTrustedMapUrl(pharmacy.mapurl) ?? trustedMapUrlFromText(pharmacy.address);
 
     const whatsappMessage = buildPharmacyWhatsappMessage({
       name: pharmacy.name,

@@ -3,7 +3,8 @@ import Image from "next/image";
 import { SiteShell } from "@/components/layout/site-shell";
 
 export const metadata: Metadata = {
-  title: "فريق طب نت | طب نت",
+  alternates: { canonical: "/leaders" },
+  title: "فريق طب نت",
   description:
     "تعرّف على الفريق المؤسس لطب نت ورؤيته في تطوير دليل رقمي للخدمات الصحية والتجميلية في العراق."
 };

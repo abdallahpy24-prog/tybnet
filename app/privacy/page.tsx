@@ -5,7 +5,8 @@ import { SiteShell } from "@/components/layout/site-shell";
 import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "سياسة الخصوصية | طب نت",
+  alternates: { canonical: "/privacy" },
+  title: "سياسة الخصوصية",
   description:
     "تعرّف على كيفية تعامل منصة طب نت مع بيانات المستخدمين وطلبات المواعيد ومعلومات التواصل."
 };

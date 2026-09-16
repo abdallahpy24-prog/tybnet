@@ -285,9 +285,11 @@ model Appointment {
   id            String            @id @default(cuid())
   providerId    String?
   provider      Provider?         @relation(fields: [providerId], references: [id])
-  patientName   String
-  patientPhone  String
-  note          String?
+  patientName            String
+  patientPhone           String
+  patientPhoneNormalized String?
+  requestKey             String?           @unique
+  note                    String?
   preferredDate String?
   status        AppointmentStatus @default(NEW)
   createdAt     DateTime          @default(now())
@@ -295,6 +297,8 @@ model Appointment {
 
   @@index([providerId])
   @@index([status, createdAt])
+  @@index([patientPhoneNormalized, createdAt])
+  @@index([providerId, patientPhoneNormalized, createdAt])
 }
 
 model InformationReport {

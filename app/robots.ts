@@ -5,7 +5,7 @@ function getSiteUrl() {
     process.env.PUBLIC_SITE_URL ||
     process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.AUTH_URL ||
-    "https://tybnet.com";
+    "https://www.tybnet.com";
 
   try {
     const url = new URL(value);
@@ -16,7 +16,7 @@ function getSiteUrl() {
 
     return url.toString().replace(/\/$/, "");
   } catch {
-    return "https://tybnet.com";
+    return "https://www.tybnet.com";
   }
 }
 

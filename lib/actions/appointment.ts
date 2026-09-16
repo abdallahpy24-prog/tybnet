@@ -2,11 +2,25 @@
 
 import { revalidatePath } from "next/cache";
 
+import { storeAppointmentSafely } from "@/lib/appointments";
+import { logServerError } from "@/lib/server-error";
 import { prisma } from "@/lib/prisma";
 import { appointmentSchema } from "@/lib/validations";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 
-const DUPLICATE_WINDOW_MS = 10 * 60 * 1000;
+export type AppointmentActionState = {
+  ok: boolean;
+  message: string;
+  saved?: boolean;
+  duplicate?: boolean;
+  rateLimited?: boolean;
+  appointmentId?: string | null;
+  whatsappUrl?: string;
+  whatsappMessage?: string;
+  fieldErrors?: Partial<
+    Record<"patientName" | "patientPhone" | "preferredDate" | "note" | "privacyConsent", string>
+  >;
+};
 
 class AppointmentRequestError extends Error {
   constructor(message: string) {
@@ -18,8 +32,9 @@ class AppointmentRequestError extends Error {
 function getSiteUrl() {
   return (
     process.env.PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.AUTH_URL ||
-    "https://tybnet.com"
+    "https://www.tybnet.com"
   ).replace(/\/$/, "");
 }
 
@@ -27,29 +42,9 @@ function getProviderProfilePath(
   providerType: "DOCTOR" | "DENTIST" | "COSMETIC_DOCTOR",
   slug: string
 ) {
-  if (providerType === "COSMETIC_DOCTOR") {
-    return `/cosmetic-doctors/${slug}`;
-  }
-
-  return `/providers/${slug}`;
-}
-
-function normalizePhoneForComparison(value: string) {
-  const digits = value.replace(/\D/g, "");
-
-  if (digits.startsWith("00964")) {
-    return digits.slice(2);
-  }
-
-  if (digits.startsWith("964")) {
-    return digits;
-  }
-
-  if (digits.startsWith("0")) {
-    return `964${digits.slice(1)}`;
-  }
-
-  return digits;
+  return providerType === "COSMETIC_DOCTOR"
+    ? `/cosmetic-doctors/${slug}`
+    : `/providers/${slug}`;
 }
 
 function buildAppointmentMessage(input: {
@@ -61,64 +56,76 @@ function buildAppointmentMessage(input: {
   note?: string | null;
   providerUrl: string;
 }) {
-  const lines = [
-    "مرحبا، وصلت لكم من منصة طب نت وأرغب بحجز موعد.",
+  const providerFullName =
+    `${input.providerTitlePrefix} ${input.providerName}`.trim();
+
+  return [
+    "مرحباً، وصلت لكم عن طريق طب نت وأرغب بطلب موعد.",
     "",
-    `الطبيب/الجهة: ${input.providerTitlePrefix} ${input.providerName}`,
+    `الطبيب/الجهة: ${providerFullName}`,
     `اسم المراجع: ${input.patientName}`,
     `رقم الهاتف: ${input.patientPhone}`,
-    `اليوم والوقت المناسب: ${input.preferredDate || "لم يتم تحديده"}`,
+    `الموعد المفضل: ${input.preferredDate || "لم يتم تحديده"}`,
     input.note ? `ملاحظة: ${input.note}` : null,
     "",
     `رابط الصفحة: ${input.providerUrl}`
-  ].filter(Boolean);
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
 
-  return lines.join("\n");
+function firstFieldErrors(error: {
+  flatten: () => {
+    fieldErrors: Record<string, string[] | undefined>;
+  };
+}) {
+  const fieldErrors = error.flatten().fieldErrors;
+
+  return Object.fromEntries(
+    Object.entries(fieldErrors)
+      .filter(([, messages]) => messages?.[0])
+      .map(([field, messages]) => [field, messages?.[0]])
+  ) as AppointmentActionState["fieldErrors"];
 }
 
 export async function createAppointment(
-  _prevState: unknown,
+  _prevState: AppointmentActionState | null,
   formData: FormData
-) {
-  const privacyConsent = formData.get("privacyConsent");
-
-  if (privacyConsent !== "yes") {
+): Promise<AppointmentActionState> {
+  if (formData.get("privacyConsent") !== "yes") {
     return {
       ok: false,
-      message: "يجب الموافقة على سياسة الخصوصية قبل إرسال طلب الموعد"
+      message: "يجب الموافقة على سياسة الخصوصية قبل تجهيز الطلب.",
+      fieldErrors: {
+        privacyConsent: "الموافقة مطلوبة للمتابعة."
+      }
     };
   }
 
-  const raw = Object.fromEntries(formData.entries());
-  const parsed = appointmentSchema.safeParse(raw);
+  const parsed = appointmentSchema.safeParse(Object.fromEntries(formData.entries()));
 
   if (!parsed.success) {
     return {
       ok: false,
-      message: parsed.error.issues[0]?.message ?? "تحقق من البيانات"
+      message: "تحقق من الحقول الموضحة ثم حاول مجدداً.",
+      fieldErrors: firstFieldErrors(parsed.error)
     };
   }
 
-  const providerId = parsed.data.providerId;
-
-  if (!providerId) {
+  if (!parsed.data.providerId) {
     return {
       ok: false,
-      message: "بيانات الطبيب غير مكتملة"
+      message: "بيانات الطبيب غير مكتملة."
     };
   }
 
   try {
     const provider = await prisma.provider.findFirst({
       where: {
-        id: providerId,
+        id: parsed.data.providerId,
         status: "ACTIVE",
-        governorate: {
-          isActive: true
-        },
-        area: {
-          isActive: true
-        }
+        governorate: { isActive: true },
+        area: { isActive: true }
       },
       select: {
         id: true,
@@ -132,184 +139,77 @@ export async function createAppointment(
     });
 
     if (!provider) {
-      throw new AppointmentRequestError(
-        "الطبيب غير موجود أو غير فعال"
-      );
+      throw new AppointmentRequestError("الطبيب غير موجود أو غير متاح حالياً.");
     }
 
-    const whatsappNumber = provider.whatsapp || provider.phone;
-    const providerProfilePath = getProviderProfilePath(
-      provider.type,
-      provider.slug
-    );
-    const providerUrl = `${getSiteUrl()}${providerProfilePath}`;
-
+    const providerProfilePath = getProviderProfilePath(provider.type, provider.slug);
     const message = buildAppointmentMessage({
       providerName: provider.name,
-      providerTitlePrefix: provider.titlePrefix,
+      providerTitlePrefix: provider.titlePrefix || "",
       patientName: parsed.data.patientName,
       patientPhone: parsed.data.patientPhone,
       preferredDate: parsed.data.preferredDate || null,
       note: parsed.data.note || null,
-      providerUrl
+      providerUrl: `${getSiteUrl()}${providerProfilePath}`
     });
-
-    const whatsappUrl = buildWhatsappUrl(whatsappNumber, message);
+    const whatsappUrl = buildWhatsappUrl(provider.whatsapp, message) || buildWhatsappUrl(provider.phone, message);
 
     if (!whatsappUrl) {
       throw new AppointmentRequestError(
-        "لا يوجد رقم واتساب صحيح لهذا الطبيب. يرجى التواصل مع إدارة الموقع."
+        "لا يوجد رقم واتساب صالح لهذا الطبيب حالياً. يمكنك استخدام رقم الاتصال الظاهر في الملف."
       );
     }
 
-    const normalizedPhone = normalizePhoneForComparison(
-      parsed.data.patientPhone
-    );
-    const duplicateWindowStart = new Date(
-      Date.now() - DUPLICATE_WINDOW_MS
-    );
+    let storageResult:
+      | Awaited<ReturnType<typeof storeAppointmentSafely>>
+      | null = null;
 
-    let created = false;
-    let appointmentId: string | null = null;
-
-    /*
-     * التعديل هنا فقط:
-     * أزلنا أوامر PostgreSQL الخام الخاصة بالقفل والـ rate limit لأنها كانت
-     * تسبب فشل الطلب كله على بعض قواعد البيانات/الإعدادات.
-     * بقي تسجيل الموعد وعرضه في الأدمن كما هو.
-     */
     try {
-      const recentAppointments = await prisma.appointment.findMany({
-        where: {
-          providerId: provider.id,
-          createdAt: {
-            gte: duplicateWindowStart
-          }
-        },
-        orderBy: {
-          createdAt: "desc"
-        },
-        take: 200,
-        select: {
-          id: true,
-          patientPhone: true
-        }
+      storageResult = await storeAppointmentSafely({
+        providerId: provider.id,
+        patientName: parsed.data.patientName,
+        patientPhone: parsed.data.patientPhone,
+        preferredDate: parsed.data.preferredDate || null,
+        note: parsed.data.note || null,
+        source: "public-whatsapp-form"
       });
-
-      const duplicate = recentAppointments.find(
-        (appointment) =>
-          normalizePhoneForComparison(appointment.patientPhone) ===
-          normalizedPhone
-      );
-
-      if (!duplicate) {
-        const appointment = await prisma.appointment.create({
-          data: {
-            providerId: provider.id,
-            patientName: parsed.data.patientName,
-            patientPhone: parsed.data.patientPhone,
-            preferredDate: parsed.data.preferredDate || null,
-            note: parsed.data.note || null,
-            status: "NEW"
-          },
-          select: {
-            id: true
-          }
-        });
-
-        appointmentId = appointment.id;
-        created = true;
-
-        // هذه العمليات إضافية؛ فشلها لا يمنع فتح واتساب للمستخدم.
-        try {
-          const updatedProvider = await prisma.provider.update({
-            where: {
-              id: provider.id
-            },
-            data: {
-              bookingPoints: {
-                increment: 1
-              }
-            },
-            select: {
-              bookingPoints: true
-            }
-          });
-
-          await prisma.auditLog.create({
-            data: {
-              userId: null,
-              action: "create-whatsapp-appointment",
-              entity: "Appointment",
-              entityId: appointment.id,
-              afterJson: {
-                appointmentId: appointment.id,
-                providerId: provider.id,
-                providerName: provider.name,
-                providerSlug: provider.slug,
-                providerType: provider.type,
-                patientName: parsed.data.patientName,
-                patientPhone: parsed.data.patientPhone,
-                preferredDate: parsed.data.preferredDate || null,
-                bookingPoints: updatedProvider.bookingPoints,
-                source: "public-whatsapp-form"
-              }
-            }
-          });
-        } catch (secondaryError) {
-          console.error(
-            "Appointment secondary operations error",
-            secondaryError
-          );
-        }
-      } else {
-        appointmentId = duplicate.id;
-      }
     } catch (storageError) {
-      /*
-       * إذا صار خلل مؤقت بجدول المواعيد أو السجل، لا نمنع المريض من فتح
-       * رسالة واتساب. الخطأ يبقى ظاهراً في سجل السيرفر حتى يمكن إصلاحه.
-       */
-      console.error("Appointment storage error", storageError);
+      // Contact remains available even during a temporary storage incident.
+      logServerError("Appointment storage error", storageError);
     }
 
-    if (created) {
+    if (storageResult?.saved) {
       revalidatePath("/admin/appointments");
-
-      if (provider.type === "COSMETIC_DOCTOR") {
-        revalidatePath("/admin/cosmetic-doctors");
-        revalidatePath("/cosmetic-doctors");
-      } else {
-        revalidatePath("/admin/providers");
-
-        if (provider.type === "DENTIST") {
-          revalidatePath("/dentists");
-        } else {
-          revalidatePath("/doctors");
-        }
-      }
-
       revalidatePath(providerProfilePath);
     }
 
+    const messageText = storageResult?.saved
+      ? "حُفظ طلبك في طب نت وجُهزت رسالة واتساب. افتح واتساب لإرسالها إلى العيادة."
+      : storageResult?.duplicate
+        ? "يوجد طلب مماثل محفوظ حديثاً. جُهزت رسالة واتساب دون إنشاء سجل مكرر."
+        : storageResult?.rateLimited
+          ? "وصلت عدة طلبات من هذا الرقم خلال مدة قصيرة، لذلك لم نُنشئ سجلاً جديداً. ما زال بإمكانك فتح واتساب والتواصل مباشرة."
+          : "تعذر حفظ الطلب داخل طب نت مؤقتاً، لكن جُهزت رسالة واتساب ويمكنك التواصل مباشرة.";
+
     return {
       ok: true,
-      message: created
-        ? "تم تسجيل طلب الموعد وتجهيز رسالة واتساب، سيتم تحويلك الآن"
-        : appointmentId
-          ? "تم استلام طلب مماثل مسبقاً، سيتم فتح رسالة واتساب بدون إضافة طلب جديد"
-          : "تم تجهيز رسالة واتساب، سيتم تحويلك الآن",
-      whatsappUrl
+      message: messageText,
+      saved: Boolean(storageResult?.saved),
+      duplicate: Boolean(storageResult?.duplicate),
+      rateLimited: Boolean(storageResult?.rateLimited),
+      appointmentId: storageResult?.appointmentId ?? null,
+      whatsappUrl,
+      whatsappMessage: message
     };
   } catch (error) {
-    console.error("Public appointment action error", error);
+    logServerError("Public appointment action error", error);
 
     return {
       ok: false,
       message:
         error instanceof AppointmentRequestError
           ? error.message
-          : "صار خطأ أثناء إرسال طلب الموعد. حاول مرة ثانية."
+          : "تعذر تجهيز طلب الموعد. يُرجى المحاولة مجدداً."
     };
   }
 }

@@ -32,7 +32,7 @@ type PlacePageItem =
   | LabPageItem
   | CosmeticCenterPageItem;
 
-const DEFAULT_PAGE_SIZE = 4;
+const DEFAULT_PAGE_SIZE = 8;
 const MAX_PAGE_SIZE = 12;
 const MAX_QUERY_LENGTH = 120;
 const MAX_ID_LENGTH = 191;
@@ -121,13 +121,10 @@ function toPublicListItem(item: PlacePageItem) {
     imageUrl: item.imageUrl,
     imageThumbnailUrl: item.imageThumbnailUrl,
     whatsapp: item.whatsapp,
-    instagramUrl:
-      "instagramUrl" in item
-        ? item.instagramUrl
-        : null,
+    phone: item.phone,
     workingHours: item.workingHours,
     address: item.address,
-    inquiryCount: item.inquiryCount,
+    lastVerifiedAt: item.lastVerifiedAt?.toISOString() ?? null,
     governorate: {
       name: item.governorate.name
     },
@@ -151,7 +148,8 @@ async function loadPlacePage(
     return {
       items: page.items.map(toPublicListItem),
       nextCursor: page.nextCursor,
-      hasMore: page.hasMore
+      hasMore: page.hasMore,
+      total: page.total
     };
   }
 
@@ -164,7 +162,8 @@ async function loadPlacePage(
     return {
       items: page.items.map(toPublicListItem),
       nextCursor: page.nextCursor,
-      hasMore: page.hasMore
+      hasMore: page.hasMore,
+      total: page.total
     };
   }
 
@@ -176,7 +175,8 @@ async function loadPlacePage(
   return {
     items: page.items.map(toPublicListItem),
     nextCursor: page.nextCursor,
-    hasMore: page.hasMore
+    hasMore: page.hasMore,
+    total: page.total
   };
 }
 
@@ -232,6 +232,7 @@ export async function GET(request: NextRequest) {
     }
 
     const params: SearchParams = {
+      featuredOnly: request.nextUrl.searchParams.get("featuredOnly") === "1" || request.nextUrl.searchParams.get("featuredOnly") === "true" ? "true" : undefined,
       q: q.value,
       governorateId: governorateId.value,
       areaId: areaId.value
@@ -251,7 +252,8 @@ export async function GET(request: NextRequest) {
         ok: true,
         items: page.items,
         nextCursor: page.nextCursor,
-        hasMore: page.hasMore
+        hasMore: page.hasMore,
+        total: page.total
       },
       {
         headers: {

@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/permissions";
 import Link from "next/link";
 import {
   Activity,
@@ -74,6 +75,8 @@ function formatJson(value: unknown) {
 export default async function AuditPage({
   searchParams
 }: AuditPageProps) {
+  await requireAdmin();
+
   const params = await searchParams;
   const q = params.q?.trim() ?? "";
   const entity = params.entity?.trim() ?? "";

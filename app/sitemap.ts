@@ -10,7 +10,7 @@ function getSiteUrl() {
     process.env.PUBLIC_SITE_URL ||
     process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.AUTH_URL ||
-    "https://tybnet.com";
+    "https://www.tybnet.com";
 
   try {
     const url = new URL(value);
@@ -21,7 +21,7 @@ function getSiteUrl() {
 
     return url.toString().replace(/\/$/, "");
   } catch {
-    return "https://tybnet.com";
+    return "https://www.tybnet.com";
   }
 }
 
@@ -72,8 +72,6 @@ function publicProviderWhere(): Prisma.ProviderWhereInput {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = getSiteUrl();
-  const generatedAt = new Date();
-
   const staticPageDefinitions: Array<{
     path: string;
     priority: number;
@@ -89,7 +87,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/labs", priority: 0.9, changeFrequency: "daily" },
     { path: "/cosmetic-centers", priority: 0.9, changeFrequency: "daily" },
     { path: "/offers", priority: 0.8, changeFrequency: "daily" },
-    { path: "/leaders", priority: 0.7, changeFrequency: "daily" },
+    { path: "/medical-marketing", priority: 0.7, changeFrequency: "monthly" },
+    { path: "/leaders", priority: 0.6, changeFrequency: "monthly" },
     { path: "/join", priority: 0.6, changeFrequency: "monthly" },
     { path: "/contact", priority: 0.5, changeFrequency: "monthly" },
     { path: "/privacy", priority: 0.3, changeFrequency: "yearly" },
@@ -104,8 +103,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = staticPageDefinitions.map(
     ({ path, ...entry }) => ({
       ...entry,
-      url: pageUrl(baseUrl, path),
-      lastModified: generatedAt
+      url: pageUrl(baseUrl, path)
     })
   );
 

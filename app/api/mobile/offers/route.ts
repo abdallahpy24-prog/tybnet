@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getOffers } from "@/lib/queries";
+import { normalizeTrustedMapUrl, trustedMapUrlFromText } from "@/lib/maps";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
@@ -55,56 +56,6 @@ function normalizeAssetUrl(value: string | null | undefined, baseUrl: string) {
   }
 }
 
-function normalizeMapUrl(value?: string | null) {
-  const cleanValue = value?.trim();
-
-  if (!cleanValue) return null;
-
-  try {
-    if (/^https?:\/\//i.test(cleanValue)) {
-      return new URL(cleanValue).toString();
-    }
-
-    if (
-      cleanValue.startsWith("www.google.com/maps") ||
-      cleanValue.startsWith("google.com/maps") ||
-      cleanValue.startsWith("maps.google.com") ||
-      cleanValue.startsWith("maps.app.goo.gl") ||
-      cleanValue.startsWith("goo.gl/maps") ||
-      cleanValue.startsWith("maps.apple.com")
-    ) {
-      return new URL(`https://${cleanValue}`).toString();
-    }
-
-    if (/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(cleanValue)) {
-      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        cleanValue
-      )}`;
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-function readMapUrlFromText(value?: string | null) {
-  const cleanValue = value?.trim();
-
-  if (!cleanValue) return null;
-
-  const directUrl = normalizeMapUrl(cleanValue);
-
-  if (directUrl) return directUrl;
-
-  const match = cleanValue.match(
-    /(https?:\/\/(?:www\.)?google\.com\/maps[^\s،]+|https?:\/\/maps\.google\.com[^\s،]+|https?:\/\/maps\.app\.goo\.gl[^\s،]+|https?:\/\/goo\.gl\/maps[^\s،]+|https?:\/\/maps\.apple\.com[^\s،]+)/i
-  );
-
-  if (!match?.[0]) return null;
-
-  return normalizeMapUrl(match[0]);
-}
 
 export async function GET(request: Request) {
   try {
@@ -157,8 +108,8 @@ export async function GET(request: Request) {
 
                 address: provider.address,
                 mapUrl:
-                  normalizeMapUrl(provider.mapurl) ??
-                  readMapUrlFromText(provider.address),
+                  normalizeTrustedMapUrl(provider.mapurl) ??
+                  trustedMapUrlFromText(provider.address),
 
                 isFeatured: provider.isFeatured,
                 bookingPoints: provider.bookingPoints

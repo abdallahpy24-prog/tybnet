@@ -5,6 +5,24 @@ const securityHeaders = [
       "base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'"
   },
   {
+    key: "Content-Security-Policy-Report-Only",
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https://*.supabase.co https://*.public.blob.vercel-storage.com https://developer.apple.com https://play.google.com",
+      "connect-src 'self' https://*.supabase.co",
+      "font-src 'self' data:",
+      "worker-src 'self' blob:",
+      "frame-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+      "object-src 'none'",
+      "upgrade-insecure-requests"
+    ].join("; ")
+  },
+  {
     key: "X-Content-Type-Options",
     value: "nosniff"
   },

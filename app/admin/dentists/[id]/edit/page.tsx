@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/permissions";
 import { notFound } from "next/navigation";
 
 import { AdminFormHeader } from "@/components/admin/admin-form-header";
@@ -19,6 +20,8 @@ type EditDentistPageProps = {
 export default async function EditDentistPage({
   params
 }: EditDentistPageProps) {
+  await requireAdmin();
+
   const { id } = await params;
 
   const [row, locations] = await Promise.all([

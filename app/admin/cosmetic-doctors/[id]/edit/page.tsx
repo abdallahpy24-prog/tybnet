@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/permissions";
 import { notFound } from "next/navigation";
 
 import { AdminFormHeader } from "@/components/admin/admin-form-header";
@@ -22,6 +23,8 @@ type EditCosmeticDoctorPageProps = {
 export default async function EditCosmeticDoctorPage({
   params
 }: EditCosmeticDoctorPageProps) {
+  await requireAdmin();
+
   const { id } = await params;
 
   const [row, locations, specialties] = await Promise.all([

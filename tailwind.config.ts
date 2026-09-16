@@ -7,8 +7,8 @@ const config: Config = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: "#00A9B7",
-          dark: "#087989",
+          DEFAULT: "#087989",
+          dark: "#06606E",
           soft: "#E9FBFD"
         },
         accent: "#1E7BF2",

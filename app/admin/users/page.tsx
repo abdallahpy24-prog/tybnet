@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/permissions";
 import {
   AtSign,
   ChevronDown,
@@ -38,6 +39,8 @@ function formatDate(value: Date) {
 export default async function UsersPage({
   searchParams
 }: UsersPageProps) {
+  await requireAdmin();
+
   const q = (await searchParams).q?.trim() ?? "";
 
   const rows = await prisma.user.findMany({

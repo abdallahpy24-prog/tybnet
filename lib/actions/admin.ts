@@ -788,25 +788,26 @@ export async function createProvider(formData: FormData) {
   await ensureAreaBelongsToGovernorate(parsed.areaId, parsed.governorateId);
   await ensureSpecialtyMatchesProviderType(parsed.specialtyId, parsed.type);
 
+  const slug = await uniqueProviderSlug(parsed.name, parsed.slug);
+  const specialtyId = parsed.type === "DENTIST" ? null : parsed.specialtyId;
+
   const row = await prisma.provider.create({
-    data: {
-      ...parsed,
-      slug: await uniqueProviderSlug(parsed.name, parsed.slug),
-      specialtyId:
-        parsed.type === "DENTIST" ? null : parsed.specialtyId,
-      bio: parsed.bio || null,
-      address: parsed.address || null,
-      mapurl: parsed.mapurl || null,
-      phone: parsed.phone || null,
-      whatsapp: parsed.whatsapp || null,
-      instagramUrl: parsed.instagramUrl || null,
-      imageUrl: parsed.imageUrl || null,
-      imageThumbnailUrl: parsed.imageThumbnailUrl || null,
-      imageOriginalUrl: parsed.imageOriginalUrl || null,
-      workingHours: parsed.workingHours || null,
-      lastVerifiedAt: new Date(),
-    },
-  });
+      data: {
+        ...parsed,
+        slug,
+        specialtyId,
+        bio: parsed.bio || null,
+        address: parsed.address || null,
+        mapurl: parsed.mapurl || null,
+        phone: parsed.phone || null,
+        whatsapp: parsed.whatsapp || null,
+        instagramUrl: parsed.instagramUrl || null,
+        imageUrl: parsed.imageUrl || null,
+        imageThumbnailUrl: parsed.imageThumbnailUrl || null,
+        imageOriginalUrl: parsed.imageOriginalUrl || null,
+        workingHours: parsed.workingHours || null
+      }
+    });
 
   await auditLog({
     userId,
@@ -846,28 +847,26 @@ export async function updateProvider(formData: FormData) {
   await ensureAreaBelongsToGovernorate(parsed.areaId, parsed.governorateId);
   await ensureSpecialtyMatchesProviderType(parsed.specialtyId, parsed.type);
 
+  const specialtyId = parsed.type === "DENTIST" ? null : parsed.specialtyId;
+
   const row = await prisma.provider.update({
-    where: {
-      id,
-    },
-    data: {
-      ...parsed,
-      slug: parsed.slug?.trim() || before.slug,
-      specialtyId:
-        parsed.type === "DENTIST" ? null : parsed.specialtyId,
-      bio: parsed.bio || null,
-      address: parsed.address || null,
-      mapurl: parsed.mapurl || null,
-      phone: parsed.phone || null,
-      whatsapp: parsed.whatsapp || null,
-      instagramUrl: parsed.instagramUrl || null,
-      imageUrl: parsed.imageUrl || null,
-      imageThumbnailUrl: parsed.imageThumbnailUrl || null,
-      imageOriginalUrl: parsed.imageOriginalUrl || null,
-      workingHours: parsed.workingHours || null,
-      lastVerifiedAt: new Date(),
-    },
-  });
+      where: { id },
+      data: {
+        ...parsed,
+        slug: parsed.slug?.trim() || before.slug,
+        specialtyId,
+        bio: parsed.bio || null,
+        address: parsed.address || null,
+        mapurl: parsed.mapurl || null,
+        phone: parsed.phone || null,
+        whatsapp: parsed.whatsapp || null,
+        instagramUrl: parsed.instagramUrl || null,
+        imageUrl: parsed.imageUrl || null,
+        imageThumbnailUrl: parsed.imageThumbnailUrl || null,
+        imageOriginalUrl: parsed.imageOriginalUrl || null,
+        workingHours: parsed.workingHours || null
+      }
+    });
 
   await auditLog({
     userId,
@@ -1107,7 +1106,6 @@ export async function createPharmacy(formData: FormData) {
       status: parsed.status,
       isFeatured: parsed.isFeatured,
       inquiryCount: parsed.inquiryCount,
-      lastVerifiedAt: new Date(),
     },
   });
 
@@ -1170,7 +1168,6 @@ export async function updatePharmacy(formData: FormData) {
       status: parsed.status,
       isFeatured: parsed.isFeatured,
       inquiryCount: parsed.inquiryCount,
-      lastVerifiedAt: new Date(),
     },
   });
 
@@ -1240,29 +1237,30 @@ export async function createLab(formData: FormData) {
 
   await ensureAreaBelongsToGovernorate(parsed.areaId, parsed.governorateId);
 
+  const slug = await uniqueLabSlug(parsed.name, parsed.slug);
+
   const row = await prisma.lab.create({
-    data: {
-      name: parsed.name,
-      slug: await uniqueLabSlug(parsed.name, parsed.slug),
-      governorateId: parsed.governorateId,
-      areaId: parsed.areaId,
-      bio: parsed.bio || null,
-      services: parsed.services || null,
-      address: parsed.address || null,
-      mapurl: parsed.mapurl || null,
-      phone: parsed.phone || null,
-      whatsapp: parsed.whatsapp || null,
-      instagramUrl: parsed.instagramUrl || null,
-      imageUrl: parsed.imageUrl || null,
-      imageThumbnailUrl: parsed.imageThumbnailUrl || null,
-      imageOriginalUrl: parsed.imageOriginalUrl || null,
-      workingHours: parsed.workingHours || null,
-      status: parsed.status,
-      isFeatured: parsed.isFeatured,
-      inquiryCount: parsed.inquiryCount,
-      lastVerifiedAt: new Date(),
-    },
-  });
+      data: {
+        name: parsed.name,
+        slug,
+        governorateId: parsed.governorateId,
+        areaId: parsed.areaId,
+        bio: parsed.bio || null,
+        services: parsed.services || null,
+        address: parsed.address || null,
+        mapurl: parsed.mapurl || null,
+        phone: parsed.phone || null,
+        whatsapp: parsed.whatsapp || null,
+        instagramUrl: parsed.instagramUrl || null,
+        imageUrl: parsed.imageUrl || null,
+        imageThumbnailUrl: parsed.imageThumbnailUrl || null,
+        imageOriginalUrl: parsed.imageOriginalUrl || null,
+        workingHours: parsed.workingHours || null,
+        status: parsed.status,
+        isFeatured: parsed.isFeatured,
+        inquiryCount: parsed.inquiryCount
+      }
+    });
 
   await auditLog({
     userId,
@@ -1301,31 +1299,28 @@ export async function updateLab(formData: FormData) {
   await ensureAreaBelongsToGovernorate(parsed.areaId, parsed.governorateId);
 
   const row = await prisma.lab.update({
-    where: {
-      id,
-    },
-    data: {
-      name: parsed.name,
-      slug: parsed.slug?.trim() || before.slug,
-      governorateId: parsed.governorateId,
-      areaId: parsed.areaId,
-      bio: parsed.bio || null,
-      services: parsed.services || null,
-      address: parsed.address || null,
-      mapurl: parsed.mapurl || null,
-      phone: parsed.phone || null,
-      whatsapp: parsed.whatsapp || null,
-      instagramUrl: parsed.instagramUrl || null,
-      imageUrl: parsed.imageUrl || null,
-      imageThumbnailUrl: parsed.imageThumbnailUrl || null,
-      imageOriginalUrl: parsed.imageOriginalUrl || null,
-      workingHours: parsed.workingHours || null,
-      status: parsed.status,
-      isFeatured: parsed.isFeatured,
-      inquiryCount: parsed.inquiryCount,
-      lastVerifiedAt: new Date(),
-    },
-  });
+      where: { id },
+      data: {
+        name: parsed.name,
+        slug: parsed.slug?.trim() || before.slug,
+        governorateId: parsed.governorateId,
+        areaId: parsed.areaId,
+        bio: parsed.bio || null,
+        services: parsed.services || null,
+        address: parsed.address || null,
+        mapurl: parsed.mapurl || null,
+        phone: parsed.phone || null,
+        whatsapp: parsed.whatsapp || null,
+        instagramUrl: parsed.instagramUrl || null,
+        imageUrl: parsed.imageUrl || null,
+        imageThumbnailUrl: parsed.imageThumbnailUrl || null,
+        imageOriginalUrl: parsed.imageOriginalUrl || null,
+        workingHours: parsed.workingHours || null,
+        status: parsed.status,
+        isFeatured: parsed.isFeatured,
+        inquiryCount: parsed.inquiryCount
+      }
+    });
 
   await auditLog({
     userId,
@@ -1396,17 +1391,27 @@ export async function updateAppointmentStatus(formData: FormData) {
 
   const before = await prisma.appointment.findUniqueOrThrow({
     where: {
-      id,
+      id
     },
+    select: {
+      id: true,
+      providerId: true,
+      status: true
+    }
   });
 
   const row = await prisma.appointment.update({
     where: {
-      id,
+      id
     },
     data: {
-      status: status as AppointmentStatus,
+      status: status as AppointmentStatus
     },
+    select: {
+      id: true,
+      providerId: true,
+      status: true
+    }
   });
 
   await auditLog({
@@ -1414,8 +1419,16 @@ export async function updateAppointmentStatus(formData: FormData) {
     action: "update-status",
     entity: "Appointment",
     entityId: id,
-    beforeJson: before,
-    afterJson: row,
+    beforeJson: {
+      appointmentId: before.id,
+      providerId: before.providerId,
+      status: before.status
+    },
+    afterJson: {
+      appointmentId: row.id,
+      providerId: row.providerId,
+      status: row.status
+    }
   });
 
   revalidatePath("/admin/appointments");
@@ -1427,14 +1440,20 @@ export async function deleteAppointment(formData: FormData) {
 
   const before = await prisma.appointment.findUniqueOrThrow({
     where: {
-      id,
+      id
     },
+    select: {
+      id: true,
+      providerId: true,
+      status: true,
+      createdAt: true
+    }
   });
 
   await prisma.appointment.delete({
     where: {
-      id,
-    },
+      id
+    }
   });
 
   await auditLog({
@@ -1442,7 +1461,12 @@ export async function deleteAppointment(formData: FormData) {
     action: "delete",
     entity: "Appointment",
     entityId: id,
-    beforeJson: before,
+    beforeJson: {
+      appointmentId: before.id,
+      providerId: before.providerId,
+      status: before.status,
+      createdAt: before.createdAt
+    }
   });
 
   revalidatePath("/admin/appointments");

@@ -32,6 +32,10 @@ const mainLinks = [
   {
     href: "/offers",
     label: "العروض"
+  },
+  {
+    href: "/medical-marketing",
+    label: "التسويق الطبي"
   }
 ];
 

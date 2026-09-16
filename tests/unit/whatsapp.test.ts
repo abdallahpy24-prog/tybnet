@@ -10,6 +10,15 @@ describe("normalizeIraqWhatsapp", () => {
     expect(normalizeIraqWhatsapp("+964 771 222 3333")).toBe("9647712223333");
   });
 
+  it("accepts the 00964 prefix", () => {
+    expect(normalizeIraqWhatsapp("00964 770 123 4567")).toBe("9647701234567");
+  });
+
+  it("normalizes Arabic and Persian digits", () => {
+    expect(normalizeIraqWhatsapp("٠٧٧٠١٢٣٤٥٦٧")).toBe("9647701234567");
+    expect(normalizeIraqWhatsapp("۰۷۷۰۱۲۳۴۵۶۷")).toBe("9647701234567");
+  });
+
   it("rejects non Iraqi mobile numbers", () => {
     expect(normalizeIraqWhatsapp("12345")).toBeNull();
   });

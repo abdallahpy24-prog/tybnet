@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/permissions";
 import { AdminFormHeader } from "@/components/admin/admin-form-header";
 import { LocationRequirement } from "@/components/admin/location-requirement";
 import { ServicePlaceForm } from "@/components/admin/service-place-form";
@@ -5,6 +6,8 @@ import { createLab } from "@/lib/actions/admin";
 import { getAdminLocationOptions } from "@/lib/admin-form-options";
 
 export default async function NewLabPage() {
+  await requireAdmin();
+
   const { governorates, areas } = await getAdminLocationOptions();
 
   const hasGovernorates = governorates.length > 0;

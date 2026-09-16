@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/permissions";
 import type { ReactNode } from "react";
 import {
   Globe2,
@@ -57,6 +58,8 @@ function SettingsSection({
 }
 
 export default async function SettingsPage() {
+  await requireAdmin();
+
   const settings = await getSettingsMap();
 
   return (

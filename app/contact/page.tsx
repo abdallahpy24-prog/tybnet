@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Clock, Mail, MessageCircle, ShieldCheck, UserPlus } from "lucide-react";
 import { SiteShell } from "@/components/layout/site-shell";
-import { Button } from "@/components/ui/button";
+import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const metadata: Metadata = {
-  title: "تواصل معنا | طب نت",
+  alternates: { canonical: "/contact" },
+  title: "تواصل معنا",
   description:
     "تواصل مع فريق طب نت للاستفسارات، الدعم، تحديث البيانات، أو طلب الانضمام إلى المنصة."
 };
@@ -35,9 +36,7 @@ export default function ContactPage() {
             </h1>
 
             <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">
-              يمكنك التواصل معنا للاستفسارات العامة، أو طلب إضافة وتحديث بيانات مقدم خدمة، أو مناقشة فرص التعاون مع طب نت.، طلب إضافة طبيب أو
-              صيدلية أو مختبر، تحديث بيانات منشورة، أو مناقشة فرص التعاون داخل
-              منصة طب نت.
+              يمكنك التواصل معنا للاستفسارات العامة، أو لإضافة بيانات مقدم خدمة وتحديثها، أو لمناقشة فرص التعاون مع طب نت.
             </p>
           </div>
 
@@ -52,11 +51,14 @@ export default function ContactPage() {
               </p>
 
               {whatsappUrl ? (
-                <a href={whatsappUrl} target="_blank" rel="noreferrer" className="mt-5 block">
-                  <Button type="button" className="w-full">
-                    <MessageCircle className="h-4 w-4" aria-hidden="true" />
-                    تواصل عبر واتساب
-                  </Button>
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={buttonStyles({ className: "mt-5 w-full" })}
+                >
+                  <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                  تواصل عبر واتساب
                 </a>
               ) : (
                 <p className="mt-5 rounded-xl bg-surface p-3 text-xs font-bold leading-6 text-slate-500">
@@ -75,11 +77,15 @@ export default function ContactPage() {
               </p>
 
               {contactEmail ? (
-                <a href={"mailto:" + contactEmail} className="mt-5 block">
-                  <Button type="button" variant="secondary" className="w-full">
-                    <Mail className="h-4 w-4" aria-hidden="true" />
-                    {contactEmail}
-                  </Button>
+                <a
+                  href={"mailto:" + contactEmail}
+                  className={buttonStyles({
+                    variant: "secondary",
+                    className: "mt-5 w-full"
+                  })}
+                >
+                  <Mail className="h-4 w-4" aria-hidden="true" />
+                  {contactEmail}
                 </a>
               ) : (
                 <p className="mt-5 rounded-xl bg-surface p-3 text-xs font-bold leading-6 text-slate-500">
@@ -96,11 +102,15 @@ export default function ContactPage() {
                 إذا كنت طبيباً، طبيب أسنان، طبيب تجميل، مركز تجميل، صيدلية، أو مختبراً، يمكنك الاطلاع على تفاصيل الانضمام إلى طب نت.
               </p>
 
-              <Link href="/join" className="mt-5 block">
-                <Button type="button" variant="secondary" className="w-full">
-                  <UserPlus className="h-4 w-4" aria-hidden="true" />
-                  انضم إلى طب نت
-                </Button>
+              <Link
+                href="/join"
+                className={buttonStyles({
+                  variant: "secondary",
+                  className: "mt-5 w-full"
+                })}
+              >
+                <UserPlus className="h-4 w-4" aria-hidden="true" />
+                انضم إلى طب نت
               </Link>
             </Card>
           </div>

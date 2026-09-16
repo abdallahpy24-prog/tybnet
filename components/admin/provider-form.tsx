@@ -56,7 +56,6 @@ type ProviderRow = {
   imageThumbnailUrl?: string | null;
   imageOriginalUrl?: string | null;
   status: ProviderStatus;
-  bookingPoints: number;
   isFeatured: boolean;
   address: string | null;
   workingHours: string | null;
@@ -713,22 +712,13 @@ export function ProviderForm({
       </AdminSection>
 
       <AdminSection
-        title="التفاصيل والظهور"
+        title="التفاصيل"
         description={
           isCosmetic
-            ? "تحدد النقاط أولوية الظهور، بينما تظهر النبذة وأوقات الدوام في الملف التعريفي لطبيب التجميل."
-            : "تحدد النقاط أولوية الظهور، بينما تظهر النبذة وأوقات الدوام في الملف التعريفي للطبيب."
+            ? "أضف أوقات الدوام والنبذة المثبتة التي تساعد الزائر على فهم ملف طبيب التجميل."
+            : "أضف أوقات الدوام والنبذة المثبتة التي تساعد الزائر على فهم ملف الطبيب."
         }
       >
-        <Field label="النقاط">
-          <Input
-            name="bookingPoints"
-            type="number"
-            min={0}
-            defaultValue={row?.bookingPoints ?? 0}
-          />
-        </Field>
-
         <div className="md:col-span-2 xl:col-span-3">
           <Field label="أوقات الدوام">
             <Textarea

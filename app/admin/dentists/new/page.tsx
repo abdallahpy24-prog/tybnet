@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/permissions";
 import { AdminFormHeader } from "@/components/admin/admin-form-header";
 import { LocationRequirement } from "@/components/admin/location-requirement";
 import { ProviderForm } from "@/components/admin/provider-form";
@@ -5,6 +6,8 @@ import { createProvider } from "@/lib/actions/admin";
 import { getAdminLocationOptions } from "@/lib/admin-form-options";
 
 export default async function NewDentistPage() {
+  await requireAdmin();
+
   const { governorates, areas } = await getAdminLocationOptions();
 
   const hasGovernorates = governorates.length > 0;

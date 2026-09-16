@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/permissions";
 import Link from "next/link";
 import {
   CheckCircle2,
@@ -80,6 +81,8 @@ type InformationReportsPageProps = {
 export default async function InformationReportsPage({
   searchParams
 }: InformationReportsPageProps) {
+  await requireAdmin();
+
   const params = await searchParams;
   const q = params.q?.trim() || "";
   const status = params.status?.trim() || "NEW";

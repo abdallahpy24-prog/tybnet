@@ -10,7 +10,6 @@ type ServicePlaceListRow = {
   name: string;
   imageUrl: string | null;
   status: "ACTIVE" | "INACTIVE";
-  inquiryCount: number;
   isFeatured: boolean;
   governorate: { name: string };
   area: { name: string };
@@ -82,11 +81,7 @@ export function ServicePlaceAdminList({
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-3 sm:justify-end">
-            <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-black text-primary-dark">
-              {row.inquiryCount} نقطة
-            </span>
-
+          <div className="flex items-center justify-end gap-3">
             <Link
               href={`${editBasePath}/${row.id}/edit`}
               className="focus-ring inline-flex h-9 items-center gap-2 rounded-xl border border-borderSoft px-3 text-xs font-black text-navy hover:bg-primary-soft"

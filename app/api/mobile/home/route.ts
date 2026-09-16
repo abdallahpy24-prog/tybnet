@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 
-import { getHomeData, getOffers } from "@/lib/queries";
+import { getHomeData, getOffers, searchProvidersPage } from "@/lib/queries";
+import { normalizeTrustedMapUrl, trustedMapUrlFromText } from "@/lib/maps";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
 
 const SUCCESS_CACHE_HEADERS = {
   "Cache-Control":
-    "public, s-maxage=300, stale-while-revalidate=3600"
+    "no-store"
 };
 
 function getBaseUrl(request: Request) {
@@ -60,61 +61,13 @@ function normalizeAssetUrl(value: string | null | undefined, baseUrl: string) {
   }
 }
 
-function normalizeMapUrl(value?: string | null) {
-  const cleanValue = value?.trim();
-
-  if (!cleanValue) return null;
-
-  try {
-    if (/^https?:\/\//i.test(cleanValue)) {
-      return new URL(cleanValue).toString();
-    }
-
-    if (
-      cleanValue.startsWith("www.google.com/maps") ||
-      cleanValue.startsWith("google.com/maps") ||
-      cleanValue.startsWith("maps.google.com") ||
-      cleanValue.startsWith("maps.app.goo.gl") ||
-      cleanValue.startsWith("goo.gl/maps") ||
-      cleanValue.startsWith("maps.apple.com")
-    ) {
-      return new URL(`https://${cleanValue}`).toString();
-    }
-
-    if (/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(cleanValue)) {
-      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        cleanValue
-      )}`;
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-function readMapUrlFromText(value?: string | null) {
-  const cleanValue = value?.trim();
-
-  if (!cleanValue) return null;
-
-  const directUrl = normalizeMapUrl(cleanValue);
-
-  if (directUrl) return directUrl;
-
-  const match = cleanValue.match(
-    /(https?:\/\/(?:www\.)?google\.com\/maps[^\s،]+|https?:\/\/maps\.google\.com[^\s،]+|https?:\/\/maps\.app\.goo\.gl[^\s،]+|https?:\/\/goo\.gl\/maps[^\s،]+|https?:\/\/maps\.apple\.com[^\s،]+)/i
-  );
-
-  if (!match?.[0]) return null;
-
-  return normalizeMapUrl(match[0]);
-}
 
 export async function GET(request: Request) {
   try {
     const baseUrl = getBaseUrl(request);
-    const [home, offers] = await Promise.all([getHomeData(), getOffers()]);
+    const [home, offers, featured] = await Promise.all([
+      getHomeData(), getOffers(), searchProvidersPage("DOCTOR", { featuredOnly: "true" }, { take: 6 })
+    ]);
 
     return NextResponse.json(
       {
@@ -145,14 +98,14 @@ export async function GET(request: Request) {
           }
         ],
 
-        featuredProviders: home.featured.map((provider) => {
+        featuredProviders: featured.items.map((provider) => {
           const displayName = [provider.titlePrefix, provider.name]
             .filter(Boolean)
             .join(" ");
 
           const mapUrl =
-            normalizeMapUrl(provider.mapurl) ??
-            readMapUrlFromText(provider.address);
+            normalizeTrustedMapUrl(provider.mapurl) ??
+            trustedMapUrlFromText(provider.address);
 
           const profileImageUrl = normalizeAssetUrl(
             provider.imageUrl ?? provider.imageThumbnailUrl,
@@ -238,3 +191,4 @@ export async function GET(request: Request) {
     );
   }
 }
+
