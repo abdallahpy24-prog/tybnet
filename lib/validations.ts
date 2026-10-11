@@ -145,46 +145,54 @@ const optionalMapUrl = z
   });
 
 /**
- * Phone numbers pasted from RTL apps may contain invisible direction marks
- * or Unicode dash variants. These are formatting characters, not digits.
- * Keep all entered digits unchanged, including the leading zero.
+ * Normalize copied phone text before enforcing phone rules.
+ * Preserve all digits; only remove invisible direction/formatting marks and
+ * normalize Arabic/Persian/full-width numerals and common dash characters.
  */
 function normalizePhoneInput(value: string) {
   return normalizeArabicDigits(value)
     .normalize("NFKC")
-    .replace(/[\u061C\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF]/g, "")
-    .replace(/[‐‑‒–—―−﹣－]/g, "-")
+    .replace(/[\p{Cf}\uFEFF]/gu, "")
+    .replace(/[‐‑‒–—−]/g, "-")
+    .replace(/[\u00A0\u2000-\u200A\u202F\u205F\u3000]/g, " ")
     .trim();
 }
 
 function isValidPhone(value: string) {
   const normalized = normalizePhoneInput(value);
 
-  // One number only; ignore harmless separators without accepting letters.
-  if (!/^\+?[\d\s().\/-]+$/.test(normalized)) {
+  // A single phone number only, with optional leading country-code plus sign.
+  if (!/^\+?[\d\s().-]+$/.test(normalized)) {
     return false;
   }
 
   const digits = normalized.replace(/\D/g, "");
-
   return digits.length >= 7 && digits.length <= 15;
 }
 
 const optionalPhone = z
   .string()
-  .trim()
-  .max(32, "رقم الهاتف طويل جداً")
   .optional()
   .nullable()
+  // Normalize *before* checking length: copied invisible marks are not digits.
+  .transform((value) => (value ? normalizePhoneInput(value) || null : null))
   .superRefine((value, ctx) => {
-    if (value && !isValidPhone(value)) {
+    if (!value) return;
+    if (value.length > 32) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.too_big,
+        type: "string",
+        inclusive: true,
+        maximum: 32,
+        message: "رقم الهاتف طويل جداً"
+      });
+    } else if (!isValidPhone(value)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "رقم الهاتف غير صحيح"
       });
     }
-  })
-  .transform((value) => (value ? normalizePhoneInput(value) : null));
+  });
 
 const requiredPhone = z
   .string()
@@ -192,7 +200,7 @@ const requiredPhone = z
   .min(7, "رقم الهاتف مطلوب")
   .max(32, "رقم الهاتف طويل جداً")
   .refine(isValidPhone, "رقم الهاتف غير صحيح")
-  .transform((value) => normalizePhoneInput(value));
+  .transform((value) => normalizeArabicDigits(value));
 
 const optionalImageUrl = z
   .string()
