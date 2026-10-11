@@ -144,10 +144,24 @@ const optionalMapUrl = z
     return normalized;
   });
 
-function isValidPhone(value: string) {
-  const normalized = normalizeArabicDigits(value);
+/**
+ * Phone numbers pasted from RTL apps may contain invisible direction marks
+ * or Unicode dash variants. These are formatting characters, not digits.
+ * Keep all entered digits unchanged, including the leading zero.
+ */
+function normalizePhoneInput(value: string) {
+  return normalizeArabicDigits(value)
+    .normalize("NFKC")
+    .replace(/[\u061C\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF]/g, "")
+    .replace(/[‐‑‒–—―−﹣－]/g, "-")
+    .trim();
+}
 
-  if (!/^[+\d\s().-]+$/.test(normalized)) {
+function isValidPhone(value: string) {
+  const normalized = normalizePhoneInput(value);
+
+  // One number only; ignore harmless separators without accepting letters.
+  if (!/^\+?[\d\s().\/-]+$/.test(normalized)) {
     return false;
   }
 
@@ -170,7 +184,7 @@ const optionalPhone = z
       });
     }
   })
-  .transform((value) => (value ? normalizeArabicDigits(value) : null));
+  .transform((value) => (value ? normalizePhoneInput(value) : null));
 
 const requiredPhone = z
   .string()
@@ -178,7 +192,7 @@ const requiredPhone = z
   .min(7, "رقم الهاتف مطلوب")
   .max(32, "رقم الهاتف طويل جداً")
   .refine(isValidPhone, "رقم الهاتف غير صحيح")
-  .transform((value) => normalizeArabicDigits(value));
+  .transform((value) => normalizePhoneInput(value));
 
 const optionalImageUrl = z
   .string()
