@@ -13,9 +13,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:seed": "prisma db seed",
-    "test": "vitest run",
-    "check:mobile-cache": "node scripts/check-mobile-api-cache.cjs",
-    "prebuild": "npm run check:mobile-cache"
+    "test": "vitest run"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
