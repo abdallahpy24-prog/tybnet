@@ -110,7 +110,7 @@ export function PlaceProfile({ kind, place, backHref, backLabel }: Props) {
 
   return (
     <SiteShell>
-      <section className="container-page py-8">
+      <section className="container-page py-8 md:py-10">
         <Link
           href={backHref}
           className="focus-ring mb-5 inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-black text-primary-dark hover:text-primary"
@@ -120,7 +120,7 @@ export function PlaceProfile({ kind, place, backHref, backLabel }: Props) {
         </Link>
 
         <Card className="overflow-hidden p-0">
-          <div className="grid gap-6 p-6 md:grid-cols-[180px_minmax(0,1fr)] md:items-start">
+          <div className="grid gap-6 bg-[radial-gradient(circle_at_top_right,rgba(8,121,137,0.09),transparent_38%),white] p-6 md:grid-cols-[180px_minmax(0,1fr)] md:items-start md:p-8">
             <div className="relative mx-auto flex h-40 w-40 items-center justify-center overflow-hidden rounded-3xl border border-borderSoft bg-slate-50 md:mx-0">
               {image ? (
                 originalImage ? (
@@ -174,7 +174,7 @@ export function PlaceProfile({ kind, place, backHref, backLabel }: Props) {
                 {lastVerified ? (
                   <p className="flex items-center gap-2 text-xs font-bold text-slate-500">
                     <ShieldCheck className="h-4 w-4 text-emerald-700" aria-hidden="true" />
-                    آخر تحقق من البيانات: <bdi dir="ltr">{lastVerified}</bdi>
+                    آخر تحقق: <bdi dir="ltr">{lastVerified}</bdi>
                   </p>
                 ) : null}
               </div>
@@ -195,7 +195,7 @@ export function PlaceProfile({ kind, place, backHref, backLabel }: Props) {
                 {mapUrl ? (
                   <a href={mapUrl} target="_blank" rel="noopener noreferrer" className={buttonStyles({ variant: "secondary" })}>
                     <MapPin className="h-4 w-4" aria-hidden="true" />
-                    الخريطة
+                    الاتجاهات
                   </a>
                 ) : null}
                 {place.instagramUrl ? (
@@ -234,13 +234,13 @@ export function PlaceProfile({ kind, place, backHref, backLabel }: Props) {
           </div>
         ) : null}
 
-        <Card className="mt-6">
+        <Card className="mt-6 bg-surface shadow-none">
           <div className="flex gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary-dark">
               <ShieldCheck className="h-6 w-6" aria-hidden="true" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-navy">تحقق قبل الزيارة</h2>
+              <h2 className="text-lg font-black text-navy">تأكد من التفاصيل قبل الزيارة</h2>
               <p className="mt-2 text-sm leading-7 text-slate-600">
                 قد تتغير أوقات الدوام وتوفر الخدمات. استخدم رقم الهاتف أو واتساب للتأكد من التفاصيل قبل التوجه إلى المكان. ظهور الملف في طب نت لا يمثل تقييماً طبياً أو ضماناً للخدمة.
               </p>

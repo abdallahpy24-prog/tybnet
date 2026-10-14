@@ -64,3 +64,4 @@ tibnet_src/
 .env.development.local
 .env.test.local
 .env.production.local
+.vercel

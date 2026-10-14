@@ -3,7 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   BadgeCheck,
-  Clock3,
   MapPin,
   MessageCircle,
   Stethoscope
@@ -82,7 +81,7 @@ export function ProviderCard({
   return (
     <Card
       className={[
-        "flex h-full flex-col overflow-hidden",
+        "group flex h-full flex-col overflow-hidden transition duration-300 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-[0_22px_58px_rgba(15,35,64,0.1)]",
         compact ? "p-4" : "p-5"
       ].join(" ")}
     >
@@ -136,14 +135,9 @@ export function ProviderCard({
           {verificationDate ? (
             <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-slate-500">
               <BadgeCheck className="h-4 w-4 text-primary-dark" aria-hidden="true" />
-              آخر تحقق من البيانات: {verificationDate}
+              آخر تحقق: {verificationDate}
             </p>
-          ) : (
-            <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400">
-              <Clock3 className="h-4 w-4" aria-hidden="true" />
-              تاريخ التحقق غير متوفر بعد
-            </p>
-          )}
+          ) : null}
         </div>
       </div>
 

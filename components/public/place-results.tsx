@@ -174,12 +174,12 @@ export function PlaceResults({
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3" aria-live="polite">
-        <p className="text-sm font-bold text-slate-600">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-borderSoft bg-white px-4 py-3" aria-live="polite">
+        <p className="text-sm font-black text-navy">
           {total.toLocaleString("ar-IQ")} نتيجة مطابقة
         </p>
-        <p className="text-xs text-slate-500">
-          معروض الآن {items.length.toLocaleString("ar-IQ")} من {total.toLocaleString("ar-IQ")}
+        <p className="text-xs font-semibold text-slate-500">
+          معروض الآن {items.length.toLocaleString("ar-IQ")}
         </p>
       </div>
 

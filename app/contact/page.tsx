@@ -26,17 +26,17 @@ export default function ContactPage() {
     <SiteShell>
       <section className="container-page py-10">
         <div className="mx-auto max-w-5xl">
-          <div className="rounded-3xl bg-primary-soft p-6 md:p-8">
+          <div className="rounded-[30px] border border-primary/10 bg-primary-soft p-6 md:p-9">
             <p className="text-sm font-black text-primary-dark">
               الدعم والتواصل
             </p>
 
             <h1 className="mt-3 text-3xl font-black text-navy md:text-5xl">
-              تواصل مع فريق طب نت
+              كيف يمكننا مساعدتك؟
             </h1>
 
             <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">
-              يمكنك التواصل معنا للاستفسارات العامة، أو لإضافة بيانات مقدم خدمة وتحديثها، أو لمناقشة فرص التعاون مع طب نت.
+              اختر القناة المناسبة للاستفسار، تحديث ملف مقدم خدمة، طلب الانضمام أو مناقشة فرص التعاون مع طب نت.
             </p>
           </div>
 

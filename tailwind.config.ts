@@ -9,18 +9,18 @@ const config: Config = {
         primary: {
           DEFAULT: "#087989",
           dark: "#06606E",
-          soft: "#E9FBFD"
+          soft: "#EAF8FA"
         },
-        accent: "#1E7BF2",
-        navy: "#102D55",
-        surface: "#F4FBFD",
-        borderSoft: "#DBEAF0"
+        accent: "#2F6BFF",
+        navy: "#0B213D",
+        surface: "#F7F9FC",
+        borderSoft: "#E4EAF1"
       },
       boxShadow: {
-        card: "0 18px 45px rgba(16, 45, 85, 0.08)"
+        card: "0 14px 42px rgba(15, 35, 64, 0.06)"
       },
       fontFamily: {
-        arabic: ["var(--font-arabic)", "Tajawal", "Noto Sans Arabic", "Arial", "sans-serif"]
+        arabic: ["var(--font-arabic)", "Noto Sans Arabic", "Tahoma", "Arial", "sans-serif"]
       }
     }
   },

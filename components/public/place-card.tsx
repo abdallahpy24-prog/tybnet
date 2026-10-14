@@ -100,7 +100,7 @@ export function PlaceCard({ item, label, kind: providedKind, returnTo }: PlaceCa
   );
 
   return (
-    <Card className="flex h-full flex-col p-5">
+    <Card className="group flex h-full flex-col p-5 transition duration-300 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-[0_22px_58px_rgba(15,35,64,0.1)]">
       <div className="flex items-start gap-4">
         <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-borderSoft bg-slate-50">
           {cardImageUrl ? (
@@ -126,12 +126,15 @@ export function PlaceCard({ item, label, kind: providedKind, returnTo }: PlaceCa
           </h3>
 
           <p className="mt-2 flex items-start gap-2 text-sm leading-6 text-slate-600">
-            <MapPin className="mt-1 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-            <span className="line-clamp-2">
-              {item.governorate.name} · {item.area.name}
-              {item.address ? ` — ${item.address}` : ""}
-            </span>
+            <MapPin className="mt-1 h-4 w-4 shrink-0 text-primary-dark" aria-hidden="true" />
+            <span>{item.governorate.name} · {item.area.name}</span>
           </p>
+
+          {item.address ? (
+            <p className="mt-1 line-clamp-2 text-xs font-semibold leading-6 text-slate-500">
+              {item.address}
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -146,7 +149,7 @@ export function PlaceCard({ item, label, kind: providedKind, returnTo }: PlaceCa
         {verifiedAt ? (
           <p className="flex items-center gap-2 text-xs font-bold text-slate-500">
             <ShieldCheck className="h-4 w-4 text-emerald-700" aria-hidden="true" />
-            آخر تحقق من البيانات: <bdi dir="ltr">{verifiedAt}</bdi>
+            آخر تحقق: <bdi dir="ltr">{verifiedAt}</bdi>
           </p>
         ) : null}
       </div>
@@ -159,10 +162,10 @@ export function PlaceCard({ item, label, kind: providedKind, returnTo }: PlaceCa
               variant: "secondary",
               className: cn(!whatsappUrl && "sm:col-span-2")
             })}
-            aria-label={`عرض تفاصيل ${item.name}`}
+            aria-label={`عرض ملف ${item.name}`}
           >
             <ExternalLink className="h-4 w-4" aria-hidden="true" />
-            عرض التفاصيل
+            عرض الملف
           </Link>
         ) : null}
 

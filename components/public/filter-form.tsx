@@ -164,13 +164,31 @@ function FilterFormFields({
             ? "كل المناطق المتاحة"
             : "لا توجد مناطق مطابقة";
 
+  const filterDescription = placeType
+    ? "اختر المحافظة ثم المنطقة، أو ابحث باسم الجهة مباشرة."
+    : providerType === "DENTIST"
+      ? "اختر المحافظة والمنطقة، أو ابحث باسم طبيب الأسنان."
+      : "اختر المحافظة والاختصاص أولاً، ثم حدّد المنطقة إذا رغبت.";
+
+  const searchPlaceholder = placeType === "pharmacies"
+    ? "اسم الصيدلية أو المنطقة"
+    : placeType === "labs"
+      ? "اسم المختبر أو المنطقة"
+      : placeType === "cosmetic-centers"
+        ? "اسم مركز التجميل أو المنطقة"
+        : providerType === "DENTIST"
+          ? "اسم طبيب الأسنان أو المنطقة"
+          : providerType === "COSMETIC_DOCTOR"
+            ? "اسم الطبيب أو الاختصاص أو المنطقة"
+            : "اسم الطبيب أو الاختصاص أو المنطقة";
+
   return (
-    <Card className="mb-6 md:mb-8">
+    <Card className="mb-7 p-5 md:mb-8 md:p-6">
       <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-base font-black text-navy">فلترة النتائج</h2>
+          <h2 className="text-base font-black text-navy">تصفية النتائج</h2>
           <p className="mt-1 text-xs font-semibold leading-6 text-slate-500">
-            ابدأ بالمحافظة، ثم الاختصاص عند توفره، وبعدها تظهر المناطق التي تحتوي نتائج فعلية.
+            {filterDescription}
           </p>
         </div>
         {hasActiveFilters ? (
@@ -259,7 +277,7 @@ function FilterFormFields({
             name="q"
             defaultValue={q}
             maxLength={120}
-            placeholder={placeType ? "اسم الجهة أو المنطقة" : "مثال: عيون النجف أو اسم الطبيب"}
+            placeholder={searchPlaceholder}
           />
         </Field>
 

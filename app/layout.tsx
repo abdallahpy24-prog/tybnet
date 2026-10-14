@@ -6,7 +6,9 @@ import "./globals.css";
 const arabicFont = localFont({
   src: [
     { path: "../public/fonts/NotoSansArabic-Regular.ttf", weight: "400", style: "normal" },
-    { path: "../public/fonts/NotoSansArabic-Bold.ttf", weight: "700", style: "normal" }
+    { path: "../public/fonts/NotoSansArabic-Bold.ttf", weight: "700", style: "normal" },
+    { path: "../public/fonts/NotoSansArabic-Bold.ttf", weight: "800", style: "normal" },
+    { path: "../public/fonts/NotoSansArabic-Bold.ttf", weight: "900", style: "normal" }
   ],
   display: "swap",
   variable: "--font-arabic",
@@ -35,17 +37,18 @@ export const metadata: Metadata = {
   },
   applicationName: "طب نت",
   description:
-    "دليل عراقي للبحث عن الأطباء وأطباء الأسنان والصيدليات والمختبرات وأطباء ومراكز التجميل حسب المحافظة والاختصاص والمنطقة.",
+    "منصة عراقية للبحث عن الأطباء وأطباء الأسنان والصيدليات والمختبرات وخدمات التجميل حسب المحافظة والمنطقة والاختصاص.",
   metadataBase: getMetadataBase(),
   icons: {
-    icon: "/assets/logo.png",
-    apple: "/assets/logo.png"
+    icon: "/assets/logo-mark.png",
+    shortcut: "/assets/logo-mark.png",
+    apple: "/assets/logo-mark.png"
   },
   openGraph: {
     type: "website",
     title: "طب نت | دليلك الصحي في العراق",
     description:
-      "ابحث حسب المحافظة والاختصاص والمنطقة، واطّلع على معلومات العيادة ووسائل التواصل.",
+      "ابحث عن مقدمي الخدمات الصحية في العراق حسب المحافظة والمنطقة والاختصاص، واطّلع على التفاصيل قبل التواصل.",
     siteName: "طب نت",
     locale: "ar_IQ",
     images: ["/assets/logo.png"]
@@ -54,7 +57,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "طب نت | دليلك الصحي في العراق",
     description:
-      "ابحث عن مقدمي الخدمات الصحية في العراق حسب موقعك واحتياجك.",
+      "ابحث عن مقدمي الخدمات الصحية في العراق حسب موقعك واحتياجك، واطّلع على معلومات التواصل في مكان واحد.",
     images: ["/assets/logo.png"]
   },
   robots: {
@@ -73,7 +76,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0b5263",
+  themeColor: "#0B213D",
   colorScheme: "light"
 };
 

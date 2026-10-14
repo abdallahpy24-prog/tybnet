@@ -159,7 +159,7 @@ export default async function CosmeticDoctorDetailsPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}
       />
 
-      <section className="container-page py-8">
+      <section className="container-page py-8 md:py-10">
         <Link
           href={backHref}
           className="focus-ring mb-5 inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-black text-primary-dark transition hover:text-primary"
@@ -170,7 +170,7 @@ export default async function CosmeticDoctorDetailsPage({
 
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
           <Card className="overflow-hidden p-0 self-start">
-            <div className="grid gap-6 p-6 md:grid-cols-[180px_minmax(0,1fr)] md:items-start">
+            <div className="grid gap-6 bg-[radial-gradient(circle_at_top_right,rgba(8,121,137,0.09),transparent_38%),white] p-6 md:grid-cols-[180px_minmax(0,1fr)] md:items-start md:p-8">
               <div className="relative mx-auto h-40 w-40 overflow-hidden rounded-3xl border border-borderSoft bg-slate-50 md:mx-0">
                 {profileImageUrl ? (
                   originalImageUrl ? (
@@ -230,18 +230,13 @@ export default async function CosmeticDoctorDetailsPage({
                   {verifiedAt ? (
                     <p className="flex items-center gap-2 text-xs font-bold text-slate-500">
                       <ShieldCheck className="h-4 w-4 text-emerald-700" aria-hidden="true" />
-                      آخر تحقق من بيانات الملف: <bdi dir="ltr">{verifiedAt}</bdi>
+                      آخر تحقق: <bdi dir="ltr">{verifiedAt}</bdi>
                     </p>
                   ) : (
-                    <p className="text-xs font-bold text-slate-500">تاريخ التحقق من بيانات التواصل غير منشور بعد.</p>
+                    <p className="text-xs font-bold text-slate-500">تاريخ التحقق غير متوفر حالياً.</p>
                   )}
                 </div>
 
-                {provider.bio ? (
-                  <p className="mt-5 max-w-3xl whitespace-pre-line text-base leading-8 text-slate-700">
-                    {provider.bio}
-                  </p>
-                ) : null}
 
                 <div className="mt-6 flex flex-wrap gap-2">
                   {whatsappUrl ? (
@@ -261,7 +256,7 @@ export default async function CosmeticDoctorDetailsPage({
                   {clinicMapUrl ? (
                     <a href={clinicMapUrl} target="_blank" rel="noopener noreferrer" className={buttonStyles({ variant: "secondary" })}>
                       <MapPin className="h-4 w-4" aria-hidden="true" />
-                      الخريطة
+                      الاتجاهات
                     </a>
                   ) : null}
 
@@ -283,16 +278,27 @@ export default async function CosmeticDoctorDetailsPage({
             </div>
           </Card>
 
-          <Card className="self-start lg:sticky lg:top-24">
-            <h2 className="text-xl font-black text-navy">طلب موعد عبر واتساب</h2>
+          <Card className="self-start border-primary/10 bg-white lg:sticky lg:top-24">
+            <p className="text-xs font-black text-primary-dark">طلب موعد</p>
+            <h2 className="mt-1 text-xl font-black text-navy">جهّز طلبك عبر واتساب</h2>
             <p className="mt-2 text-sm leading-7 text-slate-600">
-              جهّز طلبك ثم افتح واتساب لإرساله إلى العيادة. تجهيز الطلب أو حفظه في طب نت لا يعني أن الموعد أصبح مؤكداً.
+              أدخل بيانات التواصل والوقت المفضل، ثم افتح واتساب لإرسال الطلب إلى العيادة. الموعد يصبح مؤكداً فقط بعد رد العيادة.
             </p>
             <div className="mt-5">
               <AppointmentForm providerId={provider.id} />
             </div>
           </Card>
         </div>
+
+        {provider.bio ? (
+          <Card className="mt-6">
+            <p className="text-xs font-black text-primary-dark">عن مقدم الخدمة</p>
+            <h2 className="mt-1 text-xl font-black text-navy">نبذة</h2>
+            <p className="mt-3 whitespace-pre-line text-sm leading-8 text-slate-700 md:text-base">
+              {provider.bio}
+            </p>
+          </Card>
+        ) : null}
 
         {provider.offers.length ? (
           <section className="mt-6" aria-labelledby="provider-offers-title">
@@ -307,13 +313,13 @@ export default async function CosmeticDoctorDetailsPage({
           </section>
         ) : null}
 
-        <Card className="mt-6">
+        <Card className="mt-6 bg-surface shadow-none">
           <div className="flex flex-col gap-4 md:flex-row md:items-start">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary-dark">
               <ShieldCheck className="h-6 w-6" aria-hidden="true" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-navy">ماذا يعني «تم التحقق»؟</h2>
+              <h2 className="text-lg font-black text-navy">ماذا يعني تاريخ التحقق؟</h2>
               <p className="mt-2 text-sm leading-7 text-slate-600">
                 تحقق البيانات يعني مراجعة معلومات الملف والتواصل بحسب المصادر المتاحة، ولا يمثل اعتماداً لجودة العلاج أو تقييماً طبياً. طب نت دليل للبحث والتواصل ولا يقدم تشخيصاً أو علاجاً.
               </p>

@@ -69,18 +69,18 @@ export default function JoinPage() {
       <section className="container-page py-10">
         <div className="mx-auto max-w-6xl">
           <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-            <div className="rounded-3xl bg-primary-soft p-6 md:p-8">
+            <div className="rounded-[30px] border border-primary/10 bg-primary-soft p-6 md:p-9">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-primary-dark">
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
                 لمقدمي الخدمات الصحية والتجميلية
               </div>
 
               <h1 className="text-3xl font-black text-navy md:text-5xl">
-                اعرض بياناتك وخدماتك بصورة واضحة ومنظمة
+                اجعل الوصول إلى عيادتك أسهل
               </h1>
 
               <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">
-                يساعد طب نت الأطباء وأطباء الأسنان وأطباء التجميل ومراكز التجميل والصيدليات والمختبرات على عرض معلوماتهم بصورة منظمة، لتسهيل وصول المستخدم إلى الموقع ووسائل التواصل والتفاصيل الأساسية قبل الزيارة أو طلب الموعد.
+                أنشئ حضوراً واضحاً داخل طب نت واعرض معلوماتك الأساسية، موقعك، أوقات الدوام ووسائل التواصل في مكان واحد يسهل الوصول إليه.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
@@ -168,7 +168,7 @@ export default function JoinPage() {
             </Card>
           </div>
 
-          <Card className="mt-8">
+          <Card className="mt-8 border-primary/10 bg-[linear-gradient(135deg,#ffffff,#f3fbfc)]">
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div>
                 <h2 className="text-xl font-black text-navy">
